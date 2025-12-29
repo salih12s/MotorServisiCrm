@@ -28,6 +28,8 @@ import {
   Avatar,
   Paper,
   InputAdornment,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Save as SaveIcon,
@@ -44,6 +46,8 @@ import {
 import { isEmriService } from '../services/api';
 
 function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isEdit = Boolean(editId);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -79,7 +83,8 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
     const fetchNextFisNo = async () => {
       if (open && !isEdit) {
         try {
-          const response = await fetch('http://localhost:5000/api/is-emirleri/next-fis-no/preview');
+          const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+          const response = await fetch(`${apiUrl}/is-emirleri/next-fis-no/preview`);
           const data = await response.json();
           setFisNo(data.fis_no);
         } catch (error) {
@@ -99,7 +104,6 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
         try {
           const response = await isEmriService.getById(editId);
           const data = response.data || response;
-          console.log('Edit için yüklenen veri:', data);
           setFormData({
             musteri_ad_soyad: data.musteri_ad_soyad || '',
             km: data.km || '',
@@ -187,6 +191,16 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
 
   const removeParca = (index) => {
     setParcalar(parcalar.filter((_, i) => i !== index));
+  };
+
+  // Inline parça düzenleme fonksiyonu
+  const updateParca = (index, field, value) => {
+    const updatedParcalar = [...parcalar];
+    updatedParcalar[index] = {
+      ...updatedParcalar[index],
+      [field]: value
+    };
+    setParcalar(updatedParcalar);
   };
 
   const calculateTotals = () => {
@@ -652,91 +666,180 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
                       </Grid>
                     </Paper>
 
-                    {/* Parça Listesi */}
-                    <TableContainer 
-                      component={Paper} 
-                      variant="outlined" 
-                      sx={{ maxHeight: 250, mb: 2 }}
-                    >
-                      <Table size="small" stickyHeader>
-                        <TableHead>
-                          <TableRow>
-                            <TableCell>Parça</TableCell>
-                            <TableCell align="center">Adet</TableCell>
-                            {isEdit && <TableCell align="right">Maliyet</TableCell>}
-                            <TableCell align="right">Satış</TableCell>
-                            {isEdit && <TableCell align="center" width={40}>Düzenle</TableCell>}
-                            <TableCell align="center" width={40}>Sil</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {parcalar.length === 0 ? (
+                    {/* Parça Listesi - Mobilde Card, Masaüstünde Inline Düzenlenebilir Tablo */}
+                    {isMobile ? (
+                      /* Mobile Card View - Inline Düzenlenebilir */
+                      <Box sx={{ maxHeight: 300, overflowY: 'auto', mb: 2 }}>
+                        {parcalar.length === 0 ? (
+                          <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
+                            <Typography color="text.secondary" variant="body2">
+                              Henüz parça eklenmedi
+                            </Typography>
+                          </Paper>
+                        ) : (
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                            {parcalar.map((parca, index) => (
+                              <Paper key={parca.id || index} variant="outlined" sx={{ p: 1.5 }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1, gap: 1 }}>
+                                  <Box sx={{ flex: 1 }}>
+                                    <TextField
+                                      fullWidth
+                                      size="small"
+                                      label="Parça Adı"
+                                      value={parca.takilan_parca}
+                                      onChange={(e) => updateParca(index, 'takilan_parca', e.target.value)}
+                                      sx={{ mb: 1 , mt: 1 }}
+                                    />
+                                    <TextField
+                                      fullWidth
+                                      size="small"
+                                      label="Parça Kodu"
+                                      value={parca.parca_kodu || ''}
+                                      onChange={(e) => updateParca(index, 'parca_kodu', e.target.value)}
+                                      placeholder="Örn: 054455465"
+                                    />
+                                  </Box>
+                                  <IconButton size="small" color="error" onClick={() => removeParca(index)} sx={{ mt: 1 }}>
+                                    <DeleteIcon fontSize="small" />
+                                  </IconButton>
+                                </Box>
+                                <Grid container spacing={1}>
+                                  <Grid item xs={4}>
+                                    <TextField
+                                      fullWidth
+                                      size="small"
+                                      type="number"
+                                      label="Adet"
+                                      value={parca.adet}
+                                      onChange={(e) => updateParca(index, 'adet', parseInt(e.target.value) || 1)}
+                                      inputProps={{ min: 1, style: { textAlign: 'center' } }}
+                                    />
+                                  </Grid>
+                                  {isEdit && (
+                                    <Grid item xs={4}>
+                                      <TextField
+                                        fullWidth
+                                        size="small"
+                                        type="number"
+                                        label="Maliyet"
+                                        value={parca.maliyet === 0 || parca.maliyet ? parca.maliyet : ''}
+                                        onChange={(e) => updateParca(index, 'maliyet', e.target.value === '' ? '' : parseFloat(e.target.value))}
+                                        inputProps={{ min: 0, step: 0.01 }}
+                                      />
+                                    </Grid>
+                                  )}
+                                  <Grid item xs={isEdit ? 4 : 8}>
+                                    <TextField
+                                      fullWidth
+                                      size="small"
+                                      type="number"
+                                      label="Satış"
+                                      value={parca.birim_fiyat === 0 || parca.birim_fiyat ? parca.birim_fiyat : ''}
+                                      onChange={(e) => updateParca(index, 'birim_fiyat', e.target.value === '' ? '' : parseFloat(e.target.value))}
+                                      inputProps={{ min: 0, step: 0.01 }}
+                                    />
+                                  </Grid>
+                                </Grid>
+                              </Paper>
+                            ))}
+                          </Box>
+                        )}
+                      </Box>
+                    ) : (
+                      /* Desktop Inline Düzenlenebilir Tablo */
+                      <TableContainer 
+                        component={Paper} 
+                        variant="outlined" 
+                        sx={{ maxHeight: 250, mb: 2 }}
+                      >
+                        <Table size="small" stickyHeader>
+                          <TableHead>
                             <TableRow>
-                              <TableCell colSpan={isEdit ? 6 : 4} align="center" sx={{ py: 3 }}>
-                                <Typography color="text.secondary" variant="body2">
-                                  Henüz parça eklenmedi
-                                </Typography>
-                              </TableCell>
+                              <TableCell>Parça</TableCell>
+                              <TableCell align="center" width={80}>Adet</TableCell>
+                              {isEdit && <TableCell align="right" width={100}>Maliyet</TableCell>}
+                              <TableCell align="right" width={100}>Satış</TableCell>
+                              <TableCell align="center" width={50}>Sil</TableCell>
                             </TableRow>
-                          ) : (
-                            parcalar.map((parca, index) => (
-                              <TableRow key={parca.id || index}>
-                                <TableCell>
-                                  <Typography variant="body2" fontWeight={500}>
-                                    {parca.takilan_parca}
-                                  </Typography>
-                                  <Typography variant="caption" color="text.secondary">
-                                    {parca.parca_kodu || '-'}
+                          </TableHead>
+                          <TableBody>
+                            {parcalar.length === 0 ? (
+                              <TableRow>
+                                <TableCell colSpan={isEdit ? 5 : 4} align="center" sx={{ py: 3 }}>
+                                  <Typography color="text.secondary" variant="body2">
+                                    Henüz parça eklenmedi
                                   </Typography>
                                 </TableCell>
-                                <TableCell align="center">{parca.adet}</TableCell>
-                                {isEdit && (
-                                  <TableCell align="right">
-                                    <Typography variant="body2" color="error.main">
-                                      {formatCurrency(parca.maliyet || 0)}
-                                    </Typography>
+                              </TableRow>
+                            ) : (
+                              parcalar.map((parca, index) => (
+                                <TableRow key={parca.id || index}>
+                                  <TableCell>
+                                    <TextField
+                                      fullWidth
+                                      size="small"
+                                      value={parca.takilan_parca}
+                                      onChange={(e) => updateParca(index, 'takilan_parca', e.target.value)}
+                                      placeholder="Parça Adı"
+                                      sx={{ mb: 0.5, '& input': { p: 0.5, fontWeight: 500 } }}
+                                    />
+                                    <TextField
+                                      fullWidth
+                                      size="small"
+                                      value={parca.parca_kodu || ''}
+                                      onChange={(e) => updateParca(index, 'parca_kodu', e.target.value)}
+                                      placeholder="Parça Kodu"
+                                      sx={{ '& input': { p: 0.5, fontSize: '0.75rem', color: 'text.secondary' } }}
+                                    />
                                   </TableCell>
-                                )}
-                                <TableCell align="right">
-                                  <Typography variant="body2" fontWeight={600}>
-                                    {formatCurrency(parca.birim_fiyat)}
-                                  </Typography>
-                                </TableCell>
-                                {isEdit && (
+                                  <TableCell align="center">
+                                    <TextField
+                                      size="small"
+                                      type="number"
+                                      value={parca.adet}
+                                      onChange={(e) => updateParca(index, 'adet', parseInt(e.target.value) || 1)}
+                                      inputProps={{ min: 1, style: { textAlign: 'center', width: 50 } }}
+                                      sx={{ '& input': { p: 0.5 } }}
+                                    />
+                                  </TableCell>
+                                  {isEdit && (
+                                    <TableCell align="right">
+                                      <TextField
+                                        size="small"
+                                        type="number"
+                                        value={parca.maliyet === 0 || parca.maliyet ? parca.maliyet : ''}
+                                        onChange={(e) => updateParca(index, 'maliyet', e.target.value === '' ? '' : parseFloat(e.target.value))}
+                                        inputProps={{ min: 0, step: 0.01, style: { textAlign: 'right', width: 70 } }}
+                                        sx={{ '& input': { p: 0.5 } }}
+                                      />
+                                    </TableCell>
+                                  )}
+                                  <TableCell align="right">
+                                    <TextField
+                                      size="small"
+                                      type="number"
+                                      value={parca.birim_fiyat === 0 || parca.birim_fiyat ? parca.birim_fiyat : ''}
+                                      onChange={(e) => updateParca(index, 'birim_fiyat', e.target.value === '' ? '' : parseFloat(e.target.value))}
+                                      inputProps={{ min: 0, step: 0.01, style: { textAlign: 'right', width: 70 } }}
+                                      sx={{ '& input': { p: 0.5 } }}
+                                    />
+                                  </TableCell>
                                   <TableCell align="center">
                                     <IconButton 
                                       size="small" 
-                                      color="primary" 
-                                      onClick={() => {
-                                        setNewParca({
-                                          parca_kodu: parca.parca_kodu || '',
-                                          takilan_parca: parca.takilan_parca,
-                                          adet: parca.adet,
-                                          birim_fiyat: parca.birim_fiyat,
-                                          maliyet: parca.maliyet || 0,
-                                        });
-                                        removeParca(index);
-                                      }}
+                                      color="error" 
+                                      onClick={() => removeParca(index)}
                                     >
-                                      <BuildIcon fontSize="small" />
+                                      <DeleteIcon fontSize="small" />
                                     </IconButton>
                                   </TableCell>
-                                )}
-                                <TableCell align="center">
-                                  <IconButton 
-                                    size="small" 
-                                    color="error" 
-                                    onClick={() => removeParca(index)}
-                                  >
-                                    <DeleteIcon fontSize="small" />
-                                  </IconButton>
-                                </TableCell>
-                              </TableRow>
-                            ))
-                          )}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
+                                </TableRow>
+                              ))
+                            )}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    )}
 
                     {/* Toplamlar */}
                     {parcalar.length > 0 && (
@@ -812,10 +915,28 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
                                 Beklemede
                               </Box>
                             </MenuItem>
+                            <MenuItem value="islemde">
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'info.main' }} />
+                                İşlemde
+                              </Box>
+                            </MenuItem>
+                            <MenuItem value="odeme_bekleniyor">
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#f57c00' }} />
+                                Ödeme Bekleniyor
+                              </Box>
+                            </MenuItem>
                             <MenuItem value="tamamlandi">
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'success.main' }} />
                                 Tamamlandı
+                              </Box>
+                            </MenuItem>
+                            <MenuItem value="iptal_edildi">
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'error.main' }} />
+                                İptal Edildi
                               </Box>
                             </MenuItem>
                           </Select>

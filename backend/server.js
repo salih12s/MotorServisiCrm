@@ -23,7 +23,9 @@ const corsOptions = {
         'http://www.demirkanmotorluaraclar.com',
         'https://www.demirkanmotorluaraclar.com',
         'https://motorservisicrm.railway.internal',
-        'http://motorservisicrm.railway.internal'
+        'http://motorservisicrm.railway.internal',
+        'https://motorservisicrm-production.up.railway.app',
+        'http://motorservisicrm-production.up.railway.app'
       ]
     : ['http://localhost:3000', 'http://localhost:3001'],
   credentials: true,

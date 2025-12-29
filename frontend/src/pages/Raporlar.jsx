@@ -27,6 +27,10 @@ import {
   Divider,
   useMediaQuery,
   useTheme,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import {
   TrendingUp as TrendingUpIcon,
@@ -40,12 +44,12 @@ import {
   Person as PersonIcon,
   Close as CloseIcon,
 } from '@mui/icons-material';
-import { raporService } from '../services/api';
+import { raporService, authService } from '../services/api';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
 // Stat Card Component
-const StatCard = ({ title, value, icon, color, variant = 'default' }) => (
+const StatCard = ({ title, value, icon, color, variant = 'default', isMobile = false }) => (
   <Card 
     sx={{ 
       height: '100%',
@@ -55,11 +59,11 @@ const StatCard = ({ title, value, icon, color, variant = 'default' }) => (
       }),
     }}
   >
-    <CardContent>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+    <CardContent sx={{ p: isMobile ? 1.5 : 2, '&:last-child': { pb: isMobile ? 1.5 : 2 } }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
         {React.cloneElement(icon, { 
           sx: { 
-            fontSize: 20, 
+            fontSize: isMobile ? 16 : 20, 
             color: variant === 'highlight' ? 'rgba(255,255,255,0.8)' : color 
           } 
         })}
@@ -68,15 +72,19 @@ const StatCard = ({ title, value, icon, color, variant = 'default' }) => (
           sx={{ 
             color: variant === 'highlight' ? 'rgba(255,255,255,0.9)' : 'text.secondary',
             fontWeight: 500,
+            fontSize: isMobile ? '0.7rem' : '0.875rem',
           }}
         >
           {title}
         </Typography>
       </Box>
       <Typography 
-        variant="h5" 
+        variant={isMobile ? 'h6' : 'h5'}
         fontWeight={800}
-        sx={{ color: variant === 'highlight' ? 'white' : color }}
+        sx={{ 
+          color: variant === 'highlight' ? 'white' : color,
+          fontSize: isMobile ? '1.1rem' : '1.5rem',
+        }}
       >
         {value}
       </Typography>
@@ -95,6 +103,10 @@ function Raporlar() {
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [gunlukRapor, setGunlukRapor] = useState(null);
   
+  // Oluşturan Kişi Filtresi
+  const [kullanicilar, setKullanicilar] = useState([]);
+  const [selectedKullanici, setSelectedKullanici] = useState('');
+  
   // Fiş Kar State
   const [fisKarTarih, setFisKarTarih] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [fisKarRapor, setFisKarRapor] = useState(null);
@@ -102,6 +114,19 @@ function Raporlar() {
   // Detay Modal State
   const [selectedWorkOrder, setSelectedWorkOrder] = useState(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
+
+  // Kullanıcıları yükle
+  useEffect(() => {
+    const loadKullanicilar = async () => {
+      try {
+        const response = await authService.getUsers();
+        setKullanicilar(response.data || []);
+      } catch (error) {
+        console.error('Kullanıcılar yüklenemedi:', error);
+      }
+    };
+    loadKullanicilar();
+  }, []);
 
   useEffect(() => {
     if (activeTab === 0) {
@@ -153,9 +178,16 @@ function Raporlar() {
     }).format(value || 0);
   };
 
+  // Oluşturan kişiye göre filtrelenmiş iş emirleri
+  const filteredIsEmirleri = gunlukRapor?.detayli_is_emirleri?.filter(isEmri => {
+    if (!selectedKullanici) return true;
+    return isEmri.olusturan_kullanici_adi === selectedKullanici || 
+           isEmri.olusturan_ad_soyad === selectedKullanici;
+  }) || [];
+
   const renderGunlukRapor = () => (
     <Box>
-      {/* Tarih Aralığı Seçici */}
+      {/* Tarih Aralığı ve Filtreler */}
       <Card sx={{ mb: 3 }}>
         <CardContent sx={{ py: 2 }}>
           <Grid container spacing={2} alignItems="center">
@@ -167,7 +199,7 @@ function Raporlar() {
                 </Typography>
               </Box>
             </Grid>
-            <Grid item xs={12} sm={5} md={3}>
+            <Grid item xs={12} sm={5} md={2}>
               <TextField
                 type="date"
                 label="Başlangıç Tarihi"
@@ -178,7 +210,7 @@ function Raporlar() {
                 fullWidth
               />
             </Grid>
-            <Grid item xs={12} sm={5} md={3}>
+            <Grid item xs={12} sm={5} md={2}>
               <TextField
                 type="date"
                 label="Bitiş Tarihi"
@@ -188,6 +220,23 @@ function Raporlar() {
                 size="small"
                 fullWidth
               />
+            </Grid>
+            <Grid item xs={12} sm={5} md={3} width={180}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Oluşturan Kişi</InputLabel>
+                <Select
+                  value={selectedKullanici}
+                  label="Oluşturan Kişi"
+                  onChange={(e) => setSelectedKullanici(e.target.value)}
+                >
+                  <MenuItem value="">Tümü</MenuItem>
+                  {kullanicilar.map((kullanici) => (
+                    <MenuItem key={kullanici.id} value={kullanici.kullanici_adi}>
+                      {kullanici.ad_soyad}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
             <Grid item xs={12} sm="auto">
               <Chip 
@@ -210,13 +259,14 @@ function Raporlar() {
       ) : gunlukRapor ? (
         <>
           {/* Özet Kartları */}
-          <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid container spacing={isMobile ? 1 : 2} sx={{ mb: 3 }}>
             <Grid item xs={6} sm={3}>
               <StatCard
                 title="İş Emri Sayısı"
                 value={gunlukRapor.genel_ozet?.toplam_is || gunlukRapor.ozet?.toplam_is_emri || 0}
                 icon={<AssignmentIcon />}
                 color="#04A7B8"
+                isMobile={isMobile}
               />
             </Grid>
             <Grid item xs={6} sm={3}>
@@ -225,6 +275,7 @@ function Raporlar() {
                 value={formatCurrency(gunlukRapor.genel_ozet?.toplam_gelir || gunlukRapor.ozet?.toplam_gelir || 0)}
                 icon={<AttachMoneyIcon />}
                 color="#2e7d32"
+                isMobile={isMobile}
               />
             </Grid>
             <Grid item xs={6} sm={3}>
@@ -233,6 +284,7 @@ function Raporlar() {
                 value={formatCurrency(gunlukRapor.genel_ozet?.toplam_maliyet || gunlukRapor.ozet?.toplam_maliyet || 0)}
                 icon={<MoneyOffIcon />}
                 color="#c62828"
+                isMobile={isMobile}
               />
             </Grid>
             <Grid item xs={6} sm={3}>
@@ -242,6 +294,7 @@ function Raporlar() {
                 icon={<TrendingUpIcon />}
                 color="#04A7B8"
                 variant="highlight"
+                isMobile={isMobile}
               />
             </Grid>
           </Grid>
@@ -249,30 +302,73 @@ function Raporlar() {
           {/* Günlük Veriler Tablosu */}
           <Card sx={{ mb: 3 }}>
             <CardContent sx={{ p: 0 }}>
-              <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+              <Box sx={{ p: isMobile ? 1.5 : 2.5, borderBottom: '1px solid', borderColor: 'divider' }}>
                 <Typography variant="h6" fontWeight={700} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>Günlük Özet</Typography>
               </Box>
-              <TableContainer sx={{ overflowX: 'auto' }}>
-                <Table sx={{ minWidth: { xs: 600, sm: '100%' } }}>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Tarih</TableCell>
-                      <TableCell align="center">İş Sayısı</TableCell>
-                      <TableCell align="right">Gelir</TableCell>
-                      <TableCell align="right">Maliyet</TableCell>
-                      <TableCell align="right">Kar</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {(gunlukRapor.gunluk_veriler || gunlukRapor.is_emirleri || []).length === 0 ? (
+              
+              {(gunlukRapor.gunluk_veriler || gunlukRapor.is_emirleri || []).length === 0 ? (
+                <Box sx={{ textAlign: 'center', py: 6 }}>
+                  <ReceiptIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
+                  <Typography color="text.secondary">Bu tarih aralığında iş emri bulunmuyor</Typography>
+                </Box>
+              ) : isMobile ? (
+                /* Mobile Card View for Günlük Özet */
+                <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  {(gunlukRapor.gunluk_veriler || []).map((item, index) => (
+                    <Card key={index} variant="outlined" sx={{ bgcolor: '#fafafa' }}>
+                      <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                          <Typography variant="subtitle2" fontWeight={700}>
+                            {format(new Date(item.tarih), 'd MMMM yyyy', { locale: tr })}
+                          </Typography>
+                          <Chip label={`${item.is_sayisi} iş`} size="small" color="primary" sx={{ height: 22 }} />
+                        </Box>
+                        <Grid container spacing={1}>
+                          <Grid item xs={4}>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>Gelir</Typography>
+                            <Typography variant="body2" fontWeight={600} sx={{ color: '#2e7d32', fontSize: '0.85rem' }}>
+                              {formatCurrency(item.toplam_gelir)}
+                            </Typography>
+                          </Grid>
+                          <Grid item xs={4}>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>Maliyet</Typography>
+                            <Typography variant="body2" sx={{ color: '#c62828', fontSize: '0.85rem' }}>
+                              {formatCurrency(item.toplam_maliyet)}
+                            </Typography>
+                          </Grid>
+                          <Grid item xs={4}>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>Kar</Typography>
+                            <Typography 
+                              variant="body2" 
+                              fontWeight={700}
+                              sx={{ 
+                                color: parseFloat(item.toplam_kar) >= 0 ? '#2e7d32' : '#c62828',
+                                fontSize: '0.85rem',
+                              }}
+                            >
+                              {formatCurrency(item.toplam_kar)}
+                            </Typography>
+                          </Grid>
+                        </Grid>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </Box>
+              ) : (
+                /* Desktop Table View */
+                <TableContainer sx={{ overflowX: 'auto' }}>
+                  <Table sx={{ minWidth: { xs: 600, sm: '100%' } }}>
+                    <TableHead>
                       <TableRow>
-                        <TableCell colSpan={5} align="center" sx={{ py: 6 }}>
-                          <ReceiptIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
-                          <Typography color="text.secondary">Bu tarih aralığında iş emri bulunmuyor</Typography>
-                        </TableCell>
+                        <TableCell>Tarih</TableCell>
+                        <TableCell align="center">İş Sayısı</TableCell>
+                        <TableCell align="right">Gelir</TableCell>
+                        <TableCell align="right">Maliyet</TableCell>
+                        <TableCell align="right">Kar</TableCell>
                       </TableRow>
-                    ) : (
-                      (gunlukRapor.gunluk_veriler || []).map((item, index) => (
+                    </TableHead>
+                    <TableBody>
+                      {(gunlukRapor.gunluk_veriler || []).map((item, index) => (
                         <TableRow key={index} hover>
                           <TableCell>
                             <Typography fontWeight={600}>
@@ -301,11 +397,11 @@ function Raporlar() {
                             </Typography>
                           </TableCell>
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
             </CardContent>
           </Card>
 
@@ -317,9 +413,9 @@ function Raporlar() {
                 <Typography variant="h6" fontWeight={700} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
                   Tarih Aralığındaki İş Emirleri
                 </Typography>
-                {gunlukRapor.detayli_is_emirleri && (
+                {filteredIsEmirleri && (
                   <Chip 
-                    label={`${gunlukRapor.detayli_is_emirleri.length} iş emri`} 
+                    label={`${filteredIsEmirleri.length} iş emri`} 
                     size="small" 
                     color="primary" 
                     sx={{ ml: { xs: 0, sm: 'auto' } }}
@@ -330,14 +426,14 @@ function Raporlar() {
               {isMobile ? (
                 /* Mobile Card View */
                 <Box sx={{ p: 1.5 }}>
-                  {(!gunlukRapor.detayli_is_emirleri || gunlukRapor.detayli_is_emirleri.length === 0) ? (
+                  {(!filteredIsEmirleri || filteredIsEmirleri.length === 0) ? (
                     <Box sx={{ textAlign: 'center', py: 6 }}>
                       <ReceiptIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
-                      <Typography color="text.secondary">Bu tarih aralığında iş emri bulunmuyor</Typography>
+                      <Typography color="text.secondary">{selectedKullanici ? 'Bu kişiye ait iş emri bulunmuyor' : 'Bu tarih aralığında iş emri bulunmuyor'}</Typography>
                     </Box>
                   ) : (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                      {gunlukRapor.detayli_is_emirleri.map((isEmri) => (
+                      {filteredIsEmirleri.map((isEmri) => (
                         <Card key={isEmri.id} sx={{ overflow: 'hidden', bgcolor: '#fafafa' }}>
                           <CardContent sx={{ p: 1.5 }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1, gap: 1 }}>
@@ -461,15 +557,15 @@ function Raporlar() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {(!gunlukRapor.detayli_is_emirleri || gunlukRapor.detayli_is_emirleri.length === 0) ? (
+                    {(!filteredIsEmirleri || filteredIsEmirleri.length === 0) ? (
                       <TableRow>
                         <TableCell colSpan={10} align="center" sx={{ py: 6 }}>
                           <ReceiptIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
-                          <Typography color="text.secondary">Bu tarih aralığında iş emri bulunmuyor</Typography>
+                          <Typography color="text.secondary">{selectedKullanici ? 'Bu kişiye ait iş emri bulunmuyor' : 'Bu tarih aralığında iş emri bulunmuyor'}</Typography>
                         </TableCell>
                       </TableRow>
                     ) : (
-                      gunlukRapor.detayli_is_emirleri.map((isEmri) => (
+                      filteredIsEmirleri.map((isEmri) => (
                         <TableRow key={isEmri.id} hover>
                           <TableCell>
                             <Typography fontWeight={700} color="primary.main">{isEmri.fis_no}</Typography>

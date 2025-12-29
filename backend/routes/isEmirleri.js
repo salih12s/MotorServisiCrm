@@ -241,6 +241,16 @@ router.put('/:id', async (req, res) => {
     await client.query('BEGIN');
     
     const { id } = req.params;
+    
+    // İş emri durumunu kontrol et - tamamlandıysa personel düzenlemesin
+    const mevcutIsEmri = await client.query('SELECT durum FROM is_emirleri WHERE id = $1', [id]);
+    if (mevcutIsEmri.rows.length > 0 && mevcutIsEmri.rows[0].durum === 'tamamlandi') {
+      if (req.user?.rol !== 'admin') {
+        await client.query('ROLLBACK');
+        return res.status(403).json({ message: 'Tamamlanmış iş emirlerini düzenleyemezsiniz.' });
+      }
+    }
+    
     const {
       musteri_ad_soyad,
       adres,
@@ -347,9 +357,14 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// İş emri sil
+// İş emri sil (sadece admin)
 router.delete('/:id', async (req, res) => {
   try {
+    // Admin kontrolü
+    if (req.user?.rol !== 'admin') {
+      return res.status(403).json({ message: 'Bu işlem için yetkiniz yok. Sadece admin iş emri silebilir.' });
+    }
+    
     const { id } = req.params;
     
     const result = await pool.query(
@@ -439,6 +454,15 @@ router.delete('/:id/parcalar/:parcaId', async (req, res) => {
     await client.query('BEGIN');
     
     const { id, parcaId } = req.params;
+    
+    // İş emri durumunu kontrol et - tamamlandıysa personel silemesin
+    const isEmriResult = await client.query('SELECT durum FROM is_emirleri WHERE id = $1', [id]);
+    if (isEmriResult.rows.length > 0 && isEmriResult.rows[0].durum === 'tamamlandi') {
+      if (req.user?.rol !== 'admin') {
+        await client.query('ROLLBACK');
+        return res.status(403).json({ message: 'Tamamlanmış iş emirlerinde parça silemezsiniz.' });
+      }
+    }
     
     await client.query('DELETE FROM parcalar WHERE id = $1 AND is_emri_id = $2', [parcaId, id]);
     

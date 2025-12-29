@@ -32,6 +32,7 @@ import {
   Divider,
   useMediaQuery,
   useTheme,
+  Paper,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -121,7 +122,6 @@ function IsEmirleri() {
     try {
       const response = await isEmriService.getById(isEmri.id);
       const data = response.data || response; // API response'u kontrol et
-      console.log('İş emri detay:', data); // Debug için
       setSelectedIsEmri(data);
       setDetailModalOpen(true);
     } catch (error) {
@@ -182,6 +182,10 @@ function IsEmirleri() {
   // İstatistikler
   const toplamIsEmri = filteredIsEmirleri.length;
   const beklemedekiIsEmri = filteredIsEmirleri.filter(ie => ie.durum === 'beklemede').length;
+  const islemdekiIsEmri = filteredIsEmirleri.filter(ie => ie.durum === 'islemde').length;
+  const odemeBekleyenIsEmri = filteredIsEmirleri.filter(ie => ie.durum === 'odeme_bekleniyor').length;
+  const tamamlananIsEmri = filteredIsEmirleri.filter(ie => ie.durum === 'tamamlandi').length;
+  const iptalIsEmri = filteredIsEmirleri.filter(ie => ie.durum === 'iptal_edildi').length;
   const toplamTutar = filteredIsEmirleri.reduce((sum, ie) => sum + parseFloat(ie.gercek_toplam_ucret || 0), 0);
 
   return (
@@ -209,17 +213,40 @@ function IsEmirleri() {
             </Button>
           </Box>
           {/* Inline Stats */}
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <Chip 
               label={`Toplam: ${toplamIsEmri}`} 
+              size="small"
               sx={{ bgcolor: '#e3f2fd', color: '#1a237e', fontWeight: 600 }} 
             />
             <Chip 
               label={`Beklemede: ${beklemedekiIsEmri}`} 
+              size="small"
               sx={{ bgcolor: '#fff3e0', color: '#e65100', fontWeight: 600 }} 
             />
             <Chip 
+              label={`İşlemde: ${islemdekiIsEmri}`} 
+              size="small"
+              sx={{ bgcolor: '#e3f2fd', color: '#0277bd', fontWeight: 600 }} 
+            />
+            <Chip 
+              label={`Ödeme Bekl.: ${odemeBekleyenIsEmri}`} 
+              size="small"
+              sx={{ bgcolor: '#f3e5f5', color: '#7b1fa2', fontWeight: 600 }} 
+            />
+            <Chip 
+              label={`Tamamlandı: ${tamamlananIsEmri}`} 
+              size="small"
+              sx={{ bgcolor: '#e8f5e9', color: '#2e7d32', fontWeight: 600 }} 
+            />
+            <Chip 
+              label={`İptal: ${iptalIsEmri}`} 
+              size="small"
+              sx={{ bgcolor: '#ffebee', color: '#c62828', fontWeight: 600 }} 
+            />
+            <Chip 
               label={formatCurrency(toplamTutar)} 
+              size="small"
               sx={{ bgcolor: '#e8f5e9', color: '#2e7d32', fontWeight: 600 }} 
             />
           </Box>
@@ -263,7 +290,10 @@ function IsEmirleri() {
                 >
                   <MenuItem value="">Tümü</MenuItem>
                   <MenuItem value="beklemede">Beklemede</MenuItem>
+                  <MenuItem value="islemde">İşlemde</MenuItem>
+                  <MenuItem value="odeme_bekleniyor">Ödeme Bekleniyor</MenuItem>
                   <MenuItem value="tamamlandi">Tamamlandı</MenuItem>
+                  <MenuItem value="iptal_edildi">İptal Edildi</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -344,10 +374,26 @@ function IsEmirleri() {
                     </Box>
                     <Chip
                       size="small"
-                      label={isEmri.durum === 'beklemede' ? 'Beklemede' : 'Tamamlandı'}
+                      label={
+                        isEmri.durum === 'beklemede' ? 'Beklemede' :
+                        isEmri.durum === 'islemde' ? 'İşlemde' :
+                        isEmri.durum === 'odeme_bekleniyor' ? 'Ödeme Bekleniyor' :
+                        isEmri.durum === 'iptal_edildi' ? 'İptal Edildi' :
+                        'Tamamlandı'
+                      }
                       sx={{
-                        bgcolor: isEmri.durum === 'beklemede' ? '#fff3e0' : '#e8f5e9',
-                        color: isEmri.durum === 'beklemede' ? '#e65100' : '#2e7d32',
+                        bgcolor: 
+                          isEmri.durum === 'beklemede' ? '#fff3e0' :
+                          isEmri.durum === 'islemde' ? '#e3f2fd' :
+                          isEmri.durum === 'odeme_bekleniyor' ? '#fff8e1' :
+                          isEmri.durum === 'iptal_edildi' ? '#ffebee' :
+                          '#e8f5e9',
+                        color: 
+                          isEmri.durum === 'beklemede' ? '#e65100' :
+                          isEmri.durum === 'islemde' ? '#1565c0' :
+                          isEmri.durum === 'odeme_bekleniyor' ? '#f57c00' :
+                          isEmri.durum === 'iptal_edildi' ? '#c62828' :
+                          '#2e7d32',
                         fontWeight: 600,
                         fontSize: '0.7rem',
                         height: '22px',
@@ -455,7 +501,7 @@ function IsEmirleri() {
                     >
                       Yazdır
                     </Button>
-                    {isEmri.durum === 'beklemede' && (
+                    {isEmri.durum !== 'tamamlandi' && (
                       <Button
                         size="small"
                         variant="contained"
@@ -467,23 +513,27 @@ function IsEmirleri() {
                         Tamamla
                       </Button>
                     )}
-                    <IconButton
-                      size="small"
-                      onClick={() => {
-                        setEditingId(isEmri.id);
-                        setIsModalOpen(true);
-                      }}
-                      sx={{ color: 'warning.main', p: 0.5 }}
-                    >
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleDelete(isEmri.id)}
-                      sx={{ color: 'error.main', p: 0.5 }}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
+                    {(isAdmin || isEmri.durum !== 'tamamlandi') && (
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          setEditingId(isEmri.id);
+                          setIsModalOpen(true);
+                        }}
+                        sx={{ color: 'warning.main', p: 0.5 }}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    )}
+                    {isAdmin && (
+                      <IconButton
+                        size="small"
+                        onClick={() => handleDelete(isEmri.id)}
+                        sx={{ color: 'error.main', p: 0.5 }}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    )}
                   </Box>
                 </CardContent>
               </Card>
@@ -584,10 +634,26 @@ function IsEmirleri() {
                           </Tooltip>
                           <Chip
                             size="small"
-                            label={isEmri.durum === 'beklemede' ? 'Beklemede' : 'Tamamlandı'}
+                            label={
+                              isEmri.durum === 'beklemede' ? 'Beklemede' :
+                              isEmri.durum === 'islemde' ? 'İşlemde' :
+                              isEmri.durum === 'odeme_bekleniyor' ? 'Ödeme Bekleniyor' :
+                              isEmri.durum === 'iptal_edildi' ? 'İptal Edildi' :
+                              'Tamamlandı'
+                            }
                             sx={{
-                              bgcolor: isEmri.durum === 'beklemede' ? '#fff3e0' : '#e8f5e9',
-                              color: isEmri.durum === 'beklemede' ? '#e65100' : '#2e7d32',
+                              bgcolor: 
+                                isEmri.durum === 'beklemede' ? '#fff3e0' :
+                                isEmri.durum === 'islemde' ? '#e3f2fd' :
+                                isEmri.durum === 'odeme_bekleniyor' ? '#fff8e1' :
+                                isEmri.durum === 'iptal_edildi' ? '#ffebee' :
+                                '#e8f5e9',
+                              color: 
+                                isEmri.durum === 'beklemede' ? '#e65100' :
+                                isEmri.durum === 'islemde' ? '#1565c0' :
+                                isEmri.durum === 'odeme_bekleniyor' ? '#f57c00' :
+                                isEmri.durum === 'iptal_edildi' ? '#c62828' :
+                                '#2e7d32',
                               fontWeight: 600,
                               fontSize: '0.7rem',
                               height: 20,
@@ -653,7 +719,7 @@ function IsEmirleri() {
                               <PrintIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          {isEmri.durum === 'beklemede' && (
+                          {isEmri.durum !== 'tamamlandi' && (
                             <Tooltip title="Tamamla">
                               <IconButton
                                 size="small"
@@ -664,27 +730,31 @@ function IsEmirleri() {
                               </IconButton>
                             </Tooltip>
                           )}
-                          <Tooltip title="Düzenle">
-                            <IconButton
-                              size="small"
-                              onClick={() => {
-                                setEditingId(isEmri.id);
-                                setIsModalOpen(true);
-                              }}
-                              sx={{ color: 'warning.main' }}
-                            >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Sil">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleDelete(isEmri.id)}
-                              sx={{ color: 'error.main' }}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
+                          {(isAdmin || isEmri.durum !== 'tamamlandi') && (
+                            <Tooltip title="Düzenle">
+                              <IconButton
+                                size="small"
+                                onClick={() => {
+                                  setEditingId(isEmri.id);
+                                  setIsModalOpen(true);
+                                }}
+                                sx={{ color: 'warning.main' }}
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          {isAdmin && (
+                            <Tooltip title="Sil">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleDelete(isEmri.id)}
+                                sx={{ color: 'error.main' }}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -789,10 +859,26 @@ function IsEmirleri() {
                     <Box sx={{ ml: 'auto' }}>
                       <Chip 
                         size="small" 
-                        label={selectedIsEmri.durum === 'beklemede' ? 'Beklemede' : 'Tamamlandı'}
+                        label={
+                          selectedIsEmri.durum === 'beklemede' ? 'Beklemede' :
+                          selectedIsEmri.durum === 'islemde' ? 'İşlemde' :
+                          selectedIsEmri.durum === 'odeme_bekleniyor' ? 'Ödeme Bekleniyor' :
+                          selectedIsEmri.durum === 'iptal_edildi' ? 'İptal Edildi' :
+                          'Tamamlandı'
+                        }
                         sx={{ 
-                          bgcolor: selectedIsEmri.durum === 'beklemede' ? '#fff3e0' : '#e8f5e9',
-                          color: selectedIsEmri.durum === 'beklemede' ? '#e65100' : '#2e7d32',
+                          bgcolor: 
+                            selectedIsEmri.durum === 'beklemede' ? '#fff3e0' :
+                            selectedIsEmri.durum === 'islemde' ? '#e3f2fd' :
+                            selectedIsEmri.durum === 'odeme_bekleniyor' ? '#f3e5f5' :
+                            selectedIsEmri.durum === 'iptal_edildi' ? '#ffebee' :
+                            '#e8f5e9',
+                          color: 
+                            selectedIsEmri.durum === 'beklemede' ? '#e65100' :
+                            selectedIsEmri.durum === 'islemde' ? '#0277bd' :
+                            selectedIsEmri.durum === 'odeme_bekleniyor' ? '#7b1fa2' :
+                            selectedIsEmri.durum === 'iptal_edildi' ? '#c62828' :
+                            '#2e7d32',
                           fontWeight: 600,
                         }}
                       />
@@ -836,32 +922,68 @@ function IsEmirleri() {
                     <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2, pb: 1, borderBottom: '2px solid', borderColor: 'primary.main' }}>
                       Parçalar ({selectedIsEmri.parcalar.length})
                     </Typography>
-                    <TableContainer>
-                      <Table size="small">
-                        <TableHead>
-                          <TableRow sx={{ bgcolor: '#f5f5f5' }}>
-                            <TableCell sx={{ fontWeight: 700 }}>Parça Kodu</TableCell>
-                            <TableCell sx={{ fontWeight: 700 }}>Parça Adı</TableCell>
-                            <TableCell align="center" sx={{ fontWeight: 700 }}>Adet</TableCell>
-                            <TableCell align="right" sx={{ fontWeight: 700 }}>Birim Fiyat</TableCell>
-                            <TableCell align="right" sx={{ fontWeight: 700 }}>Maliyet</TableCell>
-                            <TableCell align="right" sx={{ fontWeight: 700 }}>Toplam</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {selectedIsEmri.parcalar.map((parca, index) => (
-                            <TableRow key={index} hover>
-                              <TableCell>{parca.parca_kodu || '-'}</TableCell>
-                              <TableCell>{parca.takilan_parca}</TableCell>
-                              <TableCell align="center">{parca.adet}</TableCell>
-                              <TableCell align="right">{formatCurrency(parca.birim_fiyat)}</TableCell>
-                              <TableCell align="right">{formatCurrency(parca.maliyet)}</TableCell>
-                              <TableCell align="right">{formatCurrency(parca.adet * parca.birim_fiyat)}</TableCell>
+                    
+                    {/* Mobile Card View */}
+                    {isMobile ? (
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                        {selectedIsEmri.parcalar.map((parca, index) => (
+                          <Paper key={index} variant="outlined" sx={{ p: 1.5 }}>
+                            <Typography variant="body2" fontWeight={600} sx={{ mb: 0.5 }}>
+                              {parca.takilan_parca}
+                            </Typography>
+                            {parca.parca_kodu && (
+                              <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+                                Kod: {parca.parca_kodu}
+                              </Typography>
+                            )}
+                            <Grid container spacing={1}>
+                              <Grid item xs={4}>
+                                <Typography variant="caption" color="text.secondary">Adet</Typography>
+                                <Typography variant="body2" fontWeight={600}>{parca.adet}</Typography>
+                              </Grid>
+                              <Grid item xs={4}>
+                                <Typography variant="caption" color="text.secondary">Birim Fiyat</Typography>
+                                <Typography variant="body2" fontWeight={600}>{formatCurrency(parca.birim_fiyat)}</Typography>
+                              </Grid>
+                              <Grid item xs={4}>
+                                <Typography variant="caption" color="text.secondary">Toplam</Typography>
+                                <Typography variant="body2" fontWeight={600} color="primary.main">
+                                  {formatCurrency(parca.adet * parca.birim_fiyat)}
+                                </Typography>
+                              </Grid>
+                            </Grid>
+                          </Paper>
+                        ))}
+                      </Box>
+                    ) : (
+                      /* Desktop Table View */
+                      <TableContainer>
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow sx={{ bgcolor: '#f5f5f5' }}>
+                              <TableCell sx={{ fontWeight: 700 }}>Parça Kodu</TableCell>
+                              <TableCell sx={{ fontWeight: 700 }}>Parça Adı</TableCell>
+                              <TableCell align="center" sx={{ fontWeight: 700 }}>Adet</TableCell>
+                              <TableCell align="right" sx={{ fontWeight: 700 }}>Birim Fiyat</TableCell>
+                              <TableCell align="right" sx={{ fontWeight: 700 }}>Maliyet</TableCell>
+                              <TableCell align="right" sx={{ fontWeight: 700 }}>Toplam</TableCell>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
+                          </TableHead>
+                          <TableBody>
+                            {selectedIsEmri.parcalar.map((parca, index) => (
+                              <TableRow key={index} hover>
+                                <TableCell>{parca.parca_kodu || '-'}</TableCell>
+                                <TableCell>{parca.takilan_parca}</TableCell>
+                                <TableCell align="center">{parca.adet}</TableCell>
+                                <TableCell align="right">{formatCurrency(parca.birim_fiyat)}</TableCell>
+                                <TableCell align="right">{formatCurrency(parca.maliyet)}</TableCell>
+                                <TableCell align="right">{formatCurrency(parca.adet * parca.birim_fiyat)}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    )}
                   </Card>
                 </Grid>
               )}
