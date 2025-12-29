@@ -41,9 +41,9 @@ const logAktivite = async (arg1, arg2, arg3, arg4, arg5) => {
     }
   }
   
-  // Validate required fields
-  if (!kullanici_id || !islem_tipi) {
-    console.error('Aktivite loglama hatası: kullanici_id ve islem_tipi zorunlu alanlar');
+  // Validate required fields - kullanici_id can be null for failed login attempts
+  if (!islem_tipi) {
+    console.error('Aktivite loglama hatası: islem_tipi zorunlu alan');
     return;
   }
   
