@@ -158,33 +158,48 @@ function Raporlar() {
       {/* Tarih Aralığı Seçici */}
       <Card sx={{ mb: 3 }}>
         <CardContent sx={{ py: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-            <CalendarIcon color="primary" />
-            <TextField
-              type="date"
-              label="Başlangıç Tarihi"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-              size="small"
-            />
-            <Typography variant="body2" color="text.secondary">-</Typography>
-            <TextField
-              type="date"
-              label="Bitiş Tarihi"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-              size="small"
-            />
-            <Chip 
-              label={selectedDate && endDate ? 
-                `${format(new Date(selectedDate), 'd MMM yyyy', { locale: tr })} - ${format(new Date(endDate), 'd MMM yyyy', { locale: tr })}` 
-                : 'Tarih Seçin'}
-              color="primary"
-              variant="outlined"
-            />
-          </Box>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} sm="auto">
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CalendarIcon color="primary" />
+                <Typography variant="body2" fontWeight={600} sx={{ display: { xs: 'none', sm: 'block' } }}>
+                  Tarih Aralığı
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={5} md={3}>
+              <TextField
+                type="date"
+                label="Başlangıç Tarihi"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                size="small"
+                fullWidth
+              />
+            </Grid>
+            <Grid item xs={12} sm={5} md={3}>
+              <TextField
+                type="date"
+                label="Bitiş Tarihi"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                size="small"
+                fullWidth
+              />
+            </Grid>
+            <Grid item xs={12} sm="auto">
+              <Chip 
+                label={selectedDate && endDate ? 
+                  `${format(new Date(selectedDate), 'd MMM yyyy', { locale: tr })} - ${format(new Date(endDate), 'd MMM yyyy', { locale: tr })}` 
+                  : 'Tarih Seçin'}
+                color="primary"
+                variant="outlined"
+                sx={{ width: { xs: '100%', sm: 'auto' } }}
+              />
+            </Grid>
+          </Grid>
         </CardContent>
       </Card>
 

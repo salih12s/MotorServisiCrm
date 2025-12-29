@@ -50,11 +50,43 @@ const initDatabase = async () => {
       END $$;
     `);
 
+    // NOT NULL kısıtlamalarını kaldır (mevcut tablolar için)
+    await pool.query(`
+      DO $$
+      BEGIN
+        -- is_emirleri tablosunda musteri_ad_soyad NOT NULL kısıtlamasını kaldır
+        ALTER TABLE is_emirleri ALTER COLUMN musteri_ad_soyad DROP NOT NULL;
+      EXCEPTION
+        WHEN others THEN NULL;
+      END $$;
+    `);
+
+    await pool.query(`
+      DO $$
+      BEGIN
+        -- musteriler tablosunda ad_soyad NOT NULL kısıtlamasını kaldır
+        ALTER TABLE musteriler ALTER COLUMN ad_soyad DROP NOT NULL;
+      EXCEPTION
+        WHEN others THEN NULL;
+      END $$;
+    `);
+
+    await pool.query(`
+      DO $$
+      BEGIN
+        -- parcalar tablosunda takilan_parca NOT NULL kısıtlamasını kaldır
+        ALTER TABLE parcalar ALTER COLUMN takilan_parca DROP NOT NULL;
+      EXCEPTION
+        WHEN others THEN NULL;
+      END $$;
+    `);
+    console.log('✓ NOT NULL kısıtlamaları kaldırıldı (tüm alanlar opsiyonel)');
+
     // Müşteriler tablosu
     await pool.query(`
       CREATE TABLE IF NOT EXISTS musteriler (
         id SERIAL PRIMARY KEY,
-        ad_soyad VARCHAR(100) NOT NULL,
+        ad_soyad VARCHAR(100),
         adres TEXT,
         telefon VARCHAR(20),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -69,7 +101,7 @@ const initDatabase = async () => {
         id SERIAL PRIMARY KEY,
         fis_no INTEGER UNIQUE,
         musteri_id INTEGER REFERENCES musteriler(id),
-        musteri_ad_soyad VARCHAR(100) NOT NULL,
+        musteri_ad_soyad VARCHAR(100),
         adres TEXT,
         telefon VARCHAR(20),
         model_tip VARCHAR(100),
@@ -98,7 +130,7 @@ const initDatabase = async () => {
         id SERIAL PRIMARY KEY,
         is_emri_id INTEGER REFERENCES is_emirleri(id) ON DELETE CASCADE,
         parca_kodu VARCHAR(50),
-        takilan_parca VARCHAR(200) NOT NULL,
+        takilan_parca VARCHAR(200),
         adet INTEGER DEFAULT 1,
         birim_fiyat DECIMAL(10, 2) DEFAULT 0,
         maliyet DECIMAL(10, 2) DEFAULT 0,

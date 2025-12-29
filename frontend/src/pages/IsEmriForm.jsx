@@ -682,24 +682,12 @@ function IsEmriForm() {
                               {formatCurrency(totals.toplamMaliyet)}
                             </Typography>
                           </Grid>
-                          <Grid item xs={4}>
+                          <Grid item xs={6}>
                             <Typography variant="caption" color="text.secondary">
                               Toplam Satış
                             </Typography>
                             <Typography variant="h6" fontWeight={600}>
                               {formatCurrency(totals.toplamFiyat)}
-                            </Typography>
-                          </Grid>
-                          <Grid item xs={4}>
-                            <Typography variant="caption" color="text.secondary">
-                              Net Kar
-                            </Typography>
-                            <Typography 
-                              variant="h6" 
-                              fontWeight={700}
-                              color={totals.kar >= 0 ? 'success.main' : 'error.main'}
-                            >
-                              {formatCurrency(totals.kar)}
                             </Typography>
                           </Grid>
                         </>

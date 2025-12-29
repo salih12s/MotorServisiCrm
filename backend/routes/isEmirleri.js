@@ -94,6 +94,19 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// Boş string'leri null'a çevir (PostgreSQL için)
+const emptyToNull = (value) => {
+  if (value === '' || value === undefined) return null;
+  return value;
+};
+
+// Boş string'leri 0'a çevir (sayısal alanlar için)
+const emptyToZero = (value) => {
+  if (value === '' || value === undefined || value === null) return 0;
+  const num = Number(value);
+  return isNaN(num) ? 0 : num;
+};
+
 // İş emri oluştur
 router.post('/', async (req, res) => {
   const client = await pool.connect();
@@ -105,15 +118,20 @@ router.post('/', async (req, res) => {
       musteri_ad_soyad,
       adres,
       telefon,
-      km,
+      km: rawKm,
       model_tip,
       marka,
       aciklama,
       ariza_sikayetler,
-      tahmini_teslim_tarihi,
-      tahmini_toplam_ucret,
+      tahmini_teslim_tarihi: rawTahminiTeslimTarihi,
+      tahmini_toplam_ucret: rawTahminiToplamUcret,
       parcalar
     } = req.body;
+    
+    // Boş string'leri uygun değerlere çevir
+    const km = emptyToNull(rawKm);
+    const tahmini_teslim_tarihi = emptyToNull(rawTahminiTeslimTarihi);
+    const tahmini_toplam_ucret = emptyToZero(rawTahminiToplamUcret);
     
     const fis_no = await getNextFisNo();
     
@@ -150,7 +168,7 @@ router.post('/', async (req, res) => {
         (fis_no, musteri_id, musteri_ad_soyad, adres, telefon, km, model_tip, marka, aciklama, ariza_sikayetler, tahmini_teslim_tarihi, tahmini_toplam_ucret, durum, olusturan_kullanici_id) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) 
        RETURNING *`,
-      [fis_no, musteri_id, musteri_ad_soyad, adres, telefon, km, model_tip, marka, aciklama, ariza_sikayetler, tahmini_teslim_tarihi, tahmini_toplam_ucret || 0, 'beklemede', olusturan_kullanici_id]
+      [fis_no, musteri_id, musteri_ad_soyad, adres, telefon, km, model_tip, marka, aciklama, ariza_sikayetler, tahmini_teslim_tarihi, tahmini_toplam_ucret, 'beklemede', olusturan_kullanici_id]
     );
     
     const isEmri = isEmriResult.rows[0];
@@ -227,20 +245,26 @@ router.put('/:id', async (req, res) => {
       musteri_ad_soyad,
       adres,
       telefon,
-      km,
+      km: rawKm,
       model_tip,
       marka,
       aciklama,
       ariza_sikayetler,
-      tahmini_teslim_tarihi,
-      tahmini_toplam_ucret,
+      tahmini_teslim_tarihi: rawTahminiTeslimTarihi,
+      tahmini_toplam_ucret: rawTahminiToplamUcret,
       durum,
       musteri_imza,
       teslim_alan_ad_soyad,
       teslim_eden_teknisyen,
-      teslim_tarihi,
+      teslim_tarihi: rawTeslimTarihi,
       parcalar
     } = req.body;
+    
+    // Boş string'leri uygun değerlere çevir
+    const km = emptyToNull(rawKm);
+    const tahmini_teslim_tarihi = emptyToNull(rawTahminiTeslimTarihi);
+    const tahmini_toplam_ucret = emptyToZero(rawTahminiToplamUcret);
+    const teslim_tarihi = emptyToNull(rawTeslimTarihi);
     
     // İş emrini güncelle
     await client.query(
@@ -252,7 +276,7 @@ router.put('/:id', async (req, res) => {
         updated_at = CURRENT_TIMESTAMP
        WHERE id = $16`,
       [musteri_ad_soyad, adres, telefon, km, model_tip, marka, aciklama, ariza_sikayetler, 
-       tahmini_teslim_tarihi, tahmini_toplam_ucret || 0, durum || 'beklemede', musteri_imza || false,
+       tahmini_teslim_tarihi, tahmini_toplam_ucret, durum || 'beklemede', musteri_imza || false,
        teslim_alan_ad_soyad, teslim_eden_teknisyen, teslim_tarihi, id]
     );
     
