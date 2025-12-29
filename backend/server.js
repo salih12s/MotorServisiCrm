@@ -17,7 +17,14 @@ const app = express();
 // CORS Configuration
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? ['http://demirkanmotorluaraclar.com', 'https://demirkanmotorluaraclar.com', 'http://www.demirkanmotorluaraclar.com', 'https://www.demirkanmotorluaraclar.com']
+    ? [
+        'http://demirkanmotorluaraclar.com',
+        'https://demirkanmotorluaraclar.com',
+        'http://www.demirkanmotorluaraclar.com',
+        'https://www.demirkanmotorluaraclar.com',
+        'https://motorservisicrm.railway.internal',
+        'http://motorservisicrm.railway.internal'
+      ]
     : ['http://localhost:3000', 'http://localhost:3001'],
   credentials: true,
   optionsSuccessStatus: 200

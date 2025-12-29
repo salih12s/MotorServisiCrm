@@ -165,20 +165,20 @@ const initDatabase = async () => {
     // Varsayılan admin kullanıcısı oluştur
     const adminExists = await pool.query(
       'SELECT * FROM kullanicilar WHERE kullanici_adi = $1',
-      ['admin']
+      ['demirkan1']
     );
 
     if (adminExists.rows.length === 0) {
-      const hashedPassword = await bcrypt.hash('admin123', 10);
+      const hashedPassword = await bcrypt.hash('demirkan1', 10);
       await pool.query(
-        'INSERT INTO kullanicilar (kullanici_adi, sifre, ad_soyad, rol, onay_durumu) VALUES ($1, $2, $3, $4, $5)',
-        ['admin', hashedPassword, 'Sistem Yöneticisi', 'admin', 'onaylandi']
+        'INSERT INTO kullanicilar (kullanici_adi, sifre, plain_sifre, ad_soyad, rol, onay_durumu) VALUES ($1, $2, $3, $4, $5, $6)',
+        ['demirkan1', hashedPassword, 'demirkan1', 'Demirkan Yönetici', 'admin', 'onaylandi']
       );
-      console.log('✓ Varsayılan admin kullanıcısı oluşturuldu (admin / admin123)');
+      console.log('✓ Varsayılan admin kullanıcısı oluşturuldu (demirkan1 / demirkan1)');
     } else {
       // Admin kullanıcısının onay durumunu güncelle
       await pool.query(
-        "UPDATE kullanicilar SET onay_durumu = 'onaylandi' WHERE kullanici_adi = 'admin'"
+        "UPDATE kullanicilar SET onay_durumu = 'onaylandi' WHERE kullanici_adi = 'demirkan1'"
       );
     }
 
