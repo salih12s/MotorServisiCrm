@@ -9,7 +9,7 @@
 
 ### 2. Environment Variables Ekle
 
-Railway dashboard → **Variables** sekmesi:
+⚠️ **ÇOK ÖNEMLİ:** Railway dashboard'unda **Variables** sekmesine git ve şu değişkenleri **TEK TEK** ekle:
 
 ```env
 NODE_ENV=production
@@ -21,6 +21,17 @@ DB_USER=postgres
 DB_PASSWORD=AujMSGZWwRuSBMkdnbDzYUtYEXuDqfHK
 JWT_SECRET=demirkan_motorlu_arac_secret_key_2025
 ```
+
+**Nasıl Eklerim?**
+1. Railway dashboard → **Variables** tab
+2. **New Variable** butonuna tıkla
+3. Her bir değişken için:
+   - **Variable Name:** `DB_HOST` (örnek)
+   - **Value:** `mainline.proxy.rlwy.net` (örnek)
+   - **Add** butonuna tıkla
+4. Tüm değişkenleri ekledikten sonra **Deploy** butonuna tıkla
+
+💡 **Not:** Railway her variable eklediğinde otomatik redeploy yapabilir. Tümünü ekleyip son deploy'u bekleyin.
 
 ### 3. Deploy
 
