@@ -866,45 +866,47 @@ function IsEmirleri() {
                 </Grid>
               )}
 
-              {/* Finansal Bilgiler */}
-              <Grid item xs={12}>
-                <Card variant="outlined" sx={{ p: 2, bgcolor: '#f8f9fa' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, pb: 1, borderBottom: '2px solid', borderColor: 'primary.main' }}>
-                    <AttachMoneyIcon color="primary" />
-                    <Typography variant="subtitle1" fontWeight={700}>Finansal Özet</Typography>
-                  </Box>
-                  <Grid container spacing={2}>
-                    <Grid item xs={6} sm={3}>
-                      <Card sx={{ p: 2, textAlign: 'center', bgcolor: '#e3f2fd' }}>
-                        <Typography variant="body2" color="text.secondary">Toplam Ücret</Typography>
-                        <Typography variant="h5" fontWeight={700} color="primary.main">{formatCurrency(selectedIsEmri.gercek_toplam_ucret)}</Typography>
-                      </Card>
+              {/* Finansal Bilgiler - Sadece Admin Görebilir */}
+              {isAdmin && (
+                <Grid item xs={12}>
+                  <Card variant="outlined" sx={{ p: 2, bgcolor: '#f8f9fa' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, pb: 1, borderBottom: '2px solid', borderColor: 'primary.main' }}>
+                      <AttachMoneyIcon color="primary" />
+                      <Typography variant="subtitle1" fontWeight={700}>Finansal Özet</Typography>
+                    </Box>
+                    <Grid container spacing={2}>
+                      <Grid item xs={6} sm={3}>
+                        <Card sx={{ p: 2, textAlign: 'center', bgcolor: '#e3f2fd' }}>
+                          <Typography variant="body2" color="text.secondary">Toplam Ücret</Typography>
+                          <Typography variant="h5" fontWeight={700} color="primary.main">{formatCurrency(selectedIsEmri.gercek_toplam_ucret)}</Typography>
+                        </Card>
+                      </Grid>
+                      <Grid item xs={6} sm={3}>
+                        <Card sx={{ p: 2, textAlign: 'center', bgcolor: '#ffebee' }}>
+                          <Typography variant="body2" color="text.secondary">Toplam Maliyet</Typography>
+                          <Typography variant="h5" fontWeight={700} color="error.main">{formatCurrency(selectedIsEmri.toplam_maliyet)}</Typography>
+                        </Card>
+                      </Grid>
+                      <Grid item xs={6} sm={3}>
+                        <Card sx={{ p: 2, textAlign: 'center', bgcolor: parseFloat(selectedIsEmri.kar) >= 0 ? '#e8f5e9' : '#ffebee' }}>
+                          <Typography variant="body2" color="text.secondary">Kar</Typography>
+                          <Typography variant="h5" fontWeight={700} sx={{ color: parseFloat(selectedIsEmri.kar) >= 0 ? '#2e7d32' : '#c62828' }}>
+                            {formatCurrency(selectedIsEmri.kar)}
+                          </Typography>
+                        </Card>
+                      </Grid>
+                      <Grid item xs={6} sm={3}>
+                        <Card sx={{ p: 2, textAlign: 'center', bgcolor: '#fff3e0' }}>
+                          <Typography variant="body2" color="text.secondary">Kar Oranı</Typography>
+                          <Typography variant="h5" fontWeight={700} color="warning.dark">
+                            %{selectedIsEmri.gercek_toplam_ucret > 0 ? ((selectedIsEmri.kar / selectedIsEmri.gercek_toplam_ucret) * 100).toFixed(1) : 0}
+                          </Typography>
+                        </Card>
+                      </Grid>
                     </Grid>
-                    <Grid item xs={6} sm={3}>
-                      <Card sx={{ p: 2, textAlign: 'center', bgcolor: '#ffebee' }}>
-                        <Typography variant="body2" color="text.secondary">Toplam Maliyet</Typography>
-                        <Typography variant="h5" fontWeight={700} color="error.main">{formatCurrency(selectedIsEmri.toplam_maliyet)}</Typography>
-                      </Card>
-                    </Grid>
-                    <Grid item xs={6} sm={3}>
-                      <Card sx={{ p: 2, textAlign: 'center', bgcolor: parseFloat(selectedIsEmri.kar) >= 0 ? '#e8f5e9' : '#ffebee' }}>
-                        <Typography variant="body2" color="text.secondary">Kar</Typography>
-                        <Typography variant="h5" fontWeight={700} sx={{ color: parseFloat(selectedIsEmri.kar) >= 0 ? '#2e7d32' : '#c62828' }}>
-                          {formatCurrency(selectedIsEmri.kar)}
-                        </Typography>
-                      </Card>
-                    </Grid>
-                    <Grid item xs={6} sm={3}>
-                      <Card sx={{ p: 2, textAlign: 'center', bgcolor: '#fff3e0' }}>
-                        <Typography variant="body2" color="text.secondary">Kar Oranı</Typography>
-                        <Typography variant="h5" fontWeight={700} color="warning.dark">
-                          %{selectedIsEmri.gercek_toplam_ucret > 0 ? ((selectedIsEmri.kar / selectedIsEmri.gercek_toplam_ucret) * 100).toFixed(1) : 0}
-                        </Typography>
-                      </Card>
-                    </Grid>
-                  </Grid>
-                </Card>
-              </Grid>
+                  </Card>
+                </Grid>
+              )}
             </Grid>
           )}
         </DialogContent>

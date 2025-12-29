@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import {
   Box,
   Card,
@@ -44,6 +45,8 @@ function IsEmriForm() {
   const { id } = useParams();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -528,7 +531,7 @@ function IsEmriForm() {
                         onChange={handleParcaChange}
                       />
                     </Grid>
-                    <Grid item xs={isEdit ? 4 : 6}>
+                    <Grid item xs={isEdit && isAdmin ? 4 : 6}>
                       <TextField
                         fullWidth
                         size="small"
@@ -539,7 +542,7 @@ function IsEmriForm() {
                         onChange={handleParcaChange}
                       />
                     </Grid>
-                    {isEdit && (
+                    {isEdit && isAdmin && (
                       <Grid item xs={4}>
                         <TextField
                           fullWidth
@@ -555,7 +558,7 @@ function IsEmriForm() {
                         />
                       </Grid>
                     )}
-                    <Grid item xs={isEdit ? 4 : 6}>
+                    <Grid item xs={isEdit && isAdmin ? 4 : 6}>
                       <TextField
                         fullWidth
                         size="small"
@@ -589,7 +592,7 @@ function IsEmriForm() {
                       <TableRow>
                         <TableCell>Parça</TableCell>
                         <TableCell align="center">Adet</TableCell>
-                        {isEdit && <TableCell align="right">Maliyet</TableCell>}
+                        {isEdit && isAdmin && <TableCell align="right">Maliyet</TableCell>}
                         <TableCell align="right">Satış</TableCell>
                         {isEdit && <TableCell align="center" width={50}>Düzenle</TableCell>}
                         <TableCell align="center" width={50}>Sil</TableCell>
@@ -598,7 +601,7 @@ function IsEmriForm() {
                     <TableBody>
                       {parcalar.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={isEdit ? 6 : 4} align="center" sx={{ py: 4 }}>
+                          <TableCell colSpan={(isEdit && isAdmin) ? 6 : (isEdit ? 5 : 4)} align="center" sx={{ py: 4 }}>
                             <ReceiptIcon sx={{ fontSize: 40, color: 'grey.300', mb: 1 }} />
                             <Typography color="text.secondary">
                               Henüz parça eklenmedi
@@ -617,7 +620,7 @@ function IsEmriForm() {
                               </Typography>
                             </TableCell>
                             <TableCell align="center">{parca.adet}</TableCell>
-                            {isEdit && (
+                            {isEdit && isAdmin && (
                               <TableCell align="right">
                                 <Typography variant="body2" color="error.main">
                                   {formatCurrency(parca.maliyet || 0)}
@@ -669,7 +672,7 @@ function IsEmriForm() {
                 {parcalar.length > 0 && (
                   <Paper sx={{ mt: 2, p: 2, bgcolor: 'grey.50' }}>
                     <Grid container spacing={2}>
-                      {isEdit ? (
+                      {isEdit && isAdmin ? (
                         <>
                           <Grid item xs={4}>
                             <Typography variant="caption" color="text.secondary">

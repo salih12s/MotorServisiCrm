@@ -283,8 +283,6 @@ function IsEmriDetay() {
     );
   }
 
-  const karDurumu = parseFloat(isEmri.kar) >= 0;
-
   // Alan isimleri
   const fieldLabels = {
     fisNo: 'Fiş No',
@@ -470,7 +468,9 @@ function IsEmriDetay() {
       )}
 
       {/* Kar Analizi Kartları - Sadece Admin Görebilir */}
-      {isAdmin && (
+      {isAdmin && (() => {
+        const karDurumu = parseFloat(isEmri.kar) >= 0;
+        return (
         <Grid container spacing={3} sx={{ mb: 3 }} className="no-print">
           <Grid item xs={12} md={4}>
             <Card sx={{ borderLeft: '4px solid', borderColor: 'primary.main' }}>
@@ -537,7 +537,8 @@ function IsEmriDetay() {
           </Card>
         </Grid>
         </Grid>
-      )}
+        );
+      })()}
 
       {/* Yazdırılacak Alan */}
       <Box ref={printRef}>

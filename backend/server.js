@@ -13,8 +13,17 @@ const giderRoutes = require('./routes/giderler');
 
 const app = express();
 
+// CORS Configuration
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['http://demirkanmotorluaraclar.com', 'https://demirkanmotorluaraclar.com', 'http://www.demirkanmotorluaraclar.com', 'https://www.demirkanmotorluaraclar.com']
+    : ['http://localhost:3000', 'http://localhost:3001'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // JWT Middleware (korumalı rotalar için)
