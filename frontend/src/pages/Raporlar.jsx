@@ -185,6 +185,14 @@ function Raporlar() {
            isEmri.olusturan_ad_soyad === selectedKullanici;
   }) || [];
 
+  // Filtrelenmiş verilere göre özet hesaplama
+  const filteredOzet = {
+    toplam_is: filteredIsEmirleri.length,
+    toplam_gelir: filteredIsEmirleri.reduce((sum, ie) => sum + parseFloat(ie.gercek_toplam_ucret || 0), 0),
+    toplam_maliyet: filteredIsEmirleri.reduce((sum, ie) => sum + parseFloat(ie.toplam_maliyet || 0), 0),
+    net_kar: filteredIsEmirleri.reduce((sum, ie) => sum + parseFloat(ie.kar || 0), 0),
+  };
+
   const renderGunlukRapor = () => (
     <Box>
       {/* Tarih Aralığı ve Filtreler */}
@@ -263,7 +271,7 @@ function Raporlar() {
             <Grid item xs={6} sm={3}>
               <StatCard
                 title="İş Emri Sayısı"
-                value={gunlukRapor.genel_ozet?.toplam_is || gunlukRapor.ozet?.toplam_is_emri || 0}
+                value={selectedKullanici ? filteredOzet.toplam_is : (gunlukRapor.genel_ozet?.toplam_is || gunlukRapor.ozet?.toplam_is_emri || 0)}
                 icon={<AssignmentIcon />}
                 color="#04A7B8"
                 isMobile={isMobile}
@@ -272,7 +280,7 @@ function Raporlar() {
             <Grid item xs={6} sm={3}>
               <StatCard
                 title="Toplam Gelir"
-                value={formatCurrency(gunlukRapor.genel_ozet?.toplam_gelir || gunlukRapor.ozet?.toplam_gelir || 0)}
+                value={formatCurrency(selectedKullanici ? filteredOzet.toplam_gelir : (gunlukRapor.genel_ozet?.toplam_gelir || gunlukRapor.ozet?.toplam_gelir || 0))}
                 icon={<AttachMoneyIcon />}
                 color="#2e7d32"
                 isMobile={isMobile}
@@ -281,7 +289,7 @@ function Raporlar() {
             <Grid item xs={6} sm={3}>
               <StatCard
                 title="Toplam Maliyet"
-                value={formatCurrency(gunlukRapor.genel_ozet?.toplam_maliyet || gunlukRapor.ozet?.toplam_maliyet || 0)}
+                value={formatCurrency(selectedKullanici ? filteredOzet.toplam_maliyet : (gunlukRapor.genel_ozet?.toplam_maliyet || gunlukRapor.ozet?.toplam_maliyet || 0))}
                 icon={<MoneyOffIcon />}
                 color="#c62828"
                 isMobile={isMobile}
@@ -290,7 +298,7 @@ function Raporlar() {
             <Grid item xs={6} sm={3}>
               <StatCard
                 title="Net Kar"
-                value={formatCurrency(gunlukRapor.genel_ozet?.net_kar || gunlukRapor.ozet?.net_kar || 0)}
+                value={formatCurrency(selectedKullanici ? filteredOzet.net_kar : (gunlukRapor.genel_ozet?.net_kar || gunlukRapor.ozet?.net_kar || 0))}
                 icon={<TrendingUpIcon />}
                 color="#04A7B8"
                 variant="highlight"

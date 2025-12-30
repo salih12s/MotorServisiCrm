@@ -988,6 +988,21 @@ function IsEmirleri() {
                 </Grid>
               )}
 
+              {/* Ödeme Detayları */}
+              {selectedIsEmri.odeme_detaylari && (
+                <Grid item xs={12}>
+                  <Card variant="outlined" sx={{ p: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, pb: 1, borderBottom: '2px solid', borderColor: 'success.main' }}>
+                      <ReceiptIcon color="success" />
+                      <Typography variant="subtitle1" fontWeight={700}>Ödeme Detayları</Typography>
+                    </Box>
+                    <Typography variant="body2" sx={{ bgcolor: '#f5f5f5', p: 1.5, borderRadius: 1, whiteSpace: 'pre-wrap' }}>
+                      {selectedIsEmri.odeme_detaylari}
+                    </Typography>
+                  </Card>
+                </Grid>
+              )}
+
               {/* Finansal Bilgiler - Sadece Admin Görebilir */}
               {isAdmin && (
                 <Grid item xs={12}>

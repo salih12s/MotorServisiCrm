@@ -125,6 +125,7 @@ router.post('/', async (req, res) => {
       ariza_sikayetler,
       tahmini_teslim_tarihi: rawTahminiTeslimTarihi,
       tahmini_toplam_ucret: rawTahminiToplamUcret,
+      odeme_detaylari,
       parcalar
     } = req.body;
     
@@ -165,10 +166,10 @@ router.post('/', async (req, res) => {
     
     const isEmriResult = await client.query(
       `INSERT INTO is_emirleri 
-        (fis_no, musteri_id, musteri_ad_soyad, adres, telefon, km, model_tip, marka, aciklama, ariza_sikayetler, tahmini_teslim_tarihi, tahmini_toplam_ucret, durum, olusturan_kullanici_id) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) 
+        (fis_no, musteri_id, musteri_ad_soyad, adres, telefon, km, model_tip, marka, aciklama, ariza_sikayetler, tahmini_teslim_tarihi, tahmini_toplam_ucret, durum, olusturan_kullanici_id, odeme_detaylari) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) 
        RETURNING *`,
-      [fis_no, musteri_id, musteri_ad_soyad, adres, telefon, km, model_tip, marka, aciklama, ariza_sikayetler, tahmini_teslim_tarihi, tahmini_toplam_ucret, 'beklemede', olusturan_kullanici_id]
+      [fis_no, musteri_id, musteri_ad_soyad, adres, telefon, km, model_tip, marka, aciklama, ariza_sikayetler, tahmini_teslim_tarihi, tahmini_toplam_ucret, 'beklemede', olusturan_kullanici_id, odeme_detaylari || null]
     );
     
     const isEmri = isEmriResult.rows[0];
@@ -267,6 +268,7 @@ router.put('/:id', async (req, res) => {
       teslim_alan_ad_soyad,
       teslim_eden_teknisyen,
       teslim_tarihi: rawTeslimTarihi,
+      odeme_detaylari,
       parcalar
     } = req.body;
     
@@ -283,11 +285,11 @@ router.put('/:id', async (req, res) => {
         aciklama = $7, ariza_sikayetler = $8, tahmini_teslim_tarihi = $9, 
         tahmini_toplam_ucret = $10, durum = $11, musteri_imza = $12,
         teslim_alan_ad_soyad = $13, teslim_eden_teknisyen = $14, teslim_tarihi = $15,
-        updated_at = CURRENT_TIMESTAMP
-       WHERE id = $16`,
+        odeme_detaylari = $16, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $17`,
       [musteri_ad_soyad, adres, telefon, km, model_tip, marka, aciklama, ariza_sikayetler, 
        tahmini_teslim_tarihi, tahmini_toplam_ucret, durum || 'beklemede', musteri_imza || false,
-       teslim_alan_ad_soyad, teslim_eden_teknisyen, teslim_tarihi, id]
+       teslim_alan_ad_soyad, teslim_eden_teknisyen, teslim_tarihi, odeme_detaylari || null, id]
     );
     
     // Mevcut parçaları sil ve yenilerini ekle

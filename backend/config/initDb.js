@@ -194,6 +194,18 @@ const initDatabase = async () => {
     `);
     console.log('✓ Kullanıcılar tablosuna plain_sifre kolonu eklendi');
 
+    // İş emirlerine odeme_detaylari kolonu ekle (eğer yoksa)
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name='is_emirleri' AND column_name='odeme_detaylari') THEN
+          ALTER TABLE is_emirleri ADD COLUMN odeme_detaylari TEXT;
+        END IF;
+      END $$;
+    `);
+    console.log('✓ İş emirlerine odeme_detaylari kolonu eklendi');
+
     // Varsayılan admin kullanıcısı oluştur
     const adminExists = await pool.query(
       'SELECT * FROM kullanicilar WHERE kullanici_adi = $1',

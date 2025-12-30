@@ -67,6 +67,7 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
     durum: 'beklemede',
     teslim_alan_ad_soyad: '',
     teslim_eden_teknisyen: '',
+    odeme_detaylari: '',
   });
 
   const [parcalar, setParcalar] = useState([]);
@@ -117,6 +118,7 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
             durum: data.durum || 'beklemede',
             teslim_alan_ad_soyad: data.teslim_alan_ad_soyad || '',
             teslim_eden_teknisyen: data.teslim_eden_teknisyen || '',
+            odeme_detaylari: data.odeme_detaylari || '',
           });
           setParcalar(data.parcalar || []);
           setFisNo(data.fis_no);
@@ -148,6 +150,7 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
         durum: 'beklemede',
         teslim_alan_ad_soyad: '',
         teslim_eden_teknisyen: '',
+        odeme_detaylari: '',
       });
       setParcalar([]);
       setNewParca({
@@ -943,6 +946,28 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
                         </FormControl>
                       </Box>
                     )}
+
+                    {/* Ödeme Detayları */}
+                    <Box sx={{ mt: 3 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                        <Avatar sx={{ bgcolor: 'success.lighter', color: 'success.main', width: 28, height: 28 }}>
+                          <ReceiptIcon sx={{ fontSize: 16 }} />
+                        </Avatar>
+                        <Typography variant="subtitle1" fontWeight={600}>
+                          Ödeme Detayları
+                        </Typography>
+                      </Box>
+                      <TextField
+                        fullWidth
+                        multiline
+                        rows={3}
+                        size="small"
+                        name="odeme_detaylari"
+                        value={formData.odeme_detaylari}
+                        onChange={handleChange}
+                        placeholder="Örn: 2.000 TL nakit alındı, 3.000 TL kart ile çekildi..."
+                      />
+                    </Box>
                   </CardContent>
                 </Card>
               </Grid>
