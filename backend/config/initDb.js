@@ -228,11 +228,58 @@ const initDatabase = async () => {
         odeme_tutari DECIMAL(10, 2) DEFAULT 0,
         odeme_sekli VARCHAR(50),
         aciklama TEXT,
+        durum VARCHAR(50) DEFAULT 'beklemede',
+        toplam_maliyet DECIMAL(10, 2) DEFAULT 0,
+        toplam_satis DECIMAL(10, 2) DEFAULT 0,
+        kar DECIMAL(10, 2) DEFAULT 0,
+        odeme_detaylari TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
     console.log('✓ Aksesuarlar tablosu oluşturuldu');
+
+    // Aksesuarlar tablosuna eksik kolonları ekle
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name='aksesuarlar' AND column_name='durum') THEN
+          ALTER TABLE aksesuarlar ADD COLUMN durum VARCHAR(50) DEFAULT 'beklemede';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name='aksesuarlar' AND column_name='toplam_maliyet') THEN
+          ALTER TABLE aksesuarlar ADD COLUMN toplam_maliyet DECIMAL(10, 2) DEFAULT 0;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name='aksesuarlar' AND column_name='toplam_satis') THEN
+          ALTER TABLE aksesuarlar ADD COLUMN toplam_satis DECIMAL(10, 2) DEFAULT 0;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name='aksesuarlar' AND column_name='kar') THEN
+          ALTER TABLE aksesuarlar ADD COLUMN kar DECIMAL(10, 2) DEFAULT 0;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name='aksesuarlar' AND column_name='odeme_detaylari') THEN
+          ALTER TABLE aksesuarlar ADD COLUMN odeme_detaylari TEXT;
+        END IF;
+      END $$;
+    `);
+    console.log('✓ Aksesuarlar tablosuna yeni kolonlar eklendi');
+
+    // Aksesuar Parçaları tablosu
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS aksesuar_parcalar (
+        id SERIAL PRIMARY KEY,
+        aksesuar_id INTEGER REFERENCES aksesuarlar(id) ON DELETE CASCADE,
+        urun_adi VARCHAR(255),
+        adet INTEGER DEFAULT 1,
+        maliyet DECIMAL(10, 2) DEFAULT 0,
+        satis_fiyati DECIMAL(10, 2) DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✓ Aksesuar Parçaları tablosu oluşturuldu');
 
     // Varsayılan admin kullanıcısı oluştur
     const adminExists = await pool.query(

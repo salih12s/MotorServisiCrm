@@ -357,6 +357,18 @@ function Kullanicilar() {
                     Kayıt: {new Date(user.created_at).toLocaleDateString('tr-TR')}
                   </Typography>
 
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+                    <Typography variant="caption" sx={{ fontSize: '0.7rem', fontWeight: 600 }}>
+                      Aksesuar Yetkisi:
+                    </Typography>
+                    <Switch
+                      size="small"
+                      checked={user.aksesuar_yetkisi || false}
+                      onChange={() => handleAksesuarYetkisiToggle(user.id, user.aksesuar_yetkisi)}
+                      color="secondary"
+                    />
+                  </Box>
+
                   <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
                     <Button
                       size="small"
