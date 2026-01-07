@@ -289,9 +289,9 @@ router.put('/:id', async (req, res) => {
         tahmini_toplam_ucret = $10, durum = $11, musteri_imza = $12,
         teslim_alan_ad_soyad = $13, teslim_eden_teknisyen = $14, teslim_tarihi = $15,
         odeme_detaylari = $16, 
-        tamamlama_tarihi = CASE WHEN $18 THEN CURRENT_TIMESTAMP ELSE tamamlama_tarihi END,
+        tamamlama_tarihi = CASE WHEN $17::boolean THEN CURRENT_TIMESTAMP ELSE tamamlama_tarihi END,
         updated_at = CURRENT_TIMESTAMP
-       WHERE id = $19`,
+       WHERE id = $18`,
       [musteri_ad_soyad, adres, telefon, km, model_tip, marka, aciklama, ariza_sikayetler, 
        tahmini_teslim_tarihi, tahmini_toplam_ucret, durum || 'beklemede', musteri_imza || false,
        teslim_alan_ad_soyad, teslim_eden_teknisyen, teslim_tarihi, odeme_detaylari || null, 
