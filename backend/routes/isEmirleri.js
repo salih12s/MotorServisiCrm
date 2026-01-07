@@ -279,17 +279,23 @@ router.put('/:id', async (req, res) => {
     const teslim_tarihi = emptyToNull(rawTeslimTarihi);
     
     // İş emrini güncelle
+    // Eğer durum tamamlandı'ya çekiliyorsa tamamlama_tarihi'ni set et
+    const shouldSetTamamlamaTarihi = durum === 'tamamlandi' && mevcutIsEmri.rows[0]?.durum !== 'tamamlandi';
+    
     await client.query(
       `UPDATE is_emirleri SET 
         musteri_ad_soyad = $1, adres = $2, telefon = $3, km = $4, model_tip = $5, marka = $6,
         aciklama = $7, ariza_sikayetler = $8, tahmini_teslim_tarihi = $9, 
         tahmini_toplam_ucret = $10, durum = $11, musteri_imza = $12,
         teslim_alan_ad_soyad = $13, teslim_eden_teknisyen = $14, teslim_tarihi = $15,
-        odeme_detaylari = $16, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $17`,
+        odeme_detaylari = $16, 
+        tamamlama_tarihi = CASE WHEN $18 THEN CURRENT_TIMESTAMP ELSE tamamlama_tarihi END,
+        updated_at = CURRENT_TIMESTAMP
+       WHERE id = $19`,
       [musteri_ad_soyad, adres, telefon, km, model_tip, marka, aciklama, ariza_sikayetler, 
        tahmini_teslim_tarihi, tahmini_toplam_ucret, durum || 'beklemede', musteri_imza || false,
-       teslim_alan_ad_soyad, teslim_eden_teknisyen, teslim_tarihi, odeme_detaylari || null, id]
+       teslim_alan_ad_soyad, teslim_eden_teknisyen, teslim_tarihi, odeme_detaylari || null, 
+       shouldSetTamamlamaTarihi, id]
     );
     
     // Mevcut parçaları sil ve yenilerini ekle
@@ -504,7 +510,7 @@ router.patch('/:id/tamamla', async (req, res) => {
     const { id } = req.params;
     
     await pool.query(
-      'UPDATE is_emirleri SET durum = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      'UPDATE is_emirleri SET durum = $1, tamamlama_tarihi = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
       ['tamamlandi', id]
     );
     

@@ -11,6 +11,7 @@ const musteriRoutes = require('./routes/musteriler');
 const isEmriRoutes = require('./routes/isEmirleri');
 const raporRoutes = require('./routes/raporlar');
 const giderRoutes = require('./routes/giderler');
+const aksesuarRoutes = require('./routes/aksesuarlar');
 
 const app = express();
 
@@ -62,6 +63,7 @@ app.use('/api/musteriler', authenticateToken, musteriRoutes);
 app.use('/api/is-emirleri', authenticateToken, isEmriRoutes);
 app.use('/api/raporlar', authenticateToken, raporRoutes);
 app.use('/api/giderler', authenticateToken, giderRoutes);
+app.use('/api/aksesuarlar', authenticateToken, aksesuarRoutes);
 
 // Ana sayfa
 app.get('/', (req, res) => {
@@ -73,7 +75,8 @@ app.get('/', (req, res) => {
       musteriler: '/api/musteriler',
       isEmirleri: '/api/is-emirleri',
       raporlar: '/api/raporlar',
-      giderler: '/api/giderler'
+      giderler: '/api/giderler',
+      aksesuarlar: '/api/aksesuarlar'
     }
   });
 });

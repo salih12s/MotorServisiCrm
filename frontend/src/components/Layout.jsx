@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -25,8 +25,10 @@ import {
   Assessment as AssessmentIcon,
   Menu as MenuIcon,
   Group as GroupIcon,
+  ShoppingBag as ShoppingBagIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
+import { useCustomTheme } from '../context/ThemeContext';
 import { Outlet } from 'react-router-dom';
 
 const drawerWidth = 260;
@@ -43,6 +45,14 @@ const menuItems = [
     path: '/musteriler', 
     icon: <PeopleIcon />,
     roles: ['admin', 'user', 'personel'],
+  },
+  { 
+    title: 'Aksesuarlar', 
+    path: '/aksesuarlar', 
+    icon: <ShoppingBagIcon />,
+    roles: ['admin', 'user', 'personel'],
+    color: '#630094',
+    requireAksesuarYetkisi: true,
   },
   { 
     title: 'Raporlar', 
@@ -62,13 +72,31 @@ function Layout() {
   const [anchorEl, setAnchorEl] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, logout } = useAuth();
+  const { setAksesuarTheme, setDefaultTheme, themeColors } = useCustomTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Kullanıcı rolüne göre menu filtrele
-  const filteredMenuItems = menuItems.filter(item => 
-    !item.roles || item.roles.includes(user?.role || 'user')
-  );
+  // Aksesuar sayfasında temayı değiştir
+  useEffect(() => {
+    if (location.pathname === '/aksesuarlar') {
+      setAksesuarTheme();
+    } else {
+      setDefaultTheme();
+    }
+  }, [location.pathname, setAksesuarTheme, setDefaultTheme]);
+
+  // Kullanıcı rolüne göre ve aksesuar yetkisine göre menu filtrele
+  const filteredMenuItems = menuItems.filter(item => {
+    // Rol kontrolü
+    if (item.roles && !item.roles.includes(user?.role || 'user')) {
+      return false;
+    }
+    // Aksesuar yetkisi kontrolü - admin her zaman görebilir
+    if (item.requireAksesuarYetkisi && user?.role !== 'admin' && !user?.aksesuar_yetkisi) {
+      return false;
+    }
+    return true;
+  });
 
   const handleMenuClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -95,7 +123,7 @@ function Layout() {
   };
 
   const drawer = (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#036B74', overflow: 'hidden' }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: themeColors.secondary, overflow: 'hidden', transition: 'background-color 0.3s ease' }}>
       {/* Logo */}
       <Box 
         sx={{ 
@@ -116,7 +144,8 @@ function Layout() {
             alignItems: 'center',
             justifyContent: 'center',
             overflow: 'hidden',
-            border: '2px solid #04A7B8',
+            border: `2px solid ${themeColors.primary}`,
+            transition: 'border-color 0.3s ease',
           }}
         >
           <img 
@@ -155,16 +184,18 @@ function Layout() {
                 sx={{
                   borderRadius: 2,
                   py: 1.25,
-                  bgcolor: isActive ? 'rgba(4, 167, 184, 0.3)' : 'transparent',
+                  bgcolor: isActive ? `${themeColors.primary}40` : 'transparent',
+                  transition: 'background-color 0.3s ease',
                   '&:hover': {
-                    bgcolor: isActive ? 'rgba(4, 167, 184, 0.4)' : 'rgba(255,255,255,0.08)',
+                    bgcolor: isActive ? `${themeColors.primary}60` : 'rgba(255,255,255,0.08)',
                   },
                 }}
               >
                 <ListItemIcon 
                   sx={{ 
                     minWidth: 40,
-                    color: isActive ? '#36C5D3' : 'rgba(255,255,255,0.7)',
+                    color: isActive ? themeColors.primaryLight : 'rgba(255,255,255,0.7)',
+                    transition: 'color 0.3s ease',
                   }}
                 >
                   {item.icon}
@@ -183,7 +214,8 @@ function Layout() {
                       width: 3,
                       height: 20,
                       borderRadius: 2,
-                      bgcolor: '#04A7B8',
+                      bgcolor: themeColors.primary,
+                      transition: 'background-color 0.3s ease',
                     }}
                   />
                 )}
@@ -230,9 +262,10 @@ function Layout() {
           sx={{ 
             width: 36, 
             height: 36, 
-            bgcolor: '#04A7B8',
+            bgcolor: themeColors.primary,
             fontWeight: 700,
             fontSize: '0.9rem',
+            transition: 'background-color 0.3s ease',
           }}
         >
           {user?.ad_soyad?.charAt(0) || 'U'}
@@ -316,9 +349,10 @@ function Layout() {
                   sx={{ 
                     width: 42, 
                     height: 42, 
-                    bgcolor: '#04A7B8',
+                    bgcolor: themeColors.primary,
                     fontWeight: 700,
                     fontSize: '1.1rem',
+                    transition: 'background-color 0.3s ease',
                   }}
                 >
                   {user?.ad_soyad?.charAt(0) || 'U'}

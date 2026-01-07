@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   Box,
@@ -72,6 +72,7 @@ function IsEmirleri() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterDurum, setFilterDurum] = useState('');
   const [filterTarih, setFilterTarih] = useState('');
+  const [filterBugun, setFilterBugun] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -79,24 +80,34 @@ function IsEmirleri() {
   const [completeModalOpen, setCompleteModalOpen] = useState(false);
   const [workOrderToComplete, setWorkOrderToComplete] = useState(null);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
 
+  // URL parametrelerinden filtreleri oku
+  useEffect(() => {
+    const durumParam = searchParams.get('durum');
+    const bugunParam = searchParams.get('bugun');
+    if (durumParam) {
+      setFilterDurum(durumParam);
+    }
+    if (bugunParam === 'true') {
+      setFilterBugun(true);
+    }
+  }, [searchParams]);
+
   useEffect(() => {
     loadIsEmirleri();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterDurum, filterTarih]);
+  }, []);
 
   const loadIsEmirleri = async () => {
     try {
       setLoading(true);
-      const params = {};
-      if (filterDurum) params.durum = filterDurum;
-      if (filterTarih) params.tarih = filterTarih;
-      
-      const response = await isEmriService.getAll(params);
+      // Tüm verileri çek, filtreleme frontend'de yapılacak
+      const response = await isEmriService.getAll({});
       // ID'ye göre azalan sıralama (en yeni en üstte)
       const sorted = response.data.sort((a, b) => b.id - a.id);
       setIsEmirleri(sorted);
@@ -168,25 +179,51 @@ function IsEmirleri() {
     setSearchQuery('');
     setFilterDurum('');
     setFilterTarih('');
+    setFilterBugun(false);
+    // URL parametrelerini temizle
+    setSearchParams({});
   };
 
-  const hasActiveFilters = searchQuery || filterDurum || filterTarih;
+  const hasActiveFilters = searchQuery || filterDurum || filterTarih || filterBugun;
 
-  const filteredIsEmirleri = isEmirleri.filter((ie) =>
+  // Bugünü başlangıç ve bitiş tarihiyle karşılaştır
+  const isToday = (dateStr) => {
+    if (!dateStr) return false;
+    const today = new Date();
+    const date = new Date(dateStr);
+    return date.toDateString() === today.toDateString();
+  };
+
+  // Filtreleme - arama filtresi
+  let filteredIsEmirleri = isEmirleri.filter((ie) =>
     ie.musteri_ad_soyad?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     ie.fis_no?.toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
     ie.marka?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     ie.telefon?.includes(searchQuery)
   );
 
-  // İstatistikler
-  const toplamIsEmri = filteredIsEmirleri.length;
-  const beklemedekiIsEmri = filteredIsEmirleri.filter(ie => ie.durum === 'beklemede').length;
-  const islemdekiIsEmri = filteredIsEmirleri.filter(ie => ie.durum === 'islemde').length;
-  const odemeBekleyenIsEmri = filteredIsEmirleri.filter(ie => ie.durum === 'odeme_bekleniyor').length;
-  const tamamlananIsEmri = filteredIsEmirleri.filter(ie => ie.durum === 'tamamlandi').length;
-  const iptalIsEmri = filteredIsEmirleri.filter(ie => ie.durum === 'iptal_edildi').length;
-  const toplamTutar = filteredIsEmirleri.reduce((sum, ie) => sum + parseFloat(ie.gercek_toplam_ucret || 0), 0);
+  // Durum filtresi (frontend'de uygula)
+  if (filterDurum) {
+    filteredIsEmirleri = filteredIsEmirleri.filter(ie => ie.durum === filterDurum);
+  }
+
+  // Bugünkü işler filtresi
+  if (filterBugun) {
+    filteredIsEmirleri = filteredIsEmirleri.filter(ie => isToday(ie.created_at));
+  }
+
+  // İstatistikler - FİLTRELENMİŞ verilerden hesapla
+  const toplamIsEmri = isEmirleri.length;
+  const bugunkuIsEmri = isEmirleri.filter(ie => isToday(ie.created_at)).length;
+  const beklemedekiIsEmri = isEmirleri.filter(ie => ie.durum === 'beklemede').length;
+  const islemdekiIsEmri = isEmirleri.filter(ie => ie.durum === 'islemde').length;
+  const odemeBekleyenIsEmri = isEmirleri.filter(ie => ie.durum === 'odeme_bekleniyor').length;
+  const tamamlananIsEmri = isEmirleri.filter(ie => ie.durum === 'tamamlandi').length;
+  const iptalIsEmri = isEmirleri.filter(ie => ie.durum === 'iptal_edildi').length;
+  const toplamTutar = isEmirleri.reduce((sum, ie) => sum + parseFloat(ie.gercek_toplam_ucret || 0), 0);
+
+  // FİLTRELENMİŞ VERİLER için kar hesaplama
+  const filtreliToplamKar = filteredIsEmirleri.reduce((sum, ie) => sum + parseFloat(ie.kar || 0), 0);
 
   return (
     <Box>
@@ -212,43 +249,108 @@ function IsEmirleri() {
               Yeni İş Emri
             </Button>
           </Box>
-          {/* Inline Stats */}
+          {/* Inline Stats - Tıklanabilir Filtreler */}
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <Chip 
               label={`Toplam: ${toplamIsEmri}`} 
               size="small"
-              sx={{ bgcolor: '#e3f2fd', color: '#1a237e', fontWeight: 600 }} 
+              onClick={() => { clearFilters(); }}
+              sx={{ 
+                bgcolor: !filterDurum && !filterBugun ? '#1a237e' : '#e3f2fd', 
+                color: !filterDurum && !filterBugun ? 'white' : '#1a237e', 
+                fontWeight: 600,
+                cursor: 'pointer',
+                '&:hover': { bgcolor: '#1a237e', color: 'white' }
+              }} 
+            />
+            <Chip 
+              label={`Bugün: ${bugunkuIsEmri}`} 
+              size="small"
+              onClick={() => { setFilterDurum(''); setFilterBugun(true); setSearchParams({ bugun: 'true' }); }}
+              sx={{ 
+                bgcolor: filterBugun ? '#1565c0' : '#bbdefb', 
+                color: filterBugun ? 'white' : '#1565c0', 
+                fontWeight: 600,
+                cursor: 'pointer',
+                '&:hover': { bgcolor: '#1565c0', color: 'white' }
+              }} 
             />
             <Chip 
               label={`Beklemede: ${beklemedekiIsEmri}`} 
               size="small"
-              sx={{ bgcolor: '#fff3e0', color: '#e65100', fontWeight: 600 }} 
+              onClick={() => { setFilterBugun(false); setFilterDurum('beklemede'); setSearchParams({ durum: 'beklemede' }); }}
+              sx={{ 
+                bgcolor: filterDurum === 'beklemede' ? '#e65100' : '#fff3e0', 
+                color: filterDurum === 'beklemede' ? 'white' : '#e65100', 
+                fontWeight: 600,
+                cursor: 'pointer',
+                '&:hover': { bgcolor: '#e65100', color: 'white' }
+              }} 
             />
             <Chip 
               label={`İşlemde: ${islemdekiIsEmri}`} 
               size="small"
-              sx={{ bgcolor: '#e3f2fd', color: '#0277bd', fontWeight: 600 }} 
+              onClick={() => { setFilterBugun(false); setFilterDurum('islemde'); setSearchParams({ durum: 'islemde' }); }}
+              sx={{ 
+                bgcolor: filterDurum === 'islemde' ? '#0277bd' : '#e3f2fd', 
+                color: filterDurum === 'islemde' ? 'white' : '#0277bd', 
+                fontWeight: 600,
+                cursor: 'pointer',
+                '&:hover': { bgcolor: '#0277bd', color: 'white' }
+              }} 
             />
             <Chip 
               label={`Ödeme Bekl.: ${odemeBekleyenIsEmri}`} 
               size="small"
-              sx={{ bgcolor: '#f3e5f5', color: '#7b1fa2', fontWeight: 600 }} 
+              onClick={() => { setFilterBugun(false); setFilterDurum('odeme_bekleniyor'); setSearchParams({ durum: 'odeme_bekleniyor' }); }}
+              sx={{ 
+                bgcolor: filterDurum === 'odeme_bekleniyor' ? '#7b1fa2' : '#f3e5f5', 
+                color: filterDurum === 'odeme_bekleniyor' ? 'white' : '#7b1fa2', 
+                fontWeight: 600,
+                cursor: 'pointer',
+                '&:hover': { bgcolor: '#7b1fa2', color: 'white' }
+              }} 
             />
             <Chip 
               label={`Tamamlandı: ${tamamlananIsEmri}`} 
               size="small"
-              sx={{ bgcolor: '#e8f5e9', color: '#2e7d32', fontWeight: 600 }} 
+              onClick={() => { setFilterBugun(false); setFilterDurum('tamamlandi'); setSearchParams({ durum: 'tamamlandi' }); }}
+              sx={{ 
+                bgcolor: filterDurum === 'tamamlandi' ? '#2e7d32' : '#e8f5e9', 
+                color: filterDurum === 'tamamlandi' ? 'white' : '#2e7d32', 
+                fontWeight: 600,
+                cursor: 'pointer',
+                '&:hover': { bgcolor: '#2e7d32', color: 'white' }
+              }} 
             />
             <Chip 
               label={`İptal: ${iptalIsEmri}`} 
               size="small"
-              sx={{ bgcolor: '#ffebee', color: '#c62828', fontWeight: 600 }} 
+              onClick={() => { setFilterBugun(false); setFilterDurum('iptal_edildi'); setSearchParams({ durum: 'iptal_edildi' }); }}
+              sx={{ 
+                bgcolor: filterDurum === 'iptal_edildi' ? '#c62828' : '#ffebee', 
+                color: filterDurum === 'iptal_edildi' ? 'white' : '#c62828', 
+                fontWeight: 600,
+                cursor: 'pointer',
+                '&:hover': { bgcolor: '#c62828', color: 'white' }
+              }} 
             />
             <Chip 
               label={formatCurrency(toplamTutar)} 
               size="small"
-              sx={{ bgcolor: '#e8f5e9', color: '#2e7d32', fontWeight: 600 }} 
+              sx={{ bgcolor: '#e3f2fd', color: '#1565c0', fontWeight: 600 }} 
             />
+            {isAdmin && (
+              <Chip 
+                label={`Kar: ${formatCurrency(filtreliToplamKar)}`} 
+                size="small"
+                sx={{ 
+                  bgcolor: filtreliToplamKar >= 0 ? '#e8f5e9' : '#ffebee', 
+                  color: filtreliToplamKar >= 0 ? '#2e7d32' : '#c62828', 
+                  fontWeight: 600 
+                }} 
+              />
+            )}
           </Box>
         </Box>
       </Box>
@@ -937,15 +1039,23 @@ function IsEmirleri() {
                               </Typography>
                             )}
                             <Grid container spacing={1}>
-                              <Grid item xs={4}>
+                              <Grid item xs={isAdmin ? 3 : 4}>
                                 <Typography variant="caption" color="text.secondary">Adet</Typography>
                                 <Typography variant="body2" fontWeight={600}>{parca.adet}</Typography>
                               </Grid>
-                              <Grid item xs={4}>
+                              <Grid item xs={isAdmin ? 3 : 4}>
                                 <Typography variant="caption" color="text.secondary">Birim Fiyat</Typography>
                                 <Typography variant="body2" fontWeight={600}>{formatCurrency(parca.birim_fiyat)}</Typography>
                               </Grid>
-                              <Grid item xs={4}>
+                              {isAdmin && (
+                                <Grid item xs={3}>
+                                  <Typography variant="caption" color="text.secondary">Maliyet</Typography>
+                                  <Typography variant="body2" fontWeight={600} color="error.main">
+                                    {formatCurrency(parca.maliyet)}
+                                  </Typography>
+                                </Grid>
+                              )}
+                              <Grid item xs={isAdmin ? 3 : 4}>
                                 <Typography variant="caption" color="text.secondary">Toplam</Typography>
                                 <Typography variant="body2" fontWeight={600} color="primary.main">
                                   {formatCurrency(parca.adet * parca.birim_fiyat)}
@@ -965,7 +1075,7 @@ function IsEmirleri() {
                               <TableCell sx={{ fontWeight: 700 }}>Parça Adı</TableCell>
                               <TableCell align="center" sx={{ fontWeight: 700 }}>Adet</TableCell>
                               <TableCell align="right" sx={{ fontWeight: 700 }}>Birim Fiyat</TableCell>
-                              <TableCell align="right" sx={{ fontWeight: 700 }}>Maliyet</TableCell>
+                              {isAdmin && <TableCell align="right" sx={{ fontWeight: 700 }}>Maliyet</TableCell>}
                               <TableCell align="right" sx={{ fontWeight: 700 }}>Toplam</TableCell>
                             </TableRow>
                           </TableHead>
@@ -976,7 +1086,7 @@ function IsEmirleri() {
                                 <TableCell>{parca.takilan_parca}</TableCell>
                                 <TableCell align="center">{parca.adet}</TableCell>
                                 <TableCell align="right">{formatCurrency(parca.birim_fiyat)}</TableCell>
-                                <TableCell align="right">{formatCurrency(parca.maliyet)}</TableCell>
+                                {isAdmin && <TableCell align="right">{formatCurrency(parca.maliyet)}</TableCell>}
                                 <TableCell align="right">{formatCurrency(parca.adet * parca.birim_fiyat)}</TableCell>
                               </TableRow>
                             ))}

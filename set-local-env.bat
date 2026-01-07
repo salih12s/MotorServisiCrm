@@ -29,16 +29,25 @@ echo PORT=5000
 
 REM Frontend .env dosyasini local ayarlara cevir
 (
-echo # API URL Configuration
+echo # API URL Configuration - Local Development
 echo REACT_APP_API_URL=http://localhost:5000/api
 echo.
-echo # Production API URL
-echo # REACT_APP_API_URL=https://your-production-api.com/api
+echo # Production API URL - Railway Backend
+echo # REACT_APP_API_URL=https://motorservisicrm-production.up.railway.app/api
 ) > frontend\.env
 
 echo.
-echo Local gelistirme ortami ayarlandi!
-echo Backend: localhost PostgreSQL
-echo Frontend API: http://localhost:5000/api
+echo ================================================
+echo GELISTIRME ORTAMI AYARLANDI!
+echo ================================================
 echo.
+echo Backend API: http://localhost:5000
+echo Frontend: http://localhost:3000
+echo Database: localhost:5432/Musatti
+echo.
+echo Calisma Adimlari:
+echo 1. Backend: cd backend ^&^& npm start
+echo 2. Frontend: cd frontend ^&^& npm start
+echo.
+echo ================================================
 pause

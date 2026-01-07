@@ -29,17 +29,26 @@ echo PORT=5000
 
 REM Frontend .env dosyasini production ayarlara cevir
 (
-echo # API URL Configuration
+echo # API URL Configuration - Local Development
 echo # REACT_APP_API_URL=http://localhost:5000/api
 echo.
-echo # Production API URL ^(demirkanmotorluaraclar.com backend^)
-echo REACT_APP_API_URL=http://demirkanmotorluaraclar.com/api
+echo # Production API URL - Railway Backend
+echo REACT_APP_API_URL=https://motorservisicrm-production.up.railway.app/api
 ) > frontend\.env
 
 echo.
-echo Production ortami ayarlandi!
-echo Backend: Railway PostgreSQL
-echo Frontend: http://demirkanmotorluaraclar.com
-echo API: http://demirkanmotorluaraclar.com/api
+echo ================================================
+echo PRODUCTION ORTAMI AYARLANDI!
+echo ================================================
 echo.
+echo Backend API: https://motorservisicrm-production.up.railway.app
+echo Database: Railway PostgreSQL
+echo Frontend: Buradan build alinip deploy edilecek
+echo.
+echo Deployment Adimlari:
+echo 1. Railway: Backend otomatik deploy olur
+echo 2. Frontend: npm run build ile build al
+echo 3. Build klasorunu hosting'e yukle
+echo.
+echo ================================================
 pause

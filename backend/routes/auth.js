@@ -171,7 +171,8 @@ router.post('/login', async (req, res) => {
         id: user.id,
         kullanici_adi: user.kullanici_adi,
         ad_soyad: user.ad_soyad,
-        rol: user.rol
+        rol: user.rol,
+        aksesuar_yetkisi: user.aksesuar_yetkisi || false
       }
     });
   } catch (error) {
@@ -192,7 +193,7 @@ router.get('/verify', async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     const result = await pool.query(
-      'SELECT id, kullanici_adi, ad_soyad, rol FROM kullanicilar WHERE id = $1',
+      'SELECT id, kullanici_adi, ad_soyad, rol, aksesuar_yetkisi FROM kullanicilar WHERE id = $1',
       [decoded.id]
     );
 
@@ -210,7 +211,7 @@ router.get('/verify', async (req, res) => {
 router.get('/users', authenticateToken, isAdmin, async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, kullanici_adi, ad_soyad, rol, onay_durumu, plain_sifre, created_at FROM kullanicilar ORDER BY created_at DESC'
+      'SELECT id, kullanici_adi, ad_soyad, rol, onay_durumu, plain_sifre, aksesuar_yetkisi, created_at FROM kullanicilar ORDER BY created_at DESC'
     );
     res.json(result.rows);
   } catch (error) {
@@ -255,6 +256,28 @@ router.patch('/users/:id/reject', authenticateToken, isAdmin, async (req, res) =
     res.json({ message: 'Kullanıcı reddedildi', user: result.rows[0] });
   } catch (error) {
     console.error('Kullanıcı reddetme hatası:', error);
+    res.status(500).json({ message: 'Sunucu hatası' });
+  }
+});
+
+// Aksesuar yetkisi güncelleme (sadece admin)
+router.patch('/users/:id/aksesuar-yetkisi', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { aksesuar_yetkisi } = req.body;
+    
+    const result = await pool.query(
+      'UPDATE kullanicilar SET aksesuar_yetkisi = $1 WHERE id = $2 RETURNING id, kullanici_adi, ad_soyad, aksesuar_yetkisi',
+      [aksesuar_yetkisi, id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Kullanıcı bulunamadı' });
+    }
+    
+    res.json({ message: 'Aksesuar yetkisi güncellendi', user: result.rows[0] });
+  } catch (error) {
+    console.error('Aksesuar yetkisi güncelleme hatası:', error);
     res.status(500).json({ message: 'Sunucu hatası' });
   }
 });

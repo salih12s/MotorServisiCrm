@@ -206,6 +206,34 @@ const initDatabase = async () => {
     `);
     console.log('✓ İş emirlerine odeme_detaylari kolonu eklendi');
 
+    // İş emirlerine tamamlama_tarihi kolonu ekle (eğer yoksa)
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name='is_emirleri' AND column_name='tamamlama_tarihi') THEN
+          ALTER TABLE is_emirleri ADD COLUMN tamamlama_tarihi TIMESTAMP;
+        END IF;
+      END $$;
+    `);
+    console.log('✓ İş emirlerine tamamlama_tarihi kolonu eklendi');
+
+    // Aksesuarlar tablosu
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS aksesuarlar (
+        id SERIAL PRIMARY KEY,
+        ad_soyad VARCHAR(100),
+        telefon VARCHAR(20),
+        urun_adi VARCHAR(255),
+        odeme_tutari DECIMAL(10, 2) DEFAULT 0,
+        odeme_sekli VARCHAR(50),
+        aciklama TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✓ Aksesuarlar tablosu oluşturuldu');
+
     // Varsayılan admin kullanıcısı oluştur
     const adminExists = await pool.query(
       'SELECT * FROM kullanicilar WHERE kullanici_adi = $1',

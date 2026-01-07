@@ -9,7 +9,7 @@ router.get('/gunluk', async (req, res) => {
     const { tarih } = req.query;
     const selectedDate = tarih || new Date().toISOString().split('T')[0];
     
-    // O günkü iş emirleri
+    // O günkü tamamlanan iş emirleri (tamamlama_tarihi'ne göre)
     const isEmirleriResult = await pool.query(
       `SELECT 
         ie.*,
@@ -17,9 +17,9 @@ router.get('/gunluk', async (req, res) => {
         COALESCE(SUM(p.maliyet * p.adet), 0) as toplam_maliyet
        FROM is_emirleri ie
        LEFT JOIN parcalar p ON ie.id = p.is_emri_id
-       WHERE DATE(ie.created_at) = $1
+       WHERE ie.durum = 'tamamlandi' AND DATE(COALESCE(ie.tamamlama_tarihi, ie.created_at)) = $1
        GROUP BY ie.id
-       ORDER BY ie.created_at DESC`,
+       ORDER BY ie.tamamlama_tarihi DESC`,
       [selectedDate]
     );
     
@@ -34,7 +34,7 @@ router.get('/gunluk', async (req, res) => {
     let toplamMaliyet = 0;
     
     isEmirleriResult.rows.forEach(ie => {
-      toplamGelir += parseFloat(ie.toplam_gelir) || 0;
+      toplamGelir += parseFloat(ie.gercek_toplam_ucret) || 0;
       toplamMaliyet += parseFloat(ie.toplam_maliyet) || 0;
     });
     
@@ -70,22 +70,22 @@ router.get('/aralik', async (req, res) => {
       return res.status(400).json({ message: 'Başlangıç ve bitiş tarihi gerekli' });
     }
     
-    // Tarih aralığındaki iş emirleri (özet)
+    // Tarih aralığındaki tamamlanan iş emirleri (özet) - tamamlama_tarihi'ne göre
     const isEmirleriResult = await pool.query(
       `SELECT 
-        DATE(ie.created_at) as tarih,
+        DATE(COALESCE(ie.tamamlama_tarihi, ie.created_at)) as tarih,
         COUNT(*) as is_sayisi,
         COALESCE(SUM(ie.gercek_toplam_ucret), 0) as toplam_gelir,
         COALESCE(SUM(ie.toplam_maliyet), 0) as toplam_maliyet,
         COALESCE(SUM(ie.kar), 0) as toplam_kar
        FROM is_emirleri ie
-       WHERE DATE(ie.created_at) BETWEEN $1 AND $2
-       GROUP BY DATE(ie.created_at)
-       ORDER BY DATE(ie.created_at) DESC`,
+       WHERE ie.durum = 'tamamlandi' AND DATE(COALESCE(ie.tamamlama_tarihi, ie.created_at)) BETWEEN $1 AND $2
+       GROUP BY DATE(COALESCE(ie.tamamlama_tarihi, ie.created_at))
+       ORDER BY DATE(COALESCE(ie.tamamlama_tarihi, ie.created_at)) DESC`,
       [baslangic, bitis]
     );
     
-    // Tarih aralığındaki tüm iş emirleri (detaylı liste)
+    // Tarih aralığındaki tüm iş emirleri (detaylı liste) - tamamlama_tarihi'ne göre
     const detayliIsEmirleri = await pool.query(
       `SELECT 
         ie.id,
@@ -103,12 +103,13 @@ router.get('/aralik', async (req, res) => {
         ie.kar,
         ie.tahmini_toplam_ucret,
         ie.created_at,
+        ie.tamamlama_tarihi,
         k.ad_soyad as olusturan_ad_soyad,
         k.kullanici_adi as olusturan_kullanici_adi
        FROM is_emirleri ie
        LEFT JOIN kullanicilar k ON ie.olusturan_kullanici_id = k.id
-       WHERE DATE(ie.created_at) BETWEEN $1 AND $2
-       ORDER BY ie.created_at DESC`,
+       WHERE ie.durum = 'tamamlandi' AND DATE(COALESCE(ie.tamamlama_tarihi, ie.created_at)) BETWEEN $1 AND $2
+       ORDER BY ie.tamamlama_tarihi DESC`,
       [baslangic, bitis]
     );
     
@@ -124,7 +125,7 @@ router.get('/aralik', async (req, res) => {
       [baslangic, bitis]
     );
     
-    // Genel toplam
+    // Genel toplam (sadece tamamlanan işler)
     const genelToplam = await pool.query(
       `SELECT 
         COALESCE(SUM(gercek_toplam_ucret), 0) as toplam_gelir,
@@ -132,7 +133,7 @@ router.get('/aralik', async (req, res) => {
         COALESCE(SUM(kar), 0) as toplam_kar,
         COUNT(*) as toplam_is
        FROM is_emirleri
-       WHERE DATE(created_at) BETWEEN $1 AND $2`,
+       WHERE durum = 'tamamlandi' AND DATE(COALESCE(tamamlama_tarihi, created_at)) BETWEEN $1 AND $2`,
       [baslangic, bitis]
     );
     
@@ -165,14 +166,19 @@ router.get('/aralik', async (req, res) => {
 // Genel istatistikler
 router.get('/genel', async (req, res) => {
   try {
-    // Toplam istatistikler
+    // Toplam istatistikler (sadece tamamlanan işler için finansal)
     const toplamResult = await pool.query(`
       SELECT 
         COUNT(*) as toplam_is,
-        COALESCE(SUM(gercek_toplam_ucret), 0) as toplam_gelir,
-        COALESCE(SUM(toplam_maliyet), 0) as toplam_maliyet,
-        COALESCE(SUM(kar), 0) as toplam_kar
+        COALESCE(SUM(CASE WHEN durum = 'tamamlandi' THEN gercek_toplam_ucret ELSE 0 END), 0) as toplam_gelir,
+        COALESCE(SUM(CASE WHEN durum = 'tamamlandi' THEN toplam_maliyet ELSE 0 END), 0) as toplam_maliyet,
+        COALESCE(SUM(CASE WHEN durum = 'tamamlandi' THEN kar ELSE 0 END), 0) as toplam_kar
       FROM is_emirleri
+    `);
+
+    // Açık iş sayısı (tamamlanmamış)
+    const acikIsResult = await pool.query(`
+      SELECT COUNT(*) as acik_is FROM is_emirleri WHERE durum != 'tamamlandi' AND durum != 'iptal_edildi'
     `);
     
     // Açık/Kapalı iş emirleri
@@ -184,24 +190,24 @@ router.get('/genel', async (req, res) => {
       GROUP BY durum
     `);
     
-    // Bu ayki veriler
+    // Bu ayki veriler (tamamlama tarihine göre)
     const buAyResult = await pool.query(`
       SELECT 
         COUNT(*) as is_sayisi,
         COALESCE(SUM(gercek_toplam_ucret), 0) as gelir,
         COALESCE(SUM(kar), 0) as kar
       FROM is_emirleri
-      WHERE DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE)
+      WHERE durum = 'tamamlandi' AND DATE_TRUNC('month', COALESCE(tamamlama_tarihi, created_at)) = DATE_TRUNC('month', CURRENT_DATE)
     `);
     
-    // Bugünkü veriler
+    // Bugünkü veriler (tamamlama tarihine göre)
     const bugunResult = await pool.query(`
       SELECT 
         COUNT(*) as is_sayisi,
         COALESCE(SUM(gercek_toplam_ucret), 0) as gelir,
         COALESCE(SUM(kar), 0) as kar
       FROM is_emirleri
-      WHERE DATE(created_at) = CURRENT_DATE
+      WHERE durum = 'tamamlandi' AND DATE(COALESCE(tamamlama_tarihi, created_at)) = CURRENT_DATE
     `);
     
     // Toplam müşteri
@@ -213,6 +219,7 @@ router.get('/genel', async (req, res) => {
     res.json({
       genel: {
         toplam_is: parseInt(toplamResult.rows[0].toplam_is),
+        acik_is: parseInt(acikIsResult.rows[0].acik_is),
         toplam_gelir: parseFloat(toplamResult.rows[0].toplam_gelir),
         toplam_maliyet: parseFloat(toplamResult.rows[0].toplam_maliyet),
         toplam_kar: parseFloat(toplamResult.rows[0].toplam_kar),

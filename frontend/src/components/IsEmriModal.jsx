@@ -37,7 +37,6 @@ import {
   Delete as DeleteIcon,
   Close as CloseIcon,
   Person as PersonIcon,
-  Phone as PhoneIcon,
   DirectionsCar as CarIcon,
   Build as BuildIcon,
   Receipt as ReceiptIcon,
@@ -72,7 +71,6 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
 
   const [parcalar, setParcalar] = useState([]);
   const [newParca, setNewParca] = useState({
-    parca_kodu: '',
     takilan_parca: '',
     adet: 1,
     maliyet: 0,
@@ -154,7 +152,6 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
       });
       setParcalar([]);
       setNewParca({
-        parca_kodu: '',
         takilan_parca: '',
         adet: 1,
         maliyet: 0,
@@ -184,7 +181,6 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
 
     setParcalar([...parcalar, { ...newParca, id: Date.now() }]);
     setNewParca({
-      parca_kodu: '',
       takilan_parca: '',
       adet: 1,
       maliyet: 0,
@@ -271,7 +267,7 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
     <Dialog 
       open={open} 
       onClose={onClose} 
-      maxWidth="lg" 
+      maxWidth="xl" 
       fullWidth
       fullScreen={window.innerWidth < 600}
       PaperProps={{
@@ -324,9 +320,9 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ p: { xs: 2, sm: 3 } }}>
+      <DialogContent sx={{ p: { xs: 1.5, sm: 2 } }}>
         {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 300 }}>
             <CircularProgress />
           </Box>
         ) : (
@@ -337,152 +333,129 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
               </Alert>
             )}
 
-            <Grid container spacing={{ xs: 2, sm: 3 }}>
+            <Grid container spacing={{ xs: 1.5, sm: 2 }}>
               {/* Sol Kolon */}
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12} sm={6}>
                 {/* Müşteri Bilgileri */}
-                <Card sx={{ mb: 3 }}>
-                  <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                      <Avatar sx={{ bgcolor: 'primary.lighter', color: 'primary.main', width: 28, height: 28 }}>
-                        <PersonIcon sx={{ fontSize: 16 }} />
+                <Card sx={{ mb: 0.5 }}>
+                  <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
+                      <Avatar sx={{ bgcolor: 'primary.lighter', color: 'primary.main', width: 24, height: 24 }}>
+                        <PersonIcon sx={{ fontSize: 14 }} />
                       </Avatar>
-                      <Typography variant="subtitle1" fontWeight={600}>
+                      <Typography variant="subtitle2" fontWeight={600}>
                         Müşteri Bilgileri
-                      </Typography>
+                      </Typography> 
                     </Box>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12}>
-                        <TextField
-                          fullWidth
-                          size="small"
-                          label="Müşteri Adı Soyadı"
-                          name="musteri_ad_soyad"
-                          value={formData.musteri_ad_soyad}
-                          onChange={handleChange}
-                          required
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <PersonIcon fontSize="small" color="action" />
-                              </InputAdornment>
-                            ),
-                          }}
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          fullWidth
-                          size="small"
-                          label="Telefon"
-                          name="telefon"
-                          value={formData.telefon}
-                          onChange={handleChange}
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <PhoneIcon fontSize="small" color="action" />
-                              </InputAdornment>
-                            ),
-                          }}
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          fullWidth
-                          size="small"
-                          label="KM"
-                          name="km"
-                          type="number"
-                          value={formData.km}
-                          onChange={handleChange}
-                          InputProps={{
-                            endAdornment: (
-                              <InputAdornment position="end">km</InputAdornment>
-                            ),
-                          }}
-                        />
-                      </Grid>
-                    </Grid>
+                    <Box sx={{ display: 'flex', gap: 1, mb: 1 , mt : .5 }}>
+                      <TextField
+                        sx={{ flex: 1 , mt: 1.1 }}
+                        size="small"
+                        label="Ad Soyad"
+                        name="musteri_ad_soyad"
+                        value={formData.musteri_ad_soyad}
+                        onChange={handleChange}
+                        required
+                      />
+                      <TextField
+                        sx={{ flex: 1 , mt: 1.1 }}
+                        size="small"
+                        label="Telefon"
+                        name="telefon"
+                        value={formData.telefon}
+                        onChange={handleChange}
+                      />
+                    </Box>
+                    <Box sx={{ width: 170 }}>
+                      <TextField
+                        fullWidth
+                        sx={ {mt : 1.1} }
+                        size="small"
+                        label="KM"
+                        name="km"
+                        type="number"
+                        value={formData.km}
+                        onChange={handleChange}
+                        InputProps={{
+                          endAdornment: (
+                            <InputAdornment position="end">km</InputAdornment>
+                          ),
+                        }}
+                      />
+                    </Box>
                   </CardContent>
                 </Card>
 
                 {/* Araç Bilgileri */}
-                <Card sx={{ mb: 3 }}>
-                  <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                      <Avatar sx={{ bgcolor: 'secondary.lighter', color: 'secondary.main', width: 28, height: 28 }}>
-                        <CarIcon sx={{ fontSize: 16 }} />
+                <Card sx={{ mb: 1.5 }}>
+                  <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
+                      <Avatar sx={{ bgcolor: 'secondary.lighter', color: 'secondary.main', width: 24, height: 24 }}>
+                        <CarIcon sx={{ fontSize: 14 }} />
                       </Avatar>
-                      <Typography variant="subtitle1" fontWeight={600}>
+                      <Typography variant="subtitle2" fontWeight={600}>
                         Araç Bilgileri
                       </Typography>
                     </Box>
-                    <Grid container spacing={2}>
-                      <Grid item xs={6}>
-                        <TextField
-                          fullWidth
-                          size="small"
-                          label="Marka"
-                          name="marka"
-                          value={formData.marka}
-                          onChange={handleChange}
-                        />
-                      </Grid>
-                      <Grid item xs={6}>
-                        <TextField
-                          fullWidth
-                          size="small"
-                          label="Model/Tip"
-                          name="model_tip"
-                          value={formData.model_tip}
-                          onChange={handleChange}
-                        />
-                      </Grid>
-                      <Grid item xs={6}>
-                        <TextField
-                          fullWidth
-                          size="small"
-                          type="date"
-                          label="Tahmini Teslim"
-                          name="tahmini_teslim_tarihi"
-                          value={formData.tahmini_teslim_tarihi}
-                          onChange={handleChange}
-                          InputLabelProps={{ shrink: true }}
-                        />
-                      </Grid>
-                      <Grid item xs={6}>
-                        <TextField
-                          fullWidth
-                          size="small"
-                          type="number"
-                          label="Tahmini Ücret"
-                          name="tahmini_toplam_ucret"
-                          value={formData.tahmini_toplam_ucret}
-                          onChange={handleChange}
-                          InputProps={{
-                            startAdornment: <InputAdornment position="start">₺</InputAdornment>,
-                          }}
-                        />
-                      </Grid>
-                    </Grid>
+                    <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                      <TextField
+                        sx={{ flex: 1 , mt: 1.1 }}
+                        size="small"
+                        label="Marka"
+                        name="marka"
+                        value={formData.marka}
+                        onChange={handleChange}
+                      />
+                      <TextField
+                        sx={{ flex: 1 , mt: 1.1 }}
+                        size="small"
+                        label="Model/Tip"
+                        name="model_tip"
+                        value={formData.model_tip}
+                        onChange={handleChange}
+                      />
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <TextField
+                        sx={{ flex: 1  , mb: 1 , mt : 1.1 }}
+                        size="small"
+                        type="date"
+                        label="Tahmini Teslim"
+                        name="tahmini_teslim_tarihi"
+                        value={formData.tahmini_tarihi}
+                        onChange={handleChange}
+                        InputLabelProps={{ shrink: true }}
+                      />
+                      <TextField
+                        sx={{ flex: 1 , mb: 1 , mt : 1.1 }}
+                        size="small"
+                        type="number"
+                        label="Tahmini Ücret"
+                        name="tahmini_toplam_ucret"
+                        value={formData.tahmini_toplam_ucret}
+                        onChange={handleChange}
+                        InputProps={{
+                          startAdornment: <InputAdornment position="start">₺</InputAdornment>,
+                        }}
+                      />
+                    </Box>
                   </CardContent>
                 </Card>
 
                 {/* Arıza ve Açıklama */}
                 <Card>
-                  <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                      <Avatar sx={{ bgcolor: 'warning.lighter', color: 'warning.main', width: 28, height: 28 }}>
-                        <BuildIcon sx={{ fontSize: 16 }} />
+                  <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } , mt : -1.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
+                      <Avatar sx={{ bgcolor: 'warning.lighter', color: 'warning.main', width: 24, height: 24 }}>
+                        <BuildIcon sx={{ fontSize: 14 }} />
                       </Avatar>
-                      <Typography variant="subtitle1" fontWeight={600}>
+                      <Typography variant="subtitle2" fontWeight={600}>
                         Arıza ve Açıklama
                       </Typography>
                     </Box>
                     
                     {/* Hızlı Seçim Butonları */}
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1.1 }}>
                       <Chip 
                         label="Periyodik Bakım" 
                         onClick={() => setFormData(prev => ({
@@ -533,45 +506,43 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
                       />
                     </Box>
 
-                    <Grid container spacing={2}>
-                      <Grid item xs={12}>
-                        <TextField
-                          fullWidth
-                          multiline
-                          rows={5}
-                          label="Arıza / Şikayetler"
-                          name="ariza_sikayetler"
-                          value={formData.ariza_sikayetler}
-                          onChange={handleChange}
-                          placeholder="Müşterinin bildirdiği arıza ve şikayetleri detaylı şekilde yazınız..."
-                        />
-                      </Grid>
-                      <Grid item xs={12}>
-                        <TextField
-                          fullWidth
-                          multiline
-                          rows={4}
-                          label="Ek Açıklama"
-                          name="aciklama"
-                          value={formData.aciklama}
-                          onChange={handleChange}
-                          placeholder="Yapılacak işlemler ve ek açıklamalar..."
-                        />
-                      </Grid>
-                    </Grid>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <TextField
+                        sx={{ flex: 1 , mt: 1.1 }}
+                        size="small"
+                        multiline
+                        rows={2}
+                        label="Arıza / Şikayetler"
+                        name="ariza_sikayetler"
+                        value={formData.ariza_sikayetler}
+                        onChange={handleChange}
+                        placeholder="Arıza ve şikayetler..."
+                      />
+                      <TextField
+                        sx={{ flex: 1 , mt: 1.1 }}
+                        size="small"
+                        multiline
+                        rows={2}
+                        label="Ek Açıklama"
+                        name="aciklama"
+                        value={formData.aciklama}
+                        onChange={handleChange}
+                        placeholder="Ek açıklamalar..."
+                      />
+                    </Box>
                   </CardContent>
                 </Card>
               </Grid>
 
               {/* Sağ Kolon - Parçalar */}
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12} sm={6}>
                 <Card sx={{ height: '100%' }}>
-                  <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                      <Avatar sx={{ bgcolor: 'success.lighter', color: 'success.main', width: 28, height: 28 }}>
-                        <ReceiptIcon sx={{ fontSize: 16 }} />
+                  <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } , mt : -1.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
+                      <Avatar sx={{ bgcolor: 'success.lighter', color: 'success.main', width: 24, height: 24 }}>
+                        <ReceiptIcon sx={{ fontSize: 14 }} />
                       </Avatar>
-                      <Typography variant="subtitle1" fontWeight={600}>
+                      <Typography variant="subtitle2" fontWeight={600}>
                         Parçalar ve İşçilik
                       </Typography>
                       <Chip 
@@ -587,86 +558,71 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
                     <Paper 
                       variant="outlined" 
                       sx={{ 
-                        p: 2, 
-                        mb: 2, 
+                        p: 1.5, 
+                        mb: 1.5, 
                         bgcolor: 'grey.50',
                         borderStyle: 'dashed'
                       }}
                     >
-                      <Grid container spacing={2}>
-                        <Grid item xs={12}>
-                          <TextField
-                            fullWidth
-                            label="Parça Kodu"
-                            name="parca_kodu"
-                            value={newParca.parca_kodu}
-                            onChange={handleParcaChange}
-                            placeholder="Örn: 054455465"
-                          />
-                        </Grid>
-                        <Grid item xs={12}>
-                          <TextField
-                            fullWidth
-                            label="Takılan Parça / İşçilik Adı"
-                            name="takilan_parca"
-                            value={newParca.takilan_parca}
-                            onChange={handleParcaChange}
-                            placeholder="Örn: Civata (x5)"
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={isEdit ? 4 : 6}>
-                          <TextField
-                            fullWidth
-                            type="number"
-                            label="Adet"
-                            name="adet"
-                            value={newParca.adet}
-                            onChange={handleParcaChange}
-                            inputProps={{ min: 1 }}
-                          />
-                        </Grid>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        label="Takılan Parça / İşçilik Adı"
+                        name="takilan_parca"
+                        value={newParca.takilan_parca}
+                        onChange={handleParcaChange}
+                        placeholder="Örn: Civata (x5)"
+                        sx={{ mb: 1 }}
+                      />
+                      <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                        <TextField
+                          sx={{ flex: 1 , mt : 1.1 }}
+                          size="small"
+                          type="number"
+                          label="Adet"
+                          name="adet"
+                          value={newParca.adet}
+                          onChange={handleParcaChange}
+                          inputProps={{ min: 1 }}
+                        />
                         {isEdit && (
-                          <Grid item xs={12} sm={4}>
-                            <TextField
-                              fullWidth
-                              type="number"
-                              label="Maliyet (₺)"
-                              name="maliyet"
-                              value={newParca.maliyet}
-                              onChange={handleParcaChange}
-                              InputProps={{
-                                startAdornment: <InputAdornment position="start">₺</InputAdornment>,
-                              }}
-                              inputProps={{ min: 0, step: 0.01 }}
-                            />
-                          </Grid>
-                        )}
-                        <Grid item xs={12} sm={isEdit ? 4 : 6}>
                           <TextField
-                            fullWidth
+                            sx={{ flex: 1 , mt : 1.1 }}
+                            size="small"
                             type="number"
-                            label="Satış Fiyatı (₺)"
-                            name="birim_fiyat"
-                            value={newParca.birim_fiyat}
+                            label="Maliyet (₺)"
+                            name="maliyet"
+                            value={newParca.maliyet}
                             onChange={handleParcaChange}
                             InputProps={{
                               startAdornment: <InputAdornment position="start">₺</InputAdornment>,
                             }}
                             inputProps={{ min: 0, step: 0.01 }}
                           />
-                        </Grid>
-                        <Grid item xs={12}>
-                          <Button
-                            fullWidth
-                            variant="contained"
-                            size="large"
-                            startIcon={<AddIcon />}
-                            onClick={addParca}
-                          >
-                            Parça Ekle
-                          </Button>
-                        </Grid>
-                      </Grid>
+                        )}
+                        <TextField
+                          sx={{ flex: 1 , mt : 1.1 }}
+                          size="small"
+                          type="number"
+                          label="Satış Fiyatı (₺)"
+                          name="birim_fiyat"
+                          value={newParca.birim_fiyat}
+                          onChange={handleParcaChange}
+                          InputProps={{
+                            startAdornment: <InputAdornment position="start">₺</InputAdornment>,
+                          }}
+                          inputProps={{ min: 0, step: 0.01 }}
+                        />
+                      </Box>
+                      <Button
+                        fullWidth
+                        variant="contained"
+                        size="small"
+                        startIcon={<AddIcon />}
+                        onClick={addParca}
+                      >
+                        Parça Ekle
+                      </Button>
                     </Paper>
 
                     {/* Parça Listesi - Mobilde Card, Masaüstünde Inline Düzenlenebilir Tablo */}
@@ -680,69 +636,52 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
                             </Typography>
                           </Paper>
                         ) : (
-                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: .5 , mt : -1.5 }}>
                             {parcalar.map((parca, index) => (
                               <Paper key={parca.id || index} variant="outlined" sx={{ p: 1.5 }}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1, gap: 1 }}>
-                                  <Box sx={{ flex: 1 }}>
-                                    <TextField
-                                      fullWidth
-                                      size="small"
-                                      label="Parça Adı"
-                                      value={parca.takilan_parca}
-                                      onChange={(e) => updateParca(index, 'takilan_parca', e.target.value)}
-                                      sx={{ mb: 1 , mt: 1 }}
-                                    />
-                                    <TextField
-                                      fullWidth
-                                      size="small"
-                                      label="Parça Kodu"
-                                      value={parca.parca_kodu || ''}
-                                      onChange={(e) => updateParca(index, 'parca_kodu', e.target.value)}
-                                      placeholder="Örn: 054455465"
-                                    />
-                                  </Box>
-                                  <IconButton size="small" color="error" onClick={() => removeParca(index)} sx={{ mt: 1 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                  <TextField
+                                    sx={{ flex: 1 , mt : 1.1 }}
+                                    size="small"
+                                    label="Parça Adı"
+                                    value={parca.takilan_parca}
+                                    onChange={(e) => updateParca(index, 'takilan_parca', e.target.value)}
+                                  />
+                                  <IconButton size="small" color="error" onClick={() => removeParca(index)}>
                                     <DeleteIcon fontSize="small" />
                                   </IconButton>
                                 </Box>
-                                <Grid container spacing={1}>
-                                  <Grid item xs={4}>
-                                    <TextField
-                                      fullWidth
-                                      size="small"
-                                      type="number"
-                                      label="Adet"
-                                      value={parca.adet}
-                                      onChange={(e) => updateParca(index, 'adet', parseInt(e.target.value) || 1)}
-                                      inputProps={{ min: 1, style: { textAlign: 'center' } }}
-                                    />
-                                  </Grid>
+                                <Box sx={{ display: 'flex', gap: 1 }}>
+                                  <TextField
+                                    sx={{ flex: 1 , mt : 1.1 }}
+                                    size="small"
+                                    type="number"
+                                    label="Adet"
+                                    value={parca.adet}
+                                    onChange={(e) => updateParca(index, 'adet', parseInt(e.target.value) || 1)}
+                                    inputProps={{ min: 1 }}
+                                  />
                                   {isEdit && (
-                                    <Grid item xs={4}>
-                                      <TextField
-                                        fullWidth
-                                        size="small"
-                                        type="number"
-                                        label="Maliyet"
-                                        value={parca.maliyet === 0 || parca.maliyet ? parca.maliyet : ''}
-                                        onChange={(e) => updateParca(index, 'maliyet', e.target.value === '' ? '' : parseFloat(e.target.value))}
-                                        inputProps={{ min: 0, step: 0.01 }}
-                                      />
-                                    </Grid>
-                                  )}
-                                  <Grid item xs={isEdit ? 4 : 8}>
                                     <TextField
-                                      fullWidth
+                                      sx={{ flex: 1 ,   mt : 1.1 }}
                                       size="small"
                                       type="number"
-                                      label="Satış"
-                                      value={parca.birim_fiyat === 0 || parca.birim_fiyat ? parca.birim_fiyat : ''}
-                                      onChange={(e) => updateParca(index, 'birim_fiyat', e.target.value === '' ? '' : parseFloat(e.target.value))}
+                                      label="Maliyet"
+                                      value={parca.maliyet === 0 || parca.maliyet ? parca.maliyet : ''}
+                                      onChange={(e) => updateParca(index, 'maliyet', e.target.value === '' ? '' : parseFloat(e.target.value))}
                                       inputProps={{ min: 0, step: 0.01 }}
                                     />
-                                  </Grid>
-                                </Grid>
+                                  )}
+                                  <TextField
+                                    sx={{ flex: 1 ,   mt : 1.1 }}
+                                    size="small"
+                                    type="number"
+                                    label="Satış"
+                                    value={parca.birim_fiyat === 0 || parca.birim_fiyat ? parca.birim_fiyat : ''}
+                                    onChange={(e) => updateParca(index, 'birim_fiyat', e.target.value === '' ? '' : parseFloat(e.target.value))}
+                                    inputProps={{ min: 0, step: 0.01 }}
+                                  />
+                                </Box>
                               </Paper>
                             ))}
                           </Box>
@@ -784,15 +723,7 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
                                       value={parca.takilan_parca}
                                       onChange={(e) => updateParca(index, 'takilan_parca', e.target.value)}
                                       placeholder="Parça Adı"
-                                      sx={{ mb: 0.5, '& input': { p: 0.5, fontWeight: 500 } }}
-                                    />
-                                    <TextField
-                                      fullWidth
-                                      size="small"
-                                      value={parca.parca_kodu || ''}
-                                      onChange={(e) => updateParca(index, 'parca_kodu', e.target.value)}
-                                      placeholder="Parça Kodu"
-                                      sx={{ '& input': { p: 0.5, fontSize: '0.75rem', color: 'text.secondary' } }}
+                                      sx={{ '& input': { p: 0.5, fontWeight: 500 } }}
                                     />
                                   </TableCell>
                                   <TableCell align="center">
@@ -896,11 +827,11 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
                     {/* Durum (Sadece düzenleme modunda) */}
                     {isEdit && (
                       <Box sx={{ mt: 3 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                          <Avatar sx={{ bgcolor: 'info.lighter', color: 'info.main', width: 28, height: 28 }}>
-                            <ShippingIcon sx={{ fontSize: 16 }} />
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
+                          <Avatar sx={{ bgcolor: 'info.lighter', color: 'info.main', width: 24, height: 24 }}>
+                            <ShippingIcon sx={{ fontSize: 14 }} />
                           </Avatar>
-                          <Typography variant="subtitle1" fontWeight={600}>
+                          <Typography variant="subtitle2" fontWeight={600}>
                             Durum
                           </Typography>
                         </Box>
@@ -948,24 +879,24 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
                     )}
 
                     {/* Ödeme Detayları */}
-                    <Box sx={{ mt: 3 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                        <Avatar sx={{ bgcolor: 'success.lighter', color: 'success.main', width: 28, height: 28 }}>
-                          <ReceiptIcon sx={{ fontSize: 16 }} />
+                    <Box sx={{ mt: 1.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
+                        <Avatar sx={{ bgcolor: 'success.lighter', color: 'success.main', width: 24, height: 24 }}>
+                          <ReceiptIcon sx={{ fontSize: 14 }} />
                         </Avatar>
-                        <Typography variant="subtitle1" fontWeight={600}>
+                        <Typography variant="subtitle2" fontWeight={600}>
                           Ödeme Detayları
                         </Typography>
                       </Box>
                       <TextField
                         fullWidth
                         multiline
-                        rows={3}
+                        rows={2}
                         size="small"
                         name="odeme_detaylari"
                         value={formData.odeme_detaylari}
                         onChange={handleChange}
-                        placeholder="Örn: 2.000 TL nakit alındı, 3.000 TL kart ile çekildi..."
+                        placeholder="Örn: Nakit, Kart..."
                       />
                     </Box>
                   </CardContent>

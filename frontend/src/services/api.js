@@ -46,6 +46,7 @@ export const authService = {
   approveUser: (id) => api.patch(`/auth/users/${id}/approve`),
   rejectUser: (id) => api.patch(`/auth/users/${id}/reject`),
   deleteUser: (id) => api.delete(`/auth/users/${id}`),
+  updateAksesuarYetkisi: (id, aksesuar_yetkisi) => api.patch(`/auth/users/${id}/aksesuar-yetkisi`, { aksesuar_yetkisi }),
   getUserActivities: (id) => api.get(`/auth/users/${id}/activities`),
   getUserActivityLogs: (id, limit = 100) => api.get(`/auth/users/${id}/activity-logs?limit=${limit}`),
   getUserWorkOrders: (id) => api.get(`/auth/user-work-orders/${id}`),
@@ -98,6 +99,16 @@ export const giderService = {
   create: (data) => api.post('/giderler', data),
   update: (id, data) => api.put(`/giderler/${id}`, data),
   delete: (id) => api.delete(`/giderler/${id}`),
+};
+
+// Aksesuarlar
+export const aksesuarService = {
+  getAll: () => api.get('/aksesuarlar'),
+  getById: (id) => api.get(`/aksesuarlar/${id}`),
+  create: (data) => api.post('/aksesuarlar', data),
+  update: (id, data) => api.put(`/aksesuarlar/${id}`, data),
+  delete: (id) => api.delete(`/aksesuarlar/${id}`),
+  getStats: () => api.get('/aksesuarlar/stats/genel'),
 };
 
 export default api;

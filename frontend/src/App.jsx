@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import { CssBaseline } from '@mui/material';
-import theme from './theme';
+import { CustomThemeProvider, useCustomTheme } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 // Pages
@@ -15,6 +15,7 @@ import Musteriler from './pages/Musteriler';
 import Raporlar from './pages/Raporlar';
 import Giderler from './pages/Giderler';
 import Kullanicilar from './pages/Kullanicilar';
+import Aksesuarlar from './pages/Aksesuarlar';
 
 // Components
 import Layout from './components/Layout';
@@ -110,6 +111,7 @@ function AppRoutes() {
             </AdminRoute>
           } 
         />
+        <Route path="aksesuarlar" element={<Aksesuarlar />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
@@ -117,7 +119,10 @@ function AppRoutes() {
   );
 }
 
-function App() {
+// Theme wrapper component
+function ThemedApp() {
+  const { theme } = useCustomTheme();
+  
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -127,6 +132,14 @@ function App() {
         </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>
+  );
+}
+
+function App() {
+  return (
+    <CustomThemeProvider>
+      <ThemedApp />
+    </CustomThemeProvider>
   );
 }
 

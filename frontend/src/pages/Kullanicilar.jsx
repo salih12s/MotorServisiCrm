@@ -32,6 +32,8 @@ import {
   MenuItem,
   useMediaQuery,
   useTheme,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import {
   CheckCircle as CheckCircleIcon,
@@ -140,6 +142,16 @@ function Kullanicilar() {
       loadData();
     } catch (error) {
       setSnackbar({ open: true, message: 'Reddetme başarısız', severity: 'error' });
+    }
+  };
+
+  const handleAksesuarYetkisiToggle = async (userId, currentValue) => {
+    try {
+      await authService.updateAksesuarYetkisi(userId, !currentValue);
+      setSnackbar({ open: true, message: `Aksesuar yetkisi ${!currentValue ? 'verildi' : 'kaldırıldı'}`, severity: 'success' });
+      loadData();
+    } catch (error) {
+      setSnackbar({ open: true, message: 'Yetki güncelleme başarısız', severity: 'error' });
     }
   };
 
@@ -411,6 +423,7 @@ function Kullanicilar() {
                 <TableCell>Şifre</TableCell>
                 <TableCell>Rol</TableCell>
                 <TableCell>Durum</TableCell>
+                <TableCell>Aksesuar</TableCell>
                 <TableCell>Kayıt Tarihi</TableCell>
                 <TableCell align="right">İşlemler</TableCell>
               </TableRow>
@@ -450,6 +463,14 @@ function Kullanicilar() {
                     />
                   </TableCell>
                   <TableCell>{getStatusChip(user.onay_durumu)}</TableCell>
+                  <TableCell>
+                    <Switch
+                      size="small"
+                      checked={user.aksesuar_yetkisi || false}
+                      onChange={() => handleAksesuarYetkisiToggle(user.id, user.aksesuar_yetkisi)}
+                      color="secondary"
+                    />
+                  </TableCell>
                   <TableCell>
                     {new Date(user.created_at).toLocaleDateString('tr-TR')}
                   </TableCell>
