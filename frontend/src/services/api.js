@@ -91,6 +91,9 @@ export const raporService = {
   getGenel: () => api.get('/raporlar/genel'),
   getFisKar: (tarih) => api.get('/raporlar/fis-kar', { params: { tarih } }),
   getIsEmriDetay: (id) => api.get(`/raporlar/is-emri/${id}`),
+  // Aksesuar raporları
+  getAksesuarAralik: (baslangic, bitis) => api.get('/raporlar/aksesuar/aralik', { params: { baslangic, bitis } }),
+  getAksesuarDetay: (id) => api.get(`/raporlar/aksesuar/${id}`),
 };
 
 // Giderler

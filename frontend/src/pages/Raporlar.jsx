@@ -115,6 +115,13 @@ function Raporlar() {
   const [selectedWorkOrder, setSelectedWorkOrder] = useState(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
 
+  // Aksesuar Rapor State
+  const [aksesuarSelectedDate, setAksesuarSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [aksesuarEndDate, setAksesuarEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [aksesuarRapor, setAksesuarRapor] = useState(null);
+  const [selectedAksesuar, setSelectedAksesuar] = useState(null);
+  const [aksesuarDetailModalOpen, setAksesuarDetailModalOpen] = useState(false);
+
   // Kullanıcıları yükle
   useEffect(() => {
     const loadKullanicilar = async () => {
@@ -131,11 +138,13 @@ function Raporlar() {
   useEffect(() => {
     if (activeTab === 0) {
       loadGunlukRapor();
-    } else {
+    } else if (activeTab === 1) {
+      loadAksesuarRapor();
+    } else if (activeTab === 2) {
       loadFisKarRapor();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, selectedDate, endDate, fisKarTarih]);
+  }, [activeTab, selectedDate, endDate, fisKarTarih, aksesuarSelectedDate, aksesuarEndDate]);
 
   const loadGunlukRapor = async () => {
     try {
@@ -160,6 +169,29 @@ function Raporlar() {
       setLoading(false);
     }
   };
+
+  const loadAksesuarRapor = async () => {
+    try {
+      setLoading(true);
+      const response = await raporService.getAksesuarAralik(aksesuarSelectedDate, aksesuarEndDate);
+      setAksesuarRapor(response.data);
+    } catch (error) {
+      console.error('Aksesuar rapor hatası:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleViewAksesuarDetail = async (aksesuar) => {
+    try {
+      const response = await raporService.getAksesuarDetay(aksesuar.id);
+      setSelectedAksesuar(response.data);
+      setAksesuarDetailModalOpen(true);
+    } catch (error) {
+      console.error('Aksesuar detay hatası:', error);
+    }
+  };
+
   const handleViewDetail = async (workOrder) => {
     try {
       const response = await raporService.getIsEmriDetay(workOrder.id);
@@ -709,6 +741,343 @@ function Raporlar() {
     </Box>
   );
 
+  // Aksesuar Rapor Render
+  const renderAksesuarRapor = () => (
+    <Box>
+      {/* Tarih Aralığı */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent sx={{ py: 2 }}>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} sm="auto">
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CalendarIcon color="primary" />
+                <Typography variant="body2" fontWeight={600} sx={{ display: { xs: 'none', sm: 'block' } }}>
+                  Tarih Aralığı
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={5} md={2}>
+              <TextField
+                type="date"
+                label="Başlangıç Tarihi"
+                value={aksesuarSelectedDate}
+                onChange={(e) => setAksesuarSelectedDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                size="small"
+                fullWidth
+              />
+            </Grid>
+            <Grid item xs={12} sm={5} md={2}>
+              <TextField
+                type="date"
+                label="Bitiş Tarihi"
+                value={aksesuarEndDate}
+                onChange={(e) => setAksesuarEndDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                size="small"
+                fullWidth
+              />
+            </Grid>
+            <Grid item xs={12} sm="auto">
+              <Chip 
+                label={aksesuarSelectedDate && aksesuarEndDate ? 
+                  `${format(new Date(aksesuarSelectedDate), 'd MMM yyyy', { locale: tr })} - ${format(new Date(aksesuarEndDate), 'd MMM yyyy', { locale: tr })}` 
+                  : 'Tarih Seçin'}
+                color="primary"
+                variant="outlined"
+                sx={{ width: { xs: '100%', sm: 'auto' } }}
+              />
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}>
+          <CircularProgress />
+        </Box>
+      ) : aksesuarRapor ? (
+        <>
+          {/* Özet Kartları */}
+          <Grid container spacing={isMobile ? 1 : 2} sx={{ mb: 3 }}>
+            <Grid item xs={6} sm={3}>
+              <StatCard
+                title="Satış Sayısı"
+                value={aksesuarRapor.genel_ozet?.toplam_satis_sayisi || 0}
+                icon={<AssignmentIcon />}
+                color="#04A7B8"
+                isMobile={isMobile}
+              />
+            </Grid>
+            <Grid item xs={6} sm={3}>
+              <StatCard
+                title="Toplam Satış"
+                value={formatCurrency(aksesuarRapor.genel_ozet?.toplam_satis || 0)}
+                icon={<AttachMoneyIcon />}
+                color="#2e7d32"
+                isMobile={isMobile}
+              />
+            </Grid>
+            <Grid item xs={6} sm={3}>
+              <StatCard
+                title="Toplam Maliyet"
+                value={formatCurrency(aksesuarRapor.genel_ozet?.toplam_maliyet || 0)}
+                icon={<MoneyOffIcon />}
+                color="#c62828"
+                isMobile={isMobile}
+              />
+            </Grid>
+            <Grid item xs={6} sm={3}>
+              <StatCard
+                title="Net Kar"
+                value={formatCurrency(aksesuarRapor.genel_ozet?.toplam_kar || 0)}
+                icon={<TrendingUpIcon />}
+                color="#04A7B8"
+                variant="highlight"
+                isMobile={isMobile}
+              />
+            </Grid>
+          </Grid>
+
+          {/* Günlük Veriler Tablosu */}
+          <Card sx={{ mb: 3 }}>
+            <CardContent sx={{ p: 0 }}>
+              <Box sx={{ p: isMobile ? 1.5 : 2.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+                <Typography variant="h6" fontWeight={700} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>Günlük Özet</Typography>
+              </Box>
+              
+              {(aksesuarRapor.gunluk_veriler || []).length === 0 ? (
+                <Box sx={{ textAlign: 'center', py: 6 }}>
+                  <ReceiptIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
+                  <Typography color="text.secondary">Bu tarih aralığında aksesuar satışı bulunmuyor</Typography>
+                </Box>
+              ) : isMobile ? (
+                /* Mobile Card View */
+                <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  {(aksesuarRapor.gunluk_veriler || []).map((item, index) => (
+                    <Card key={index} variant="outlined" sx={{ bgcolor: '#fafafa' }}>
+                      <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                          <Typography variant="subtitle2" fontWeight={700}>
+                            {format(new Date(item.tarih), 'd MMMM yyyy', { locale: tr })}
+                          </Typography>
+                          <Chip label={`${item.satis_sayisi} satış`} size="small" color="primary" sx={{ height: 22 }} />
+                        </Box>
+                        <Grid container spacing={1}>
+                          <Grid item xs={4}>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>Satış</Typography>
+                            <Typography variant="body2" fontWeight={600} sx={{ color: '#2e7d32', fontSize: '0.85rem' }}>
+                              {formatCurrency(item.toplam_satis)}
+                            </Typography>
+                          </Grid>
+                          <Grid item xs={4}>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>Maliyet</Typography>
+                            <Typography variant="body2" sx={{ color: '#c62828', fontSize: '0.85rem' }}>
+                              {formatCurrency(item.toplam_maliyet)}
+                            </Typography>
+                          </Grid>
+                          <Grid item xs={4}>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>Kar</Typography>
+                            <Typography 
+                              variant="body2" 
+                              fontWeight={700}
+                              sx={{ 
+                                color: parseFloat(item.toplam_kar) >= 0 ? '#2e7d32' : '#c62828',
+                                fontSize: '0.85rem',
+                              }}
+                            >
+                              {formatCurrency(item.toplam_kar)}
+                            </Typography>
+                          </Grid>
+                        </Grid>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </Box>
+              ) : (
+                /* Desktop Table View */
+                <TableContainer sx={{ overflowX: 'auto' }}>
+                  <Table sx={{ minWidth: { xs: 600, sm: '100%' } }}>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Tarih</TableCell>
+                        <TableCell align="center">Satış Sayısı</TableCell>
+                        <TableCell align="right">Satış Tutarı</TableCell>
+                        <TableCell align="right">Maliyet</TableCell>
+                        <TableCell align="right">Kar</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {(aksesuarRapor.gunluk_veriler || []).map((item, index) => (
+                        <TableRow key={index} hover>
+                          <TableCell>
+                            <Typography fontWeight={600}>
+                              {format(new Date(item.tarih), 'd MMMM yyyy', { locale: tr })}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="center">
+                            <Chip label={item.satis_sayisi} size="small" color="primary" />
+                          </TableCell>
+                          <TableCell align="right">
+                            <Typography fontWeight={600} sx={{ color: '#2e7d32' }}>
+                              {formatCurrency(item.toplam_satis)}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="right">
+                            <Typography sx={{ color: '#c62828' }}>
+                              {formatCurrency(item.toplam_maliyet)}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="right">
+                            <Typography 
+                              fontWeight={700}
+                              sx={{ color: parseFloat(item.toplam_kar) >= 0 ? '#2e7d32' : '#c62828' }}
+                            >
+                              {formatCurrency(item.toplam_kar)}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Detaylı Aksesuar Listesi */}
+          <Card>
+            <CardContent sx={{ p: 0 }}>
+              <Box sx={{ p: isMobile ? 1.5 : 2.5, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="h6" fontWeight={700} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                  Detaylı Satışlar
+                </Typography>
+                <Chip 
+                  label={`${(aksesuarRapor.detayli_aksesuarlar || []).length} satış`} 
+                  size="small" 
+                  color="primary" 
+                />
+              </Box>
+              
+              {(aksesuarRapor.detayli_aksesuarlar || []).length === 0 ? (
+                <Box sx={{ textAlign: 'center', py: 6 }}>
+                  <ReceiptIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
+                  <Typography color="text.secondary">Bu tarih aralığında aksesuar satışı bulunmuyor</Typography>
+                </Box>
+              ) : isMobile ? (
+                /* Mobile Card View */
+                <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  {(aksesuarRapor.detayli_aksesuarlar || []).map((aksesuar, index) => (
+                    <Card key={aksesuar.id || index} variant="outlined" sx={{ bgcolor: '#fafafa' }}>
+                      <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                          <Box>
+                            <Typography variant="subtitle2" fontWeight={700}>{aksesuar.ad_soyad}</Typography>
+                            <Typography variant="caption" color="text.secondary">{aksesuar.telefon}</Typography>
+                          </Box>
+                          <Tooltip title="Detay Görüntüle">
+                            <IconButton 
+                              size="small" 
+                              onClick={() => handleViewAksesuarDetail(aksesuar)}
+                              sx={{ color: '#04A7B8' }}
+                            >
+                              <VisibilityIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                        <Grid container spacing={1}>
+                          <Grid item xs={4}>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>Satış</Typography>
+                            <Typography variant="body2" fontWeight={600} sx={{ color: '#2e7d32', fontSize: '0.85rem' }}>
+                              {formatCurrency(aksesuar.toplam_satis)}
+                            </Typography>
+                          </Grid>
+                          <Grid item xs={4}>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>Maliyet</Typography>
+                            <Typography variant="body2" sx={{ color: '#c62828', fontSize: '0.85rem' }}>
+                              {formatCurrency(aksesuar.toplam_maliyet)}
+                            </Typography>
+                          </Grid>
+                          <Grid item xs={4}>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>Kar</Typography>
+                            <Typography 
+                              variant="body2" 
+                              fontWeight={700}
+                              sx={{ color: parseFloat(aksesuar.kar) >= 0 ? '#2e7d32' : '#c62828', fontSize: '0.85rem' }}
+                            >
+                              {formatCurrency(aksesuar.kar)}
+                            </Typography>
+                          </Grid>
+                        </Grid>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </Box>
+              ) : (
+                /* Desktop Table View */
+                <TableContainer sx={{ overflowX: 'auto' }}>
+                  <Table sx={{ minWidth: { xs: 600, sm: '100%' } }}>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Müşteri</TableCell>
+                        <TableCell>Telefon</TableCell>
+                        <TableCell>Ödeme Şekli</TableCell>
+                        <TableCell align="right">Satış</TableCell>
+                        <TableCell align="right">Maliyet</TableCell>
+                        <TableCell align="right">Kar</TableCell>
+                        <TableCell align="center">İşlem</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {(aksesuarRapor.detayli_aksesuarlar || []).map((aksesuar, index) => (
+                        <TableRow key={aksesuar.id || index} hover>
+                          <TableCell>
+                            <Typography fontWeight={600}>{aksesuar.ad_soyad}</Typography>
+                          </TableCell>
+                          <TableCell>{aksesuar.telefon}</TableCell>
+                          <TableCell>{aksesuar.odeme_sekli || '-'}</TableCell>
+                          <TableCell align="right">
+                            <Typography fontWeight={600} sx={{ color: '#2e7d32' }}>
+                              {formatCurrency(aksesuar.toplam_satis)}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="right">
+                            <Typography sx={{ color: '#c62828' }}>
+                              {formatCurrency(aksesuar.toplam_maliyet)}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="right">
+                            <Typography 
+                              fontWeight={700}
+                              sx={{ color: parseFloat(aksesuar.kar) >= 0 ? '#2e7d32' : '#c62828' }}
+                            >
+                              {formatCurrency(aksesuar.kar)}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="center">
+                            <Tooltip title="Detay Görüntüle">
+                              <IconButton 
+                                size="small" 
+                                onClick={() => handleViewAksesuarDetail(aksesuar)}
+                                sx={{ color: '#04A7B8' }}
+                              >
+                                <VisibilityIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      ) : null}
+    </Box>
+  );
+
   const renderFisKarRapor = () => (
     <Box>
       {/* Tarih Seçici */}
@@ -870,8 +1239,13 @@ function Raporlar() {
           }}
         >
           <Tab 
-            label="Günlük Rapor" 
-            icon={<CalendarIcon />} 
+            label="İş Emirleri" 
+            icon={<DirectionsCarIcon />} 
+            iconPosition="start"
+          />
+          <Tab 
+            label="Aksesuar Satışları" 
+            icon={<ReceiptIcon />} 
             iconPosition="start"
           />
           <Tab 
@@ -883,7 +1257,8 @@ function Raporlar() {
       </Card>
 
       {activeTab === 0 && renderGunlukRapor()}
-      {activeTab === 1 && renderFisKarRapor()}
+      {activeTab === 1 && renderAksesuarRapor()}
+      {activeTab === 2 && renderFisKarRapor()}
 
       {/* İş Emri Detay Modal */}
       <Dialog 
@@ -1126,6 +1501,164 @@ function Raporlar() {
         </DialogContent>
         <DialogActions sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
           <Button onClick={() => setDetailModalOpen(false)} variant="contained">
+            Kapat
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Aksesuar Detay Modal */}
+      <Dialog 
+        open={aksesuarDetailModalOpen} 
+        onClose={() => setAksesuarDetailModalOpen(false)}
+        maxWidth="md"
+        fullWidth
+        fullScreen={isMobile}
+        PaperProps={{
+          sx: {
+            m: { xs: 0, sm: 2 },
+            borderRadius: { xs: 0, sm: 2 },
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          bgcolor: '#04A7B8', 
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          p: { xs: 2, sm: 2.5 },
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <ReceiptIcon sx={{ fontSize: { xs: 20, sm: 24 } }} />
+            <Typography variant="h6" fontWeight={700} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+              Aksesuar Satış Detayları
+            </Typography>
+          </Box>
+          <IconButton
+            onClick={() => setAksesuarDetailModalOpen(false)}
+            size="small"
+            sx={{ color: 'white' }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ p: { xs: 2, sm: 3 } }}>
+          {selectedAksesuar && (
+            <Box>
+              {/* Müşteri Bilgileri */}
+              <Card variant="outlined" sx={{ mb: 2 }}>
+                <CardContent sx={{ p: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                    <PersonIcon color="primary" />
+                    <Typography variant="subtitle1" fontWeight={600}>Müşteri Bilgileri</Typography>
+                  </Box>
+                  <Grid container spacing={2}>
+                    <Grid item xs={6} sm={4}>
+                      <Typography variant="caption" color="text.secondary">Ad Soyad</Typography>
+                      <Typography variant="body1" fontWeight={600}>{selectedAksesuar.ad_soyad}</Typography>
+                    </Grid>
+                    <Grid item xs={6} sm={4}>
+                      <Typography variant="caption" color="text.secondary">Telefon</Typography>
+                      <Typography variant="body1">{selectedAksesuar.telefon || '-'}</Typography>
+                    </Grid>
+                    <Grid item xs={6} sm={4}>
+                      <Typography variant="caption" color="text.secondary">Ödeme Şekli</Typography>
+                      <Typography variant="body1">{selectedAksesuar.odeme_sekli || '-'}</Typography>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Typography variant="caption" color="text.secondary">Satış Tarihi</Typography>
+                      <Typography variant="body1">
+                        {selectedAksesuar.satis_tarihi ? format(new Date(selectedAksesuar.satis_tarihi), 'd MMMM yyyy', { locale: tr }) : '-'}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </Card>
+
+              {/* Ürünler */}
+              <Card variant="outlined" sx={{ mb: 2 }}>
+                <CardContent sx={{ p: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                    <AssignmentIcon color="primary" />
+                    <Typography variant="subtitle1" fontWeight={600}>Satılan Ürünler</Typography>
+                    <Chip label={`${selectedAksesuar.parcalar?.length || 0} ürün`} size="small" sx={{ ml: 1 }} />
+                  </Box>
+                  {selectedAksesuar.parcalar && selectedAksesuar.parcalar.length > 0 ? (
+                    <TableContainer component={Box}>
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow sx={{ bgcolor: 'grey.50' }}>
+                            <TableCell sx={{ fontWeight: 600 }}>Ürün Adı</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 600 }}>Adet</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 600 }}>Maliyet</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 600 }}>Satış Fiyatı</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 600 }}>Toplam</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {selectedAksesuar.parcalar.map((parca, index) => (
+                            <TableRow key={parca.id || index}>
+                              <TableCell>{parca.urun_adi}</TableCell>
+                              <TableCell align="center">{parca.adet}</TableCell>
+                              <TableCell align="right" sx={{ color: '#c62828' }}>
+                                {formatCurrency(parca.maliyet)}
+                              </TableCell>
+                              <TableCell align="right">{formatCurrency(parca.satis_fiyati)}</TableCell>
+                              <TableCell align="right" sx={{ fontWeight: 600 }}>
+                                {formatCurrency((parseInt(parca.adet) || 1) * (parseFloat(parca.satis_fiyati) || 0))}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  ) : (
+                    <Typography color="text.secondary">Ürün bilgisi bulunamadı</Typography>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Finansal Özet */}
+              <Card variant="outlined">
+                <CardContent sx={{ p: 2 }}>
+                  <Typography variant="subtitle1" fontWeight={600} gutterBottom>Finansal Özet</Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={6} sm={4}>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">Toplam Satış</Typography>
+                        <Typography variant="h6" sx={{ color: '#2e7d32' }}>
+                          {formatCurrency(selectedAksesuar.toplam_satis)}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={6} sm={4}>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">Toplam Maliyet</Typography>
+                        <Typography variant="h6" sx={{ color: '#c62828' }}>
+                          {formatCurrency(selectedAksesuar.toplam_maliyet)}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">Net Kar</Typography>
+                        <Typography 
+                          variant="h6" 
+                          fontWeight={700}
+                          sx={{ color: parseFloat(selectedAksesuar.kar) >= 0 ? '#2e7d32' : '#c62828' }}
+                        >
+                          {formatCurrency(selectedAksesuar.kar)}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </Card>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+          <Button onClick={() => setAksesuarDetailModalOpen(false)} variant="contained" sx={{ bgcolor: '#04A7B8' }}>
             Kapat
           </Button>
         </DialogActions>

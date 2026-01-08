@@ -233,6 +233,7 @@ const initDatabase = async () => {
         toplam_satis DECIMAL(10, 2) DEFAULT 0,
         kar DECIMAL(10, 2) DEFAULT 0,
         odeme_detaylari TEXT,
+        satis_tarihi DATE DEFAULT CURRENT_DATE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -262,6 +263,14 @@ const initDatabase = async () => {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
                        WHERE table_name='aksesuarlar' AND column_name='odeme_detaylari') THEN
           ALTER TABLE aksesuarlar ADD COLUMN odeme_detaylari TEXT;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name='aksesuarlar' AND column_name='satis_tarihi') THEN
+          ALTER TABLE aksesuarlar ADD COLUMN satis_tarihi DATE DEFAULT CURRENT_DATE;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name='aksesuarlar' AND column_name='tamamlama_tarihi') THEN
+          ALTER TABLE aksesuarlar ADD COLUMN tamamlama_tarihi TIMESTAMP;
         END IF;
       END $$;
     `);

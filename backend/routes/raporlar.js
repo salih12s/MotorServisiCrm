@@ -318,4 +318,124 @@ router.get('/is-emri/:id', async (req, res) => {
   }
 });
 
+// ==================== AKSESUAR RAPORLARI ====================
+
+// Aksesuar tarih aralığı raporu
+router.get('/aksesuar/aralik', async (req, res) => {
+  try {
+    const { baslangic, bitis } = req.query;
+    
+    if (!baslangic || !bitis) {
+      return res.status(400).json({ message: 'Başlangıç ve bitiş tarihi gerekli' });
+    }
+    
+    // Tarih aralığındaki tamamlanan aksesuarlar (özet) - tamamlama_tarihi'ne göre
+    const aksesuarlarOzet = await pool.query(
+      `SELECT 
+        DATE(COALESCE(tamamlama_tarihi, created_at)) as tarih,
+        COUNT(*) as satis_sayisi,
+        COALESCE(SUM(toplam_satis), 0) as toplam_satis,
+        COALESCE(SUM(toplam_maliyet), 0) as toplam_maliyet,
+        COALESCE(SUM(kar), 0) as toplam_kar
+       FROM aksesuarlar
+       WHERE durum = 'tamamlandi' AND DATE(COALESCE(tamamlama_tarihi, created_at)) BETWEEN $1 AND $2
+       GROUP BY DATE(COALESCE(tamamlama_tarihi, created_at))
+       ORDER BY DATE(COALESCE(tamamlama_tarihi, created_at)) DESC`,
+      [baslangic, bitis]
+    );
+    
+    // Tarih aralığındaki tüm tamamlanan aksesuarlar (detaylı liste)
+    const detayliAksesuarlar = await pool.query(
+      `SELECT 
+        a.id,
+        a.ad_soyad,
+        a.telefon,
+        a.odeme_sekli,
+        a.toplam_satis,
+        a.toplam_maliyet,
+        a.kar,
+        a.durum,
+        a.created_at,
+        a.tamamlama_tarihi,
+        TO_CHAR(a.satis_tarihi, 'YYYY-MM-DD') as satis_tarihi
+       FROM aksesuarlar a
+       WHERE a.durum = 'tamamlandi' AND DATE(COALESCE(a.tamamlama_tarihi, a.created_at)) BETWEEN $1 AND $2
+       ORDER BY a.tamamlama_tarihi DESC`,
+      [baslangic, bitis]
+    );
+    
+    // Her aksesuar için parçaları getir
+    const aksesuarlarWithParcalar = await Promise.all(detayliAksesuarlar.rows.map(async (aksesuar) => {
+      const parcalarResult = await pool.query(
+        'SELECT * FROM aksesuar_parcalar WHERE aksesuar_id = $1 ORDER BY id',
+        [aksesuar.id]
+      );
+      return {
+        ...aksesuar,
+        parcalar: parcalarResult.rows
+      };
+    }));
+    
+    // Genel toplam (sadece tamamlanan aksesuarlar)
+    const genelToplam = await pool.query(
+      `SELECT 
+        COALESCE(SUM(toplam_satis), 0) as toplam_satis,
+        COALESCE(SUM(toplam_maliyet), 0) as toplam_maliyet,
+        COALESCE(SUM(kar), 0) as toplam_kar,
+        COUNT(*) as toplam_satis_sayisi
+       FROM aksesuarlar
+       WHERE durum = 'tamamlandi' AND DATE(COALESCE(tamamlama_tarihi, created_at)) BETWEEN $1 AND $2`,
+      [baslangic, bitis]
+    );
+    
+    res.json({
+      baslangic,
+      bitis,
+      gunluk_veriler: aksesuarlarOzet.rows,
+      detayli_aksesuarlar: aksesuarlarWithParcalar,
+      genel_ozet: {
+        toplam_satis_sayisi: parseInt(genelToplam.rows[0].toplam_satis_sayisi),
+        toplam_satis: parseFloat(genelToplam.rows[0].toplam_satis),
+        toplam_maliyet: parseFloat(genelToplam.rows[0].toplam_maliyet),
+        toplam_kar: parseFloat(genelToplam.rows[0].toplam_kar)
+      }
+    });
+  } catch (error) {
+    console.error('Aksesuar tarih aralığı rapor hatası:', error);
+    res.status(500).json({ message: 'Sunucu hatası' });
+  }
+});
+
+// Aksesuar detayını getir (parçalarıyla birlikte)
+router.get('/aksesuar/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const aksesuarResult = await pool.query(
+      `SELECT id, ad_soyad, telefon, odeme_sekli, aciklama, durum, odeme_detaylari,
+       TO_CHAR(satis_tarihi, 'YYYY-MM-DD') as satis_tarihi,
+       toplam_maliyet, toplam_satis, kar, odeme_tutari, created_at, tamamlama_tarihi
+       FROM aksesuarlar WHERE id = $1`,
+      [id]
+    );
+    
+    if (aksesuarResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Aksesuar kaydı bulunamadı' });
+    }
+    
+    const parcalarResult = await pool.query(
+      'SELECT * FROM aksesuar_parcalar WHERE aksesuar_id = $1 ORDER BY id',
+      [id]
+    );
+    
+    res.json({
+      ...aksesuarResult.rows[0],
+      parcalar: parcalarResult.rows
+    });
+  } catch (error) {
+    console.error('Aksesuar detay hatası:', error);
+    res.status(500).json({ message: 'Sunucu hatası' });
+  }
+});
+
 module.exports = router;

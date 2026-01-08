@@ -177,6 +177,20 @@ async function checkAndAddAllColumns() {
       } else {
         console.log('  ✓ odeme_detaylari zaten var');
       }
+      
+      if (!aksesuarlarColNames.includes('satis_tarihi')) {
+        await pool.query(`ALTER TABLE aksesuarlar ADD COLUMN satis_tarihi DATE DEFAULT CURRENT_DATE`);
+        console.log('  ✅ satis_tarihi kolonu eklendi');
+      } else {
+        console.log('  ✓ satis_tarihi zaten var');
+      }
+      
+      if (!aksesuarlarColNames.includes('tamamlama_tarihi')) {
+        await pool.query(`ALTER TABLE aksesuarlar ADD COLUMN tamamlama_tarihi TIMESTAMP`);
+        console.log('  ✅ tamamlama_tarihi kolonu eklendi');
+      } else {
+        console.log('  ✓ tamamlama_tarihi zaten var');
+      }
     }
     
     console.log('');

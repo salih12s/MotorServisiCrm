@@ -82,6 +82,7 @@ function Aksesuarlar() {
   const { themeColors } = useCustomTheme();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const isAdmin = user?.role === 'admin';
 
   // Erişim kontrolü - admin veya aksesuar yetkisi olmalı
   useEffect(() => {
@@ -398,9 +399,11 @@ function Aksesuarlar() {
                       <IconButton size="small" onClick={() => handleOpenModal(aksesuar)}>
                         <EditIcon fontSize="small" />
                       </IconButton>
-                      <IconButton size="small" color="error" onClick={() => handleDelete(aksesuar.id)}>
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
+                      {isAdmin && (
+                        <IconButton size="small" color="error" onClick={() => handleDelete(aksesuar.id)}>
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      )}
                     </Box>
                   </Box>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
@@ -429,7 +432,7 @@ function Aksesuarlar() {
                     </Typography>
                   </Box>
                   <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                    {formatDate(aksesuar.created_at)}
+                    Satış: {formatDate(aksesuar.satis_tarihi || aksesuar.created_at, 'dd.MM.yyyy')}
                   </Typography>
                 </Paper>
               ))}
@@ -446,7 +449,7 @@ function Aksesuarlar() {
                     <TableCell sx={{ fontWeight: 700 }}>Ödeme Şekli</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>Durum</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 700 }}>Tutar</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Tarih</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Satış Tarihi</TableCell>
                     <TableCell align="center" sx={{ fontWeight: 700 }}>İşlemler</TableCell>
                   </TableRow>
                 </TableHead>
@@ -479,7 +482,7 @@ function Aksesuarlar() {
                           {formatCurrency(aksesuar.toplam_satis || aksesuar.odeme_tutari)}
                         </Typography>
                       </TableCell>
-                      <TableCell>{formatDate(aksesuar.created_at)}</TableCell>
+                      <TableCell>{formatDate(aksesuar.satis_tarihi || aksesuar.created_at, 'dd.MM.yyyy')}</TableCell>
                       <TableCell align="center">
                         <IconButton size="small" onClick={() => handleViewDetails(aksesuar)} sx={{ color: themeColors.primary }}>
                           <VisibilityIcon fontSize="small" />
@@ -487,9 +490,11 @@ function Aksesuarlar() {
                         <IconButton size="small" onClick={() => handleOpenModal(aksesuar)}>
                           <EditIcon fontSize="small" />
                         </IconButton>
-                        <IconButton size="small" color="error" onClick={() => handleDelete(aksesuar.id)}>
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
+                        {isAdmin && (
+                          <IconButton size="small" color="error" onClick={() => handleDelete(aksesuar.id)}>
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -551,8 +556,8 @@ function Aksesuarlar() {
                     <Typography variant="body1">{selectedAksesuar.telefon || '-'}</Typography>
                   </Box>
                   <Box>
-                    <Typography variant="caption" color="text.secondary">Tarih</Typography>
-                    <Typography variant="body1">{formatDate(selectedAksesuar.created_at)}</Typography>
+                    <Typography variant="caption" color="text.secondary">Satış Tarihi</Typography>
+                    <Typography variant="body1">{formatDate(selectedAksesuar.satis_tarihi || selectedAksesuar.created_at, 'dd.MM.yyyy')}</Typography>
                   </Box>
                   <Box>
                     <Typography variant="caption" color="text.secondary">Durum</Typography>
@@ -583,32 +588,68 @@ function Aksesuarlar() {
                 </Box>
                 
                 {selectedAksesuar.parcalar && selectedAksesuar.parcalar.length > 0 ? (
-                  <TableContainer component={Paper} variant="outlined">
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow sx={{ bgcolor: 'grey.50' }}>
-                          <TableCell sx={{ fontWeight: 600 }}>Ürün Adı</TableCell>
-                          <TableCell align="center" sx={{ fontWeight: 600 }}>Adet</TableCell>
-                          <TableCell align="right" sx={{ fontWeight: 600 }}>Maliyet</TableCell>
-                          <TableCell align="right" sx={{ fontWeight: 600 }}>Satış Fiyatı</TableCell>
-                          <TableCell align="right" sx={{ fontWeight: 600 }}>Toplam</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {selectedAksesuar.parcalar.map((parca, index) => (
-                          <TableRow key={parca.id || index}>
-                            <TableCell>{parca.urun_adi}</TableCell>
-                            <TableCell align="center">{parca.adet}</TableCell>
-                            <TableCell align="right">{formatCurrency(parca.maliyet)}</TableCell>
-                            <TableCell align="right">{formatCurrency(parca.satis_fiyati)}</TableCell>
-                            <TableCell align="right" sx={{ fontWeight: 600 }}>
-                              {formatCurrency((parseInt(parca.adet) || 1) * (parseFloat(parca.satis_fiyati) || 0))}
-                            </TableCell>
+                  isMobile ? (
+                    /* Mobil Card View */
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      {selectedAksesuar.parcalar.map((parca, index) => (
+                        <Paper key={parca.id || index} variant="outlined" sx={{ p: 1.5 }}>
+                          <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
+                            {parca.urun_adi}
+                          </Typography>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+                            <Box>
+                              <Typography variant="caption" color="text.secondary">Adet</Typography>
+                              <Typography variant="body2" fontWeight={500}>{parca.adet}</Typography>
+                            </Box>
+                            {isAdmin && (
+                              <Box>
+                                <Typography variant="caption" color="text.secondary">Maliyet</Typography>
+                                <Typography variant="body2" color="error.main">{formatCurrency(parca.maliyet)}</Typography>
+                              </Box>
+                            )}
+                            <Box>
+                              <Typography variant="caption" color="text.secondary">Satış</Typography>
+                              <Typography variant="body2">{formatCurrency(parca.satis_fiyati)}</Typography>
+                            </Box>
+                            <Box>
+                              <Typography variant="caption" color="text.secondary">Toplam</Typography>
+                              <Typography variant="body2" fontWeight={700} sx={{ color: themeColors.primary }}>
+                                {formatCurrency((parseInt(parca.adet) || 1) * (parseFloat(parca.satis_fiyati) || 0))}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </Paper>
+                      ))}
+                    </Box>
+                  ) : (
+                    /* Desktop Tablo View */
+                    <TableContainer component={Paper} variant="outlined">
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow sx={{ bgcolor: 'grey.50' }}>
+                            <TableCell sx={{ fontWeight: 600 }}>Ürün Adı</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 600 }}>Adet</TableCell>
+                            {isAdmin && <TableCell align="right" sx={{ fontWeight: 600 }}>Maliyet</TableCell>}
+                            <TableCell align="right" sx={{ fontWeight: 600 }}>Satış Fiyatı</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 600 }}>Toplam</TableCell>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
+                        </TableHead>
+                        <TableBody>
+                          {selectedAksesuar.parcalar.map((parca, index) => (
+                            <TableRow key={parca.id || index}>
+                              <TableCell>{parca.urun_adi}</TableCell>
+                              <TableCell align="center">{parca.adet}</TableCell>
+                              {isAdmin && <TableCell align="right">{formatCurrency(parca.maliyet)}</TableCell>}
+                              <TableCell align="right">{formatCurrency(parca.satis_fiyati)}</TableCell>
+                              <TableCell align="right" sx={{ fontWeight: 600 }}>
+                                {formatCurrency((parseInt(parca.adet) || 1) * (parseFloat(parca.satis_fiyati) || 0))}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  )
                 ) : (
                   <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
                     <Typography color="text.secondary">Ürün eklenmemiş</Typography>
@@ -620,24 +661,28 @@ function Aksesuarlar() {
 
               {/* Özet */}
               <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap', mb: 2 }}>
-                <Paper sx={{ p: 2, flex: 1, minWidth: 150, bgcolor: 'error.lighter' }}>
-                  <Typography variant="caption" color="text.secondary">Toplam Maliyet</Typography>
-                  <Typography variant="h6" color="error.main" fontWeight={700}>
-                    {formatCurrency(selectedAksesuar.toplam_maliyet)}
-                  </Typography>
-                </Paper>
+                {isAdmin && (
+                  <Paper sx={{ p: 2, flex: 1, minWidth: 150, bgcolor: 'error.lighter' }}>
+                    <Typography variant="caption" color="text.secondary">Toplam Maliyet</Typography>
+                    <Typography variant="h6" color="error.main" fontWeight={700}>
+                      {formatCurrency(selectedAksesuar.toplam_maliyet)}
+                    </Typography>
+                  </Paper>
+                )}
                 <Paper sx={{ p: 2, flex: 1, minWidth: 150, bgcolor: 'grey.100' }}>
                   <Typography variant="caption" color="text.secondary">Toplam Satış</Typography>
                   <Typography variant="h6" fontWeight={700}>
                     {formatCurrency(selectedAksesuar.toplam_satis || selectedAksesuar.odeme_tutari)}
                   </Typography>
                 </Paper>
-                <Paper sx={{ p: 2, flex: 1, minWidth: 150, bgcolor: 'success.lighter' }}>
-                  <Typography variant="caption" color="text.secondary">Net Kar</Typography>
-                  <Typography variant="h6" color="success.main" fontWeight={700}>
-                    {formatCurrency(selectedAksesuar.kar)}
-                  </Typography>
-                </Paper>
+                {isAdmin && (
+                  <Paper sx={{ p: 2, flex: 1, minWidth: 150, bgcolor: 'success.lighter' }}>
+                    <Typography variant="caption" color="text.secondary">Net Kar</Typography>
+                    <Typography variant="h6" color="success.main" fontWeight={700}>
+                      {formatCurrency(selectedAksesuar.kar)}
+                    </Typography>
+                  </Paper>
+                )}
               </Box>
 
               {/* Ödeme Detayları */}

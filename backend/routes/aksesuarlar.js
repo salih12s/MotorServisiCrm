@@ -8,7 +8,10 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT * FROM aksesuarlar ORDER BY created_at DESC'
+      `SELECT id, ad_soyad, telefon, odeme_sekli, aciklama, durum, odeme_detaylari,
+       TO_CHAR(satis_tarihi, 'YYYY-MM-DD') as satis_tarihi,
+       toplam_maliyet, toplam_satis, kar, odeme_tutari, created_at
+       FROM aksesuarlar ORDER BY created_at DESC`
     );
     
     // Her aksesuar için parçaları getir
@@ -35,7 +38,10 @@ router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query(
-      'SELECT * FROM aksesuarlar WHERE id = $1',
+      `SELECT id, ad_soyad, telefon, odeme_sekli, aciklama, durum, odeme_detaylari,
+       TO_CHAR(satis_tarihi, 'YYYY-MM-DD') as satis_tarihi,
+       toplam_maliyet, toplam_satis, kar, odeme_tutari, created_at
+       FROM aksesuarlar WHERE id = $1`,
       [id]
     );
     
@@ -65,7 +71,7 @@ router.post('/', async (req, res) => {
   try {
     await client.query('BEGIN');
     
-    const { ad_soyad, telefon, odeme_sekli, aciklama, durum, odeme_detaylari, parcalar = [] } = req.body;
+    const { ad_soyad, telefon, odeme_sekli, aciklama, durum, odeme_detaylari, satis_tarihi, parcalar = [] } = req.body;
     
     // Toplamları hesapla
     let toplam_maliyet = 0;
@@ -81,10 +87,10 @@ router.post('/', async (req, res) => {
     
     // Ana aksesuar kaydını oluştur
     const result = await client.query(
-      `INSERT INTO aksesuarlar (ad_soyad, telefon, odeme_sekli, aciklama, durum, odeme_detaylari, toplam_maliyet, toplam_satis, kar, odeme_tutari)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `INSERT INTO aksesuarlar (ad_soyad, telefon, odeme_sekli, aciklama, durum, odeme_detaylari, satis_tarihi, toplam_maliyet, toplam_satis, kar, odeme_tutari)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
-      [ad_soyad, telefon, odeme_sekli, aciklama, durum || 'beklemede', odeme_detaylari, toplam_maliyet, toplam_satis, kar, toplam_satis]
+      [ad_soyad, telefon, odeme_sekli, aciklama, durum || 'beklemede', odeme_detaylari, satis_tarihi || new Date(), toplam_maliyet, toplam_satis, kar, toplam_satis]
     );
     
     const aksesuarId = result.rows[0].id;
@@ -143,7 +149,11 @@ router.put('/:id', async (req, res) => {
     await client.query('BEGIN');
     
     const { id } = req.params;
-    const { ad_soyad, telefon, odeme_sekli, aciklama, durum, odeme_detaylari, parcalar = [] } = req.body;
+    const { ad_soyad, telefon, odeme_sekli, aciklama, durum, odeme_detaylari, satis_tarihi, parcalar = [] } = req.body;
+    
+    // Mevcut durumu al
+    const mevcutDurum = await client.query('SELECT durum FROM aksesuarlar WHERE id = $1', [id]);
+    const eskiDurum = mevcutDurum.rows[0]?.durum;
     
     // Toplamları hesapla
     let toplam_maliyet = 0;
@@ -157,15 +167,25 @@ router.put('/:id', async (req, res) => {
     
     const kar = toplam_satis - toplam_maliyet;
     
+    // Tamamlama tarihi mantığı
+    let tamamlamaTarihiQuery = '';
+    if (durum === 'tamamlandi' && eskiDurum !== 'tamamlandi') {
+      // Yeni tamamlandı, tarihi ayarla
+      tamamlamaTarihiQuery = ', tamamlama_tarihi = CURRENT_TIMESTAMP';
+    } else if (durum !== 'tamamlandi') {
+      // Tamamlandı değilse, tarihi sıfırla
+      tamamlamaTarihiQuery = ', tamamlama_tarihi = NULL';
+    }
+    
     // Ana aksesuar kaydını güncelle
     const result = await client.query(
       `UPDATE aksesuarlar 
        SET ad_soyad = $1, telefon = $2, odeme_sekli = $3, aciklama = $4, 
-           durum = $5, odeme_detaylari = $6, toplam_maliyet = $7, toplam_satis = $8, 
-           kar = $9, odeme_tutari = $10, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $11
+           durum = $5, odeme_detaylari = $6, satis_tarihi = $7, toplam_maliyet = $8, toplam_satis = $9, 
+           kar = $10, odeme_tutari = $11, updated_at = CURRENT_TIMESTAMP${tamamlamaTarihiQuery}
+       WHERE id = $12
        RETURNING *`,
-      [ad_soyad, telefon, odeme_sekli, aciklama, durum || 'beklemede', odeme_detaylari, toplam_maliyet, toplam_satis, kar, toplam_satis, id]
+      [ad_soyad, telefon, odeme_sekli, aciklama, durum || 'beklemede', odeme_detaylari, satis_tarihi, toplam_maliyet, toplam_satis, kar, toplam_satis, id]
     );
     
     if (result.rows.length === 0) {

@@ -43,11 +43,14 @@ import {
 } from '@mui/icons-material';
 import { aksesuarService } from '../services/api';
 import { useCustomTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 
 function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { themeColors } = useCustomTheme();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const isEdit = Boolean(editId);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -60,6 +63,7 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
     aciklama: '',
     durum: 'beklemede',
     odeme_detaylari: '',
+    satis_tarihi: new Date().toISOString().split('T')[0],
   });
 
   const [parcalar, setParcalar] = useState([]);
@@ -78,6 +82,14 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
         try {
           const response = await aksesuarService.getById(editId);
           const data = response.data || response;
+          
+          // Tarih düzeltmesi - sadece YYYY-MM-DD kısmını al, Date objesine çevirme
+          let satisTarihi = new Date().toISOString().split('T')[0];
+          if (data.satis_tarihi) {
+            // String olarak ilk 10 karakteri al (YYYY-MM-DD)
+            satisTarihi = String(data.satis_tarihi).substring(0, 10);
+          }
+          
           setFormData({
             ad_soyad: data.ad_soyad || '',
             telefon: data.telefon || '',
@@ -85,6 +97,7 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
             aciklama: data.aciklama || '',
             durum: data.durum || 'beklemede',
             odeme_detaylari: data.odeme_detaylari || '',
+            satis_tarihi: satisTarihi,
           });
           setParcalar(data.parcalar || []);
         } catch (err) {
@@ -109,6 +122,7 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
         aciklama: '',
         durum: 'beklemede',
         odeme_detaylari: '',
+        satis_tarihi: new Date().toISOString().split('T')[0],
       });
       setParcalar([]);
       setNewParca({
@@ -298,9 +312,9 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
                         Müşteri Bilgileri
                       </Typography> 
                     </Box>
-                    <Box sx={{ display: 'flex', gap: 1, mb: 1, mt: 0.5 }}>
+                    <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
                       <TextField
-                        sx={{ flex: 1, mt: 1.1 }}
+                        sx={{ flex: 1 , mt: 1.1 }}
                         size="small"
                         label="Ad Soyad"
                         name="ad_soyad"
@@ -309,7 +323,7 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
                         required
                       />
                       <TextField
-                        sx={{ flex: 1, mt: 1.1 }}
+                        sx={{ flex: 1 , mt: 1.1 }}
                         size="small"
                         label="Telefon"
                         name="telefon"
@@ -319,7 +333,6 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
                     </Box>
                     <TextField
                       fullWidth
-                      sx={{ mt: 1.1 }}
                       size="small"
                       multiline
                       rows={2}
@@ -345,13 +358,24 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
                     </Box>
                     <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
                       <TextField
-                        sx={{ flex: 1, mt: 1.1 }}
+                        sx={{ flex: 1 , mt: 1.1 }}
                         size="small"
                         label="Ödeme Şekli"
                         name="odeme_sekli"
                         value={formData.odeme_sekli}
                         onChange={handleChange}
                         placeholder="Nakit, Kart, Havale..."
+                        InputLabelProps={{ shrink: true }}
+                      />
+                      <TextField
+                        sx={{ flex: 1 , mt: 1.1}}
+                        size="small"
+                        label="Satış Tarihi"
+                        name="satis_tarihi"
+                        type="date"
+                        value={formData.satis_tarihi}
+                        onChange={handleChange}
+                        InputLabelProps={{ shrink: true }}
                       />
                     </Box>
                     <TextField
@@ -363,7 +387,6 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
                       value={formData.odeme_detaylari}
                       onChange={handleChange}
                       placeholder="Ödeme detayları..."
-                      sx={{ mt: 1.1 }}
                     />
                   </CardContent>
                 </Card>
@@ -405,7 +428,7 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
                         value={newParca.urun_adi}
                         onChange={handleParcaChange}
                         placeholder="Örn: Kask, Eldiven, Rüzgarlık..."
-                        sx={{ mb: 1 }}
+                        sx={{ mb: 1, }}
                       />
                       <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
                         <TextField
@@ -431,10 +454,11 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
                               startAdornment: <InputAdornment position="start">₺</InputAdornment>,
                             }}
                             inputProps={{ min: 0, step: 0.01 }}
+                            InputLabelProps={{ shrink: true }}
                           />
                         )}
                         <TextField
-                          sx={{ flex: 1, mt: 1.1 }}
+                          sx={{ flex: 1 , mt: 1.1 }}
                           size="small"
                           type="number"
                           label="Satış Fiyatı (₺)"
@@ -445,6 +469,7 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
                             startAdornment: <InputAdornment position="start">₺</InputAdornment>,
                           }}
                           inputProps={{ min: 0, step: 0.01 }}
+                          InputLabelProps={{ shrink: true }}
                         />
                       </Box>
                       <Button
@@ -470,12 +495,12 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
                             </Typography>
                           </Paper>
                         ) : (
-                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mt: -1.5 }}>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                             {parcalar.map((parca, index) => (
                               <Paper key={parca.id || index} variant="outlined" sx={{ p: 1.5 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                                   <TextField
-                                    sx={{ flex: 1, mt: 1.1 }}
+                                    sx={{ flex: 1 , mt: 1.1 }}
                                     size="small"
                                     label="Ürün Adı"
                                     value={parca.urun_adi}
@@ -487,7 +512,7 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
                                 </Box>
                                 <Box sx={{ display: 'flex', gap: 1 }}>
                                   <TextField
-                                    sx={{ flex: 1, mt: 1.1 }}
+                                    sx={{ flex: 1 , mt: 1.1 }}
                                     size="small"
                                     type="number"
                                     label="Adet"
@@ -497,7 +522,7 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
                                   />
                                   {isEdit && (
                                     <TextField
-                                      sx={{ flex: 1, mt: 1.1 }}
+                                      sx={{ flex: 1 , mt: 1.1 }}
                                       size="small"
                                       type="number"
                                       label="Maliyet"
@@ -507,7 +532,7 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
                                     />
                                   )}
                                   <TextField
-                                    sx={{ flex: 1, mt: 1.1 }}
+                                    sx={{ flex: 1 , mt: 1.1 }}
                                     size="small"
                                     type="number"
                                     label="Satış"
@@ -615,15 +640,17 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
                         <Grid container spacing={2}>
                           {isEdit ? (
                             <>
-                              <Grid item xs={4}>
-                                <Typography variant="caption" color="text.secondary">
-                                  Toplam Maliyet
-                                </Typography>
-                                <Typography variant="subtitle1" color="error.main" fontWeight={600}>
-                                  {formatCurrency(calculateTotals().toplamMaliyet)}
-                                </Typography>
-                              </Grid>
-                              <Grid item xs={4}>
+                              {isAdmin && (
+                                <Grid item xs={4}>
+                                  <Typography variant="caption" color="text.secondary">
+                                    Toplam Maliyet
+                                  </Typography>
+                                  <Typography variant="subtitle1" color="error.main" fontWeight={600}>
+                                    {formatCurrency(calculateTotals().toplamMaliyet)}
+                                  </Typography>
+                                </Grid>
+                              )}
+                              <Grid item xs={isAdmin ? 4 : 6}>
                                 <Typography variant="caption" color="text.secondary">
                                   Toplam Satış
                                 </Typography>
@@ -631,18 +658,20 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
                                   {formatCurrency(toplamFiyat)}
                                 </Typography>
                               </Grid>
-                              <Grid item xs={4}>
-                                <Typography variant="caption" color="text.secondary">
-                                  Net Kar
-                                </Typography>
-                                <Typography 
-                                  variant="subtitle1" 
-                                  fontWeight={700}
-                                  color={calculateTotals().kar >= 0 ? 'success.main' : 'error.main'}
-                                >
-                                  {formatCurrency(calculateTotals().kar)}
-                                </Typography>
-                              </Grid>
+                              {isAdmin && (
+                                <Grid item xs={4}>
+                                  <Typography variant="caption" color="text.secondary">
+                                    Net Kar
+                                  </Typography>
+                                  <Typography 
+                                    variant="subtitle1" 
+                                    fontWeight={700}
+                                    color={calculateTotals().kar >= 0 ? 'success.main' : 'error.main'}
+                                  >
+                                    {formatCurrency(calculateTotals().kar)}
+                                  </Typography>
+                                </Grid>
+                              )}
                             </>
                           ) : (
                             <Grid item xs={12}>
