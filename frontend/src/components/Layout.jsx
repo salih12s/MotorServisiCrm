@@ -39,12 +39,14 @@ const menuItems = [
     path: '/', 
     icon: <AssignmentIcon />,
     roles: ['admin', 'user', 'personel'],
+    hideForAksesuarOnly: true, // Aksesuar yetkisi olanlardan gizle
   },
   { 
     title: 'Müşteriler', 
     path: '/musteriler', 
     icon: <PeopleIcon />,
     roles: ['admin', 'user', 'personel'],
+    hideForAksesuarOnly: true, // Aksesuar yetkisi olanlardan gizle
   },
   { 
     title: 'Aksesuarlar', 
@@ -52,7 +54,7 @@ const menuItems = [
     icon: <ShoppingBagIcon />,
     roles: ['admin', 'user', 'personel'],
     color: '#630094',
-    requireAksesuarYetkisi: true,
+    showForAksesuarOnly: true, // Sadece aksesuar yetkisi olanlara göster (admin hariç)
   },
   { 
     title: 'Raporlar', 
@@ -91,10 +93,23 @@ function Layout() {
     if (item.roles && !item.roles.includes(user?.role || 'user')) {
       return false;
     }
-    // Aksesuar yetkisi kontrolü - admin her zaman görebilir
-    if (item.requireAksesuarYetkisi && user?.role !== 'admin' && !user?.aksesuar_yetkisi) {
+    
+    // Admin her şeyi görebilir
+    if (user?.role === 'admin') {
+      return true;
+    }
+    
+    // Aksesuar yetkisi olan kullanıcılar SADECE aksesuar sayfasını görebilir
+    if (user?.aksesuar_yetkisi) {
+      // showForAksesuarOnly olanları göster, diğerlerini gizle
+      return item.showForAksesuarOnly === true;
+    }
+    
+    // Aksesuar yetkisi olmayan kullanıcılar aksesuar sayfasını göremez
+    if (item.showForAksesuarOnly && !user?.aksesuar_yetkisi) {
       return false;
     }
+    
     return true;
   });
 

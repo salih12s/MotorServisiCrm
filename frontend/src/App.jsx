@@ -54,6 +54,56 @@ const AdminRoute = ({ children }) => {
   return children;
 };
 
+// Aksesuar Only Route - aksesuar_yetkisi olanlar sadece bu sayfayı görebilir
+const AksesuarRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return null;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Admin her zaman erişebilir
+  if (user.role === 'admin') {
+    return children;
+  }
+
+  // Aksesuar yetkisi olmayanlar erişemez
+  if (!user.aksesuar_yetkisi) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+};
+
+// Normal sayfalar için route - aksesuar_yetkisi olanlar erişemez
+const NormalRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return null;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Admin her zaman erişebilir
+  if (user.role === 'admin') {
+    return children;
+  }
+
+  // Aksesuar yetkisi olanlar normal sayfalara erişemez
+  if (user.aksesuar_yetkisi) {
+    return <Navigate to="/aksesuarlar" replace />;
+  }
+
+  return children;
+};
+
 // Public Route Component
 const PublicRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -89,12 +139,12 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<IsEmirleri />} />
-        <Route path="is-emirleri" element={<IsEmirleri />} />
-        <Route path="is-emirleri/yeni" element={<IsEmriForm />} />
-        <Route path="is-emirleri/:id" element={<IsEmriDetay />} />
-        <Route path="is-emirleri/:id/duzenle" element={<IsEmriForm />} />
-        <Route path="musteriler" element={<Musteriler />} />
+        <Route index element={<NormalRoute><IsEmirleri /></NormalRoute>} />
+        <Route path="is-emirleri" element={<NormalRoute><IsEmirleri /></NormalRoute>} />
+        <Route path="is-emirleri/yeni" element={<NormalRoute><IsEmriForm /></NormalRoute>} />
+        <Route path="is-emirleri/:id" element={<NormalRoute><IsEmriDetay /></NormalRoute>} />
+        <Route path="is-emirleri/:id/duzenle" element={<NormalRoute><IsEmriForm /></NormalRoute>} />
+        <Route path="musteriler" element={<NormalRoute><Musteriler /></NormalRoute>} />
         <Route 
           path="raporlar" 
           element={
@@ -111,7 +161,7 @@ function AppRoutes() {
             </AdminRoute>
           } 
         />
-        <Route path="aksesuarlar" element={<Aksesuarlar />} />
+        <Route path="aksesuarlar" element={<AksesuarRoute><Aksesuarlar /></AksesuarRoute>} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
