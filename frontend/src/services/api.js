@@ -89,7 +89,7 @@ export const raporService = {
   getGunluk: (tarih) => api.get('/raporlar/gunluk', { params: { tarih } }),
   getAralik: (baslangic, bitis) => api.get('/raporlar/aralik', { params: { baslangic, bitis } }),
   getGenel: () => api.get('/raporlar/genel'),
-  getFisKar: (tarih) => api.get('/raporlar/fis-kar', { params: { tarih } }),
+  getFisKar: (baslangic, bitis) => api.get('/raporlar/fis-kar', { params: { baslangic, bitis } }),
   getIsEmriDetay: (id) => api.get(`/raporlar/is-emri/${id}`),
   // Aksesuar raporları
   getAksesuarAralik: (baslangic, bitis) => api.get('/raporlar/aksesuar/aralik', { params: { baslangic, bitis } }),

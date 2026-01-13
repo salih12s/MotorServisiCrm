@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useMemo, useCallback } from 'react';
 import { createTheme } from '@mui/material/styles';
 
 // Varsayılan Turkuaz tema
@@ -36,10 +36,10 @@ export const CustomThemeProvider = ({ children }) => {
 
   const themeColors = currentTheme === 'aksesuar' ? aksesuarTheme : defaultTheme;
 
-  const setAksesuarTheme = () => setCurrentTheme('aksesuar');
-  const setDefaultTheme = () => setCurrentTheme('default');
+  const setAksesuarTheme = useCallback(() => setCurrentTheme('aksesuar'), []);
+  const setDefaultTheme = useCallback(() => setCurrentTheme('default'), []);
 
-  const theme = createTheme({
+  const theme = useMemo(() => createTheme({
     palette: {
       mode: 'light',
       primary: {
@@ -142,7 +142,7 @@ export const CustomThemeProvider = ({ children }) => {
         },
       },
     },
-  });
+  }), [themeColors]);
 
   return (
     <ThemeContext.Provider value={{ 

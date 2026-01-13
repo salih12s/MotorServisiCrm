@@ -237,12 +237,13 @@ router.get('/genel', async (req, res) => {
   }
 });
 
-// Fiş bazlı kar raporu
+// Fiş bazlı kar raporu (tarih aralığı destekli)
 router.get('/fis-kar', async (req, res) => {
   try {
-    const { tarih } = req.query;
+    const { baslangic, bitis, tarih } = req.query;
     
-    let query = `
+    // İş Emirleri
+    let isEmriQuery = `
       SELECT 
         ie.id,
         ie.fis_no,
@@ -253,23 +254,65 @@ router.get('/fis-kar', async (req, res) => {
         ie.toplam_maliyet,
         ie.kar,
         ie.created_at,
-        ie.durum
+        ie.durum,
+        'is_emri' as kaynak_tip
       FROM is_emirleri ie
+    `;
+    
+    // Aksesuar Satışları
+    let aksesuarQuery = `
+      SELECT 
+        a.id,
+        CONCAT('AKS-', a.id) as fis_no,
+        a.ad_soyad as musteri_ad_soyad,
+        a.odeme_sekli as marka,
+        '' as model_tip,
+        a.toplam_satis as gercek_toplam_ucret,
+        a.toplam_maliyet,
+        a.kar,
+        a.satis_tarihi as created_at,
+        'tamamlandi' as durum,
+        'aksesuar' as kaynak_tip
+      FROM aksesuarlar a
     `;
     
     const params = [];
     
-    if (tarih) {
+    if (baslangic && bitis) {
+      params.push(baslangic, bitis);
+      isEmriQuery += ` WHERE DATE(ie.created_at) BETWEEN $1 AND $2`;
+      aksesuarQuery += ` WHERE DATE(a.satis_tarihi) BETWEEN $1 AND $2`;
+    } else if (tarih) {
       params.push(tarih);
-      query += ` WHERE DATE(ie.created_at) = $1`;
+      isEmriQuery += ` WHERE DATE(ie.created_at) = $1`;
+      aksesuarQuery += ` WHERE DATE(a.satis_tarihi) = $1`;
     }
     
-    query += ' ORDER BY ie.created_at DESC';
+    const isEmriResult = await pool.query(isEmriQuery + ' ORDER BY ie.created_at DESC', params);
+    const aksesuarResult = await pool.query(aksesuarQuery + ' ORDER BY a.satis_tarihi DESC', params);
     
-    const result = await pool.query(query, params);
+    // Birleştir ve tarihe göre sırala
+    const tumKayitlar = [...isEmriResult.rows, ...aksesuarResult.rows].sort((a, b) => 
+      new Date(b.created_at) - new Date(a.created_at)
+    );
     
     // Toplam hesapla
-    const toplam = result.rows.reduce((acc, row) => {
+    const toplam = tumKayitlar.reduce((acc, row) => {
+      acc.gelir += parseFloat(row.gercek_toplam_ucret) || 0;
+      acc.maliyet += parseFloat(row.toplam_maliyet) || 0;
+      acc.kar += parseFloat(row.kar) || 0;
+      return acc;
+    }, { gelir: 0, maliyet: 0, kar: 0 });
+    
+    // Ayrı toplamlar
+    const isEmriToplam = isEmriResult.rows.reduce((acc, row) => {
+      acc.gelir += parseFloat(row.gercek_toplam_ucret) || 0;
+      acc.maliyet += parseFloat(row.toplam_maliyet) || 0;
+      acc.kar += parseFloat(row.kar) || 0;
+      return acc;
+    }, { gelir: 0, maliyet: 0, kar: 0 });
+    
+    const aksesuarToplam = aksesuarResult.rows.reduce((acc, row) => {
       acc.gelir += parseFloat(row.gercek_toplam_ucret) || 0;
       acc.maliyet += parseFloat(row.toplam_maliyet) || 0;
       acc.kar += parseFloat(row.kar) || 0;
@@ -277,8 +320,12 @@ router.get('/fis-kar', async (req, res) => {
     }, { gelir: 0, maliyet: 0, kar: 0 });
     
     res.json({
-      fisler: result.rows,
-      toplam
+      fisler: tumKayitlar,
+      is_emirleri: isEmriResult.rows,
+      aksesuarlar: aksesuarResult.rows,
+      toplam,
+      is_emri_toplam: isEmriToplam,
+      aksesuar_toplam: aksesuarToplam
     });
   } catch (error) {
     console.error('Fiş kar raporu hatası:', error);

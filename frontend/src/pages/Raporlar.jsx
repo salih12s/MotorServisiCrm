@@ -43,8 +43,12 @@ import {
   Visibility as VisibilityIcon,
   Person as PersonIcon,
   Close as CloseIcon,
+  ArrowUpward as ArrowUpwardIcon,
+  ArrowDownward as ArrowDownwardIcon,
+  ShoppingBag as ShoppingBagIcon,
 } from '@mui/icons-material';
 import { raporService, authService } from '../services/api';
+import { useCustomTheme } from '../context/ThemeContext';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
@@ -95,6 +99,7 @@ const StatCard = ({ title, value, icon, color, variant = 'default', isMobile = f
 function Raporlar() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const { setAksesuarTheme, setDefaultTheme } = useCustomTheme();
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   
@@ -108,7 +113,8 @@ function Raporlar() {
   const [selectedKullanici, setSelectedKullanici] = useState('');
   
   // Fiş Kar State
-  const [fisKarTarih, setFisKarTarih] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [fisKarBaslangic, setFisKarBaslangic] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [fisKarBitis, setFisKarBitis] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [fisKarRapor, setFisKarRapor] = useState(null);
 
   // Detay Modal State
@@ -121,6 +127,14 @@ function Raporlar() {
   const [aksesuarRapor, setAksesuarRapor] = useState(null);
   const [selectedAksesuar, setSelectedAksesuar] = useState(null);
   const [aksesuarDetailModalOpen, setAksesuarDetailModalOpen] = useState(false);
+
+  // Sıralama State'leri
+  const [isEmriSortField, setIsEmriSortField] = useState('created_at');
+  const [isEmriSortDirection, setIsEmriSortDirection] = useState('desc');
+  const [aksesuarSortField, setAksesuarSortField] = useState('satis_tarihi');
+  const [aksesuarSortDirection, setAksesuarSortDirection] = useState('desc');
+  const [fisKarSortField, setFisKarSortField] = useState('created_at');
+  const [fisKarSortDirection, setFisKarSortDirection] = useState('desc');
 
   // Kullanıcıları yükle
   useEffect(() => {
@@ -135,6 +149,24 @@ function Raporlar() {
     loadKullanicilar();
   }, []);
 
+  // Sekme değiştiğinde tema değişikliği
+  useEffect(() => {
+    if (activeTab === 1) {
+      // Aksesuar Satışları sekmesi - mor tema
+      setAksesuarTheme();
+    } else {
+      // Diğer sekmeler - varsayılan tema
+      setDefaultTheme();
+    }
+  }, [activeTab, setAksesuarTheme, setDefaultTheme]);
+
+  // Sayfa kapanınca varsayılan temaya dön
+  useEffect(() => {
+    return () => {
+      setDefaultTheme();
+    };
+  }, [setDefaultTheme]);
+
   useEffect(() => {
     if (activeTab === 0) {
       loadGunlukRapor();
@@ -144,7 +176,7 @@ function Raporlar() {
       loadFisKarRapor();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, selectedDate, endDate, fisKarTarih, aksesuarSelectedDate, aksesuarEndDate]);
+  }, [activeTab, selectedDate, endDate, fisKarBaslangic, fisKarBitis, aksesuarSelectedDate, aksesuarEndDate]);
 
   const loadGunlukRapor = async () => {
     try {
@@ -161,7 +193,7 @@ function Raporlar() {
   const loadFisKarRapor = async () => {
     try {
       setLoading(true);
-      const response = await raporService.getFisKar(fisKarTarih);
+      const response = await raporService.getFisKar(fisKarBaslangic, fisKarBitis);
       setFisKarRapor(response.data);
     } catch (error) {
       console.error('Fiş kar rapor hatası:', error);
@@ -216,6 +248,80 @@ function Raporlar() {
     return isEmri.olusturan_kullanici_adi === selectedKullanici || 
            isEmri.olusturan_ad_soyad === selectedKullanici;
   }) || [];
+
+  // Sıralama fonksiyonu
+  const sortData = (data, field, direction) => {
+    return [...data].sort((a, b) => {
+      let aVal = a[field];
+      let bVal = b[field];
+      
+      // Tarih alanları için
+      if (field === 'created_at' || field === 'satis_tarihi' || field === 'tarih') {
+        aVal = new Date(aVal);
+        bVal = new Date(bVal);
+      }
+      // Sayısal alanlar için
+      else if (field === 'gercek_toplam_ucret' || field === 'toplam_satis' || field === 'kar' || field === 'toplam_maliyet') {
+        aVal = parseFloat(aVal) || 0;
+        bVal = parseFloat(bVal) || 0;
+      }
+      
+      if (direction === 'asc') {
+        return aVal > bVal ? 1 : -1;
+      } else {
+        return aVal < bVal ? 1 : -1;
+      }
+    });
+  };
+
+  // Sıralanmış iş emirleri
+  const sortedIsEmirleri = sortData(filteredIsEmirleri, isEmriSortField, isEmriSortDirection);
+
+  // İş emri sıralama toggle
+  const toggleIsEmriSort = (field) => {
+    if (isEmriSortField === field) {
+      setIsEmriSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setIsEmriSortField(field);
+      setIsEmriSortDirection('desc');
+    }
+  };
+
+  // Aksesuar sıralama toggle
+  const toggleAksesuarSort = (field) => {
+    if (aksesuarSortField === field) {
+      setAksesuarSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setAksesuarSortField(field);
+      setAksesuarSortDirection('desc');
+    }
+  };
+
+  // Fiş kar sıralama toggle
+  const toggleFisKarSort = (field) => {
+    if (fisKarSortField === field) {
+      setFisKarSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setFisKarSortField(field);
+      setFisKarSortDirection('desc');
+    }
+  };
+
+  // Sıralanmış aksesuar verileri
+  const sortedAksesuarlar = aksesuarRapor?.detayli_aksesuarlar 
+    ? sortData(aksesuarRapor.detayli_aksesuarlar, aksesuarSortField, aksesuarSortDirection) 
+    : [];
+
+  // Sıralanmış fiş kar verileri
+  const sortedFisler = fisKarRapor?.fisler 
+    ? sortData(fisKarRapor.fisler, fisKarSortField, fisKarSortDirection) 
+    : [];
+
+  // Sıralama ikonu
+  const SortIcon = ({ field, currentField, direction }) => {
+    if (field !== currentField) return null;
+    return direction === 'asc' ? <ArrowUpwardIcon sx={{ fontSize: 16, ml: 0.5 }} /> : <ArrowDownwardIcon sx={{ fontSize: 16, ml: 0.5 }} />;
+  };
 
   // Filtrelenmiş verilere göre özet hesaplama
   const filteredOzet = {
@@ -585,19 +691,45 @@ function Raporlar() {
                   <TableHead>
                     <TableRow sx={{ bgcolor: '#f5f5f5' }}>
                       <TableCell sx={{ fontWeight: 700 }}>Fiş No</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Tarih</TableCell>
+                      <TableCell 
+                        sx={{ fontWeight: 700, cursor: 'pointer', userSelect: 'none' }}
+                        onClick={() => toggleIsEmriSort('created_at')}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          Tarih
+                          <SortIcon field="created_at" currentField={isEmriSortField} direction={isEmriSortDirection} />
+                        </Box>
+                      </TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Müşteri</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Araç</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Arıza/Şikayet</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Oluşturan</TableCell>
                       <TableCell align="center" sx={{ fontWeight: 700 }}>Durum</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 700 }}>Gelir</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 700 }}>Kar</TableCell>
+                      <TableCell 
+                        align="right" 
+                        sx={{ fontWeight: 700, cursor: 'pointer', userSelect: 'none' }}
+                        onClick={() => toggleIsEmriSort('gercek_toplam_ucret')}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                          Gelir
+                          <SortIcon field="gercek_toplam_ucret" currentField={isEmriSortField} direction={isEmriSortDirection} />
+                        </Box>
+                      </TableCell>
+                      <TableCell 
+                        align="right" 
+                        sx={{ fontWeight: 700, cursor: 'pointer', userSelect: 'none' }}
+                        onClick={() => toggleIsEmriSort('kar')}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                          Kar
+                          <SortIcon field="kar" currentField={isEmriSortField} direction={isEmriSortDirection} />
+                        </Box>
+                      </TableCell>
                       <TableCell align="center" sx={{ fontWeight: 700 }}>İşlem</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {(!filteredIsEmirleri || filteredIsEmirleri.length === 0) ? (
+                    {(!sortedIsEmirleri || sortedIsEmirleri.length === 0) ? (
                       <TableRow>
                         <TableCell colSpan={10} align="center" sx={{ py: 6 }}>
                           <ReceiptIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
@@ -605,7 +737,7 @@ function Raporlar() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredIsEmirleri.map((isEmri) => (
+                      sortedIsEmirleri.map((isEmri) => (
                         <TableRow key={isEmri.id} hover>
                           <TableCell>
                             <Typography fontWeight={700} color="primary.main">{isEmri.fis_no}</Typography>
@@ -783,9 +915,13 @@ function Raporlar() {
                 label={aksesuarSelectedDate && aksesuarEndDate ? 
                   `${format(new Date(aksesuarSelectedDate), 'd MMM yyyy', { locale: tr })} - ${format(new Date(aksesuarEndDate), 'd MMM yyyy', { locale: tr })}` 
                   : 'Tarih Seçin'}
-                color="primary"
+                sx={{ 
+                  width: { xs: '100%', sm: 'auto' },
+                  bgcolor: '#f3e5f5',
+                  color: 'primary.main',
+                  borderColor: 'primary.main',
+                }}
                 variant="outlined"
-                sx={{ width: { xs: '100%', sm: 'auto' } }}
               />
             </Grid>
           </Grid>
@@ -794,7 +930,7 @@ function Raporlar() {
 
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}>
-          <CircularProgress />
+          <CircularProgress color="primary" />
         </Box>
       ) : aksesuarRapor ? (
         <>
@@ -805,7 +941,7 @@ function Raporlar() {
                 title="Satış Sayısı"
                 value={aksesuarRapor.genel_ozet?.toplam_satis_sayisi || 0}
                 icon={<AssignmentIcon />}
-                color="#04A7B8"
+                color={theme.palette.primary.main}
                 isMobile={isMobile}
               />
             </Grid>
@@ -832,7 +968,7 @@ function Raporlar() {
                 title="Net Kar"
                 value={formatCurrency(aksesuarRapor.genel_ozet?.toplam_kar || 0)}
                 icon={<TrendingUpIcon />}
-                color="#04A7B8"
+                color={theme.palette.primary.main}
                 variant="highlight"
                 isMobile={isMobile}
               />
@@ -842,20 +978,21 @@ function Raporlar() {
           {/* Günlük Veriler Tablosu */}
           <Card sx={{ mb: 3 }}>
             <CardContent sx={{ p: 0 }}>
-              <Box sx={{ p: isMobile ? 1.5 : 2.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+              <Box sx={{ p: isMobile ? 1.5 : 2.5, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 1 }}>
+                <ShoppingBagIcon color="primary" />
                 <Typography variant="h6" fontWeight={700} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>Günlük Özet</Typography>
               </Box>
               
               {(aksesuarRapor.gunluk_veriler || []).length === 0 ? (
                 <Box sx={{ textAlign: 'center', py: 6 }}>
-                  <ReceiptIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
+                  <ShoppingBagIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
                   <Typography color="text.secondary">Bu tarih aralığında aksesuar satışı bulunmuyor</Typography>
                 </Box>
               ) : isMobile ? (
                 /* Mobile Card View */
                 <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                   {(aksesuarRapor.gunluk_veriler || []).map((item, index) => (
-                    <Card key={index} variant="outlined" sx={{ bgcolor: '#fafafa' }}>
+                    <Card key={index} variant="outlined" sx={{ bgcolor: '#faf5fc' }}>
                       <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                           <Typography variant="subtitle2" fontWeight={700}>
@@ -899,12 +1036,12 @@ function Raporlar() {
                 <TableContainer sx={{ overflowX: 'auto' }}>
                   <Table sx={{ minWidth: { xs: 600, sm: '100%' } }}>
                     <TableHead>
-                      <TableRow>
-                        <TableCell>Tarih</TableCell>
-                        <TableCell align="center">Satış Sayısı</TableCell>
-                        <TableCell align="right">Satış Tutarı</TableCell>
-                        <TableCell align="right">Maliyet</TableCell>
-                        <TableCell align="right">Kar</TableCell>
+                      <TableRow sx={{ bgcolor: '#f3e5f5' }}>
+                        <TableCell sx={{ fontWeight: 700 }}>Tarih</TableCell>
+                        <TableCell align="center" sx={{ fontWeight: 700 }}>Satış Sayısı</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700 }}>Satış Tutarı</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700 }}>Maliyet</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700 }}>Kar</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -949,26 +1086,29 @@ function Raporlar() {
           <Card>
             <CardContent sx={{ p: 0 }}>
               <Box sx={{ p: isMobile ? 1.5 : 2.5, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="h6" fontWeight={700} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
-                  Detaylı Satışlar
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <ShoppingBagIcon color="primary" />
+                  <Typography variant="h6" fontWeight={700} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                    Detaylı Satışlar
+                  </Typography>
+                </Box>
                 <Chip 
                   label={`${(aksesuarRapor.detayli_aksesuarlar || []).length} satış`} 
                   size="small" 
-                  color="primary" 
+                  color="primary"
                 />
               </Box>
               
               {(aksesuarRapor.detayli_aksesuarlar || []).length === 0 ? (
                 <Box sx={{ textAlign: 'center', py: 6 }}>
-                  <ReceiptIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
+                  <ShoppingBagIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
                   <Typography color="text.secondary">Bu tarih aralığında aksesuar satışı bulunmuyor</Typography>
                 </Box>
               ) : isMobile ? (
                 /* Mobile Card View */
                 <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                   {(aksesuarRapor.detayli_aksesuarlar || []).map((aksesuar, index) => (
-                    <Card key={aksesuar.id || index} variant="outlined" sx={{ bgcolor: '#fafafa' }}>
+                    <Card key={aksesuar.id || index} variant="outlined" sx={{ bgcolor: '#faf5fc' }}>
                       <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                           <Box>
@@ -979,7 +1119,7 @@ function Raporlar() {
                             <IconButton 
                               size="small" 
                               onClick={() => handleViewAksesuarDetail(aksesuar)}
-                              sx={{ color: '#04A7B8' }}
+                              color="primary"
                             >
                               <VisibilityIcon fontSize="small" />
                             </IconButton>
@@ -1018,18 +1158,18 @@ function Raporlar() {
                 <TableContainer sx={{ overflowX: 'auto' }}>
                   <Table sx={{ minWidth: { xs: 600, sm: '100%' } }}>
                     <TableHead>
-                      <TableRow>
-                        <TableCell>Müşteri</TableCell>
-                        <TableCell>Telefon</TableCell>
-                        <TableCell>Ödeme Şekli</TableCell>
-                        <TableCell align="right">Satış</TableCell>
-                        <TableCell align="right">Maliyet</TableCell>
-                        <TableCell align="right">Kar</TableCell>
-                        <TableCell align="center">İşlem</TableCell>
+                      <TableRow sx={{ bgcolor: '#f3e5f5' }}>
+                        <TableCell sx={{ fontWeight: 700 }}>Müşteri</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Telefon</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Ödeme Şekli</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700 }}>Satış</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700 }}>Maliyet</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700 }}>Kar</TableCell>
+                        <TableCell align="center" sx={{ fontWeight: 700 }}>İşlem</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {(aksesuarRapor.detayli_aksesuarlar || []).map((aksesuar, index) => (
+                      {sortedAksesuarlar.map((aksesuar, index) => (
                         <TableRow key={aksesuar.id || index} hover>
                           <TableCell>
                             <Typography fontWeight={600}>{aksesuar.ad_soyad}</Typography>
@@ -1059,7 +1199,7 @@ function Raporlar() {
                               <IconButton 
                                 size="small" 
                                 onClick={() => handleViewAksesuarDetail(aksesuar)}
-                                sx={{ color: '#04A7B8' }}
+                                color="primary"
                               >
                                 <VisibilityIcon fontSize="small" />
                               </IconButton>
@@ -1080,23 +1220,51 @@ function Raporlar() {
 
   const renderFisKarRapor = () => (
     <Box>
-      {/* Tarih Seçici */}
+      {/* Tarih Aralığı Seçici */}
       <Card sx={{ mb: 3 }}>
         <CardContent sx={{ py: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-            <ReceiptIcon color="primary" />
-            <TextField
-              type="date"
-              label="Tarih Seçin"
-              value={fisKarTarih}
-              onChange={(e) => setFisKarTarih(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-              size="small"
-            />
-            <Typography variant="body2" color="text.secondary">
-              Her fişin kar/zarar durumunu görüntüleyin
-            </Typography>
-          </Box>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} sm="auto">
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <ReceiptIcon color="primary" />
+                <Typography variant="body2" fontWeight={600} sx={{ display: { xs: 'none', sm: 'block' } }}>
+                  Tarih Aralığı
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={5} md={2}>
+              <TextField
+                type="date"
+                label="Başlangıç Tarihi"
+                value={fisKarBaslangic}
+                onChange={(e) => setFisKarBaslangic(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                size="small"
+                fullWidth
+              />
+            </Grid>
+            <Grid item xs={12} sm={5} md={2}>
+              <TextField
+                type="date"
+                label="Bitiş Tarihi"
+                value={fisKarBitis}
+                onChange={(e) => setFisKarBitis(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                size="small"
+                fullWidth
+              />
+            </Grid>
+            <Grid item xs={12} sm="auto">
+              <Chip 
+                label={fisKarBaslangic && fisKarBitis ? 
+                  `${format(new Date(fisKarBaslangic), 'd MMM yyyy', { locale: tr })} - ${format(new Date(fisKarBitis), 'd MMM yyyy', { locale: tr })}` 
+                  : 'Tarih Seçin'}
+                color="primary"
+                variant="outlined"
+                sx={{ width: { xs: '100%', sm: 'auto' } }}
+              />
+            </Grid>
+          </Grid>
         </CardContent>
       </Card>
 
@@ -1135,35 +1303,79 @@ function Raporlar() {
             </Grid>
           </Grid>
 
-          {/* Fiş Tablosu */}
-          <Card>
+          {/* İş Emirleri Tablosu */}
+          <Card sx={{ mb: 3 }}>
             <CardContent sx={{ p: 0 }}>
-              <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider' }}>
-                <Typography variant="h6" fontWeight={700} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>Fiş Kar Analizi</Typography>
+              <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 1 }}>
+                <DirectionsCarIcon color="primary" />
+                <Typography variant="h6" fontWeight={700} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                  İş Emirleri
+                </Typography>
+                <Chip 
+                  label={`${fisKarRapor.is_emirleri?.length || 0} kayıt`} 
+                  size="small" 
+                  color="primary"
+                  sx={{ ml: 'auto' }} 
+                />
+                {fisKarRapor.is_emri_toplam && (
+                  <Chip 
+                    label={`Kar: ${formatCurrency(fisKarRapor.is_emri_toplam.kar)}`} 
+                    size="small" 
+                    sx={{ bgcolor: '#e8f5e9', color: '#2e7d32' }}
+                  />
+                )}
               </Box>
               <TableContainer sx={{ overflowX: 'auto' }}>
                 <Table sx={{ minWidth: { xs: 700, sm: '100%' } }}>
                   <TableHead>
                     <TableRow>
-                      <TableCell>Fiş No</TableCell>
-                      <TableCell>Müşteri</TableCell>
-                      <TableCell>Araç</TableCell>
-                      <TableCell align="center">Durum</TableCell>
-                      <TableCell align="right">Gelir</TableCell>
-                      <TableCell align="right">Maliyet</TableCell>
-                      <TableCell align="right">Kar</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Fiş No</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Müşteri</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Araç</TableCell>
+                      <TableCell 
+                        align="center" 
+                        sx={{ fontWeight: 700, cursor: 'pointer', userSelect: 'none' }}
+                        onClick={() => toggleFisKarSort('created_at')}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          Tarih
+                          <SortIcon field="created_at" currentField={fisKarSortField} direction={fisKarSortDirection} />
+                        </Box>
+                      </TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 700 }}>Durum</TableCell>
+                      <TableCell 
+                        align="right" 
+                        sx={{ fontWeight: 700, cursor: 'pointer', userSelect: 'none' }}
+                        onClick={() => toggleFisKarSort('gercek_toplam_ucret')}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                          Gelir
+                          <SortIcon field="gercek_toplam_ucret" currentField={fisKarSortField} direction={fisKarSortDirection} />
+                        </Box>
+                      </TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700 }}>Maliyet</TableCell>
+                      <TableCell 
+                        align="right" 
+                        sx={{ fontWeight: 700, cursor: 'pointer', userSelect: 'none' }}
+                        onClick={() => toggleFisKarSort('kar')}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                          Kar
+                          <SortIcon field="kar" currentField={fisKarSortField} direction={fisKarSortDirection} />
+                        </Box>
+                      </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {fisKarRapor.fisler.length === 0 ? (
+                    {(fisKarRapor.is_emirleri || []).length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
-                          <ReceiptIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
-                          <Typography color="text.secondary">Bu tarihte fiş bulunmuyor</Typography>
+                        <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                          <ReceiptIcon sx={{ fontSize: 40, color: 'text.disabled', mb: 1 }} />
+                          <Typography color="text.secondary">Bu tarih aralığında iş emri bulunmuyor</Typography>
                         </TableCell>
                       </TableRow>
                     ) : (
-                      fisKarRapor.fisler.map((f) => (
+                      sortData(fisKarRapor.is_emirleri, fisKarSortField, fisKarSortDirection).map((f) => (
                         <TableRow key={f.id} hover>
                           <TableCell>
                             <Typography fontWeight={700} color="primary.main">{f.fis_no}</Typography>
@@ -1171,9 +1383,14 @@ function Raporlar() {
                           <TableCell>{f.musteri_ad_soyad}</TableCell>
                           <TableCell>{f.marka} {f.model_tip}</TableCell>
                           <TableCell align="center">
+                            <Typography variant="body2">
+                              {format(new Date(f.created_at), 'dd.MM.yyyy', { locale: tr })}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="center">
                             <Chip
                               size="small"
-                              label={f.durum === 'acik' ? 'Açık' : 'Kapalı'}
+                              label={f.durum === 'acik' ? 'Açık' : 'Tamamlandı'}
                               sx={{
                                 bgcolor: f.durum === 'acik' ? '#fff3e0' : '#e8f5e9',
                                 color: f.durum === 'acik' ? '#e65100' : '#2e7d32',
@@ -1199,6 +1416,91 @@ function Raporlar() {
                               }}
                             >
                               {formatCurrency(f.kar)}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </CardContent>
+          </Card>
+
+          {/* Aksesuar Satışları Tablosu */}
+          <Card>
+            <CardContent sx={{ p: 0 }}>
+              <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 1 }}>
+                <ShoppingBagIcon color="primary" />
+                <Typography variant="h6" fontWeight={700} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                  Aksesuar Satışları
+                </Typography>
+                <Chip 
+                  label={`${fisKarRapor.aksesuarlar?.length || 0} kayıt`} 
+                  size="small" 
+                  color="primary"
+                  sx={{ ml: 'auto' }}
+                />
+                {fisKarRapor.aksesuar_toplam && (
+                  <Chip 
+                    label={`Kar: ${formatCurrency(fisKarRapor.aksesuar_toplam.kar)}`} 
+                    size="small" 
+                    sx={{ bgcolor: '#e8f5e9', color: '#2e7d32' }}
+                  />
+                )}
+              </Box>
+              <TableContainer sx={{ overflowX: 'auto' }}>
+                <Table sx={{ minWidth: { xs: 600, sm: '100%' } }}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 700 }}>Fiş No</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Müşteri</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Ödeme Şekli</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 700 }}>Tarih</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700 }}>Satış</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700 }}>Maliyet</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700 }}>Kar</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {(fisKarRapor.aksesuarlar || []).length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                          <ShoppingBagIcon sx={{ fontSize: 40, color: 'text.disabled', mb: 1 }} />
+                          <Typography color="text.secondary">Bu tarih aralığında aksesuar satışı bulunmuyor</Typography>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      (fisKarRapor.aksesuarlar || []).map((a) => (
+                        <TableRow key={a.id} hover>
+                          <TableCell>
+                            <Typography fontWeight={700} color="primary.main">{a.fis_no}</Typography>
+                          </TableCell>
+                          <TableCell>{a.musteri_ad_soyad}</TableCell>
+                          <TableCell>{a.marka || '-'}</TableCell>
+                          <TableCell align="center">
+                            <Typography variant="body2">
+                              {format(new Date(a.created_at), 'dd.MM.yyyy', { locale: tr })}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="right">
+                            <Typography sx={{ color: '#2e7d32' }}>
+                              {formatCurrency(a.gercek_toplam_ucret)}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="right">
+                            <Typography sx={{ color: '#c62828' }}>
+                              {formatCurrency(a.toplam_maliyet)}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="right">
+                            <Typography
+                              fontWeight={700}
+                              sx={{ 
+                                color: parseFloat(a.kar) >= 0 ? '#2e7d32' : '#c62828'
+                              }}
+                            >
+                              {formatCurrency(a.kar)}
                             </Typography>
                           </TableCell>
                         </TableRow>
@@ -1245,7 +1547,7 @@ function Raporlar() {
           />
           <Tab 
             label="Aksesuar Satışları" 
-            icon={<ReceiptIcon />} 
+            icon={<ShoppingBagIcon />} 
             iconPosition="start"
           />
           <Tab 
