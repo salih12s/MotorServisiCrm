@@ -98,6 +98,7 @@ router.get('/aralik', async (req, res) => {
         ie.ariza_sikayetler,
         ie.aciklama,
         ie.durum,
+        ie.odeme_detaylari,
         ie.gercek_toplam_ucret,
         ie.toplam_maliyet,
         ie.kar,

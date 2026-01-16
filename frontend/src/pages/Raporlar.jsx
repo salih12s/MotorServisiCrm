@@ -705,6 +705,7 @@ function Raporlar() {
                       <TableCell sx={{ fontWeight: 700 }}>Arıza/Şikayet</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Oluşturan</TableCell>
                       <TableCell align="center" sx={{ fontWeight: 700 }}>Durum</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Ödeme Detayları</TableCell>
                       <TableCell 
                         align="right" 
                         sx={{ fontWeight: 700, cursor: 'pointer', userSelect: 'none' }}
@@ -731,7 +732,7 @@ function Raporlar() {
                   <TableBody>
                     {(!sortedIsEmirleri || sortedIsEmirleri.length === 0) ? (
                       <TableRow>
-                        <TableCell colSpan={10} align="center" sx={{ py: 6 }}>
+                        <TableCell colSpan={11} align="center" sx={{ py: 6 }}>
                           <ReceiptIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
                           <Typography color="text.secondary">{selectedKullanici ? 'Bu kişiye ait iş emri bulunmuyor' : 'Bu tarih aralığında iş emri bulunmuyor'}</Typography>
                         </TableCell>
@@ -793,6 +794,11 @@ function Raporlar() {
                                 fontWeight: 600,
                               }}
                             />
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" sx={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {isEmri.odeme_detaylari || '-'}
+                            </Typography>
                           </TableCell>
                           <TableCell align="right">
                             <Typography fontWeight={600} sx={{ color: '#2e7d32' }}>
