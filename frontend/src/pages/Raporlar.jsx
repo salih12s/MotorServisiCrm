@@ -111,6 +111,7 @@ function Raporlar() {
   // Oluşturan Kişi Filtresi
   const [kullanicilar, setKullanicilar] = useState([]);
   const [selectedKullanici, setSelectedKullanici] = useState('');
+  const [selectedOdemeDetay, setSelectedOdemeDetay] = useState('');
   
   // Fiş Kar State
   const [fisKarBaslangic, setFisKarBaslangic] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -242,11 +243,20 @@ function Raporlar() {
     }).format(value || 0);
   };
 
-  // Oluşturan kişiye göre filtrelenmiş iş emirleri
+  // Oluşturan kişiye ve ödeme detayına göre filtrelenmiş iş emirleri
   const filteredIsEmirleri = gunlukRapor?.detayli_is_emirleri?.filter(isEmri => {
-    if (!selectedKullanici) return true;
-    return isEmri.olusturan_kullanici_adi === selectedKullanici || 
-           isEmri.olusturan_ad_soyad === selectedKullanici;
+    // Oluşturan kişi filtresi
+    if (selectedKullanici) {
+      const kullaniciMatch = isEmri.olusturan_kullanici_adi === selectedKullanici || 
+             isEmri.olusturan_ad_soyad === selectedKullanici;
+      if (!kullaniciMatch) return false;
+    }
+    // Ödeme detayı filtresi
+    if (selectedOdemeDetay) {
+      const odemeMatch = isEmri.odeme_detaylari && isEmri.odeme_detaylari.toLowerCase().includes(selectedOdemeDetay.toLowerCase());
+      if (!odemeMatch) return false;
+    }
+    return true;
   }) || [];
 
   // Sıralama fonksiyonu
@@ -381,6 +391,21 @@ function Raporlar() {
                       {kullanici.ad_soyad}
                     </MenuItem>
                   ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={5} md={2} width={180}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Ödeme Detayı</InputLabel>
+                <Select
+                  value={selectedOdemeDetay}
+                  label="Ödeme Detayı"
+                  onChange={(e) => setSelectedOdemeDetay(e.target.value)}
+                >
+                  <MenuItem value="">Tümü</MenuItem>
+                  <MenuItem value="nakit">Nakit</MenuItem>
+                  <MenuItem value="kredi">Kredi Kartı</MenuItem>
+                  <MenuItem value="havale">Havale/EFT</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -796,9 +821,11 @@ function Raporlar() {
                             />
                           </TableCell>
                           <TableCell>
-                            <Typography variant="body2" sx={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {isEmri.odeme_detaylari || '-'}
-                            </Typography>
+                            <Tooltip title={isEmri.odeme_detaylari || '-'} arrow placement="top">
+                              <Typography variant="body2" sx={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer' }}>
+                                {isEmri.odeme_detaylari || '-'}
+                              </Typography>
+                            </Tooltip>
                           </TableCell>
                           <TableCell align="right">
                             <Typography fontWeight={600} sx={{ color: '#2e7d32' }}>
@@ -1713,7 +1740,7 @@ function Raporlar() {
                           {selectedWorkOrder.parcalar.map((parca, index) => (
                             <TableRow key={index} hover>
                               <TableCell>
-                                <Typography fontWeight={600}>{parca.parca_adi}</Typography>
+                                <Typography fontWeight={600}>{parca.takilan_parca || parca.parca_adi || '-'}</Typography>
                               </TableCell>
                               <TableCell align="center">
                                 <Chip size="small" label={parca.adet} />
