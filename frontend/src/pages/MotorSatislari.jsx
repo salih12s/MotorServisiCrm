@@ -178,17 +178,23 @@ const MotorSatislari = () => {
       const iskontoOrani = parseFloat(satisForm.iskonto || 0);
       
       // Hesaplamalar
-      // İskonto hesabı: Alış fiyatından belirlenen % düşülüyor
+      // İskonto hesabı: Doğrudan alış fiyatı üzerinden hesaplanır
       const iskontoTutari = alisFiyati * (iskontoOrani / 100);
       const iskontoluAlisFiyati = alisFiyati - iskontoTutari;
       
-      // KDV ve ÖTV fatura fiyatı üzerinden hesaplanıyor
-      const kdvTutari = faturaFiyati * (KDV_ORANI / 100);
-      const otvTutari = faturaFiyati * (otvOrani / 100);
+      // Doğru KDV ve ÖTV hesaplaması (Türkiye vergi mevzuatına göre)
+      // Fatura Fiyatı = Matrah × (1 + ÖTV Oranı) × (1 + KDV Oranı)
+      // Matrah = Fatura Fiyatı / ((1 + ÖTV Oranı) × (1 + KDV Oranı))
+      const matrahSatis = faturaFiyati / ((1 + otvOrani / 100) * (1 + KDV_ORANI / 100));
       
-      // Matrah Satış = Fatura Fiyatı - KDV - ÖTV (KDV ve ÖTV hariç tutar)
-      const matrahSatis = faturaFiyati - kdvTutari - otvTutari;
-      const kdvsizTutar = faturaFiyati - kdvTutari;
+      // ÖTV = Matrah × ÖTV Oranı
+      const otvTutari = matrahSatis * (otvOrani / 100);
+      
+      // KDV Matrahı = Matrah + ÖTV (KDV'siz Tutar)
+      const kdvsizTutar = matrahSatis + otvTutari;
+      
+      // KDV = KDV Matrahı × KDV Oranı
+      const kdvTutari = kdvsizTutar * (KDV_ORANI / 100);
       
       // Vergiler Toplamı = KDV + ÖTV + Damga Vergisi
       const vergilerToplami = kdvTutari + otvTutari + DAMGA_VERGISI;
@@ -309,27 +315,76 @@ const MotorSatislari = () => {
     return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(value || 0);
   };
 
-  // Sayı formatla (inputlar için 250.000 gibi)
+  // Sayı formatla (gösterim için 76.791,67 gibi - Türk formatı)
   const formatNumber = (value) => {
     if (!value && value !== 0) return '';
-    const num = typeof value === 'string' ? value.replace(/\./g, '').replace(',', '.') : value;
-    const parsed = parseFloat(num);
+    // Eğer zaten sayıysa direkt formatla
+    if (typeof value === 'number') {
+      return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(value);
+    }
+    // String ise parse et
+    const parsed = parseFloat(value);
     if (isNaN(parsed)) return '';
-    return new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(parsed);
+    return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(parsed);
   };
 
-  // Formatlı inputtan sayı elde et
+  // Akıllı sayı parse - Türk formatını doğru algılar
+  // 76.791,67 -> 76791.67
+  // 76791,67 -> 76791.67  
+  // 76.791.67 -> 76791.67 (son nokta ondalık)
+  // 76791.67 -> 76791.67
   const parseFormattedNumber = (formattedValue) => {
     if (!formattedValue) return '';
-    // Nokta (binlik ayracı) kaldır, virgül (ondalık) nokta yap
-    const cleaned = formattedValue.toString().replace(/\./g, '').replace(',', '.');
-    return cleaned;
+    let str = formattedValue.toString().trim();
+    
+    // Virgül varsa, Türk formatı: nokta=binlik, virgül=ondalık
+    if (str.includes(',')) {
+      // Tüm noktaları kaldır (binlik ayracı), virgülü noktaya çevir
+      str = str.replace(/\./g, '').replace(',', '.');
+    } else {
+      // Virgül yok, noktaları kontrol et
+      const dots = (str.match(/\./g) || []).length;
+      if (dots > 1) {
+        // Birden fazla nokta var: son nokta ondalık, diğerleri binlik
+        const lastDotIndex = str.lastIndexOf('.');
+        const beforeLastDot = str.substring(0, lastDotIndex).replace(/\./g, '');
+        const afterLastDot = str.substring(lastDotIndex);
+        str = beforeLastDot + afterLastDot;
+      }
+      // Tek nokta varsa zaten doğru format (76791.67)
+    }
+    
+    return str;
   };
 
-  // Fiyat input handler
+  // Input için görüntüleme değeri (yazarken ham değer, değilse formatlı)
+  const [activeInput, setActiveInput] = useState(null);
+  
+  // Fiyat input handler - virgüllü girişe izin verir
   const handlePriceChange = (field, formattedValue) => {
-    const rawValue = parseFormattedNumber(formattedValue);
+    // Sadece sayı, nokta ve virgül karakterlerine izin ver
+    const allowedChars = formattedValue.replace(/[^0-9.,]/g, '');
+    setSatisForm({ ...satisForm, [field]: allowedChars });
+  };
+
+  // Input focus olduğunda
+  const handlePriceFocus = (field) => {
+    setActiveInput(field);
+  };
+
+  // Input blur olduğunda - değeri parse et ve kaydet
+  const handlePriceBlur = (field) => {
+    setActiveInput(null);
+    const rawValue = parseFormattedNumber(satisForm[field]);
     setSatisForm({ ...satisForm, [field]: rawValue });
+  };
+
+  // Input değerini göster (focus'taysa ham değer, değilse formatlı)
+  const getInputValue = (field) => {
+    if (activeInput === field) {
+      return satisForm[field] || '';
+    }
+    return formatNumber(satisForm[field]);
   };
 
   // Tarih formatla
@@ -459,18 +514,23 @@ const MotorSatislari = () => {
               </TableRow>
             ) : (
               filteredSatislar.map((satis) => {
-                // Kar hesaplama
+                // Kar hesaplama (Doğru formül)
                 const model = modeller.find(m => m.id === satis.motor_modeli_id);
                 const otvOrani = parseFloat(model?.otv_orani || satis.otv_orani || 0);
                 const alisFiyati = parseFloat(satis.alis_fiyati || 0);
                 const satisFiyati = parseFloat(satis.satis_fiyati || 0);
                 const faturaFiyati = parseFloat(satis.fatura_fiyati || 0);
                 const iskontoOrani = parseFloat(satis.iskonto || 0);
+                // Doğru hesaplama: Matrah = Fatura / ((1 + ÖTV) × (1 + KDV))
+                const matrahSatis = faturaFiyati / ((1 + otvOrani / 100) * (1 + KDV_ORANI / 100));
+                const otvTutari = matrahSatis * (otvOrani / 100);
+                const kdvsizTutar = matrahSatis + otvTutari;
+                const kdvTutari = kdvsizTutar * (KDV_ORANI / 100);
+                // İskonto hesabı - doğrudan alış fiyatı üzerinden
                 const iskontoTutari = alisFiyati * (iskontoOrani / 100);
                 const iskontoluAlis = alisFiyati - iskontoTutari;
-                const kdvTutari = faturaFiyati * (KDV_ORANI / 100);
-                const otvTutari = faturaFiyati * (otvOrani / 100);
                 const vergilerToplami = kdvTutari + otvTutari + DAMGA_VERGISI;
+                // Kar = Satış - Vergiler - İskontolu Alış
                 const kar = satis.kar || (satisFiyati - vergilerToplami - iskontoluAlis);
                 
                 return (
@@ -676,8 +736,10 @@ const MotorSatislari = () => {
                         sx={{ flex: 1 }}
                         size="small"
                         label="Nakit Tutar"
-                        value={formatNumber(satisForm.nakit_tutar)}
+                        value={getInputValue('nakit_tutar')}
                         onChange={(e) => handlePriceChange('nakit_tutar', e.target.value)}
+                        onFocus={() => handlePriceFocus('nakit_tutar')}
+                        onBlur={() => handlePriceBlur('nakit_tutar')}
                         InputProps={{
                           startAdornment: <InputAdornment position="start">₺</InputAdornment>
                         }}
@@ -687,8 +749,10 @@ const MotorSatislari = () => {
                         sx={{ flex: 1 }}
                         size="small"
                         label="Kart Tutar"
-                        value={formatNumber(satisForm.kart_tutar)}
+                        value={getInputValue('kart_tutar')}
                         onChange={(e) => handlePriceChange('kart_tutar', e.target.value)}
+                        onFocus={() => handlePriceFocus('kart_tutar')}
+                        onBlur={() => handlePriceBlur('kart_tutar')}
                         InputProps={{
                           startAdornment: <InputAdornment position="start">₺</InputAdornment>
                         }}
@@ -698,8 +762,10 @@ const MotorSatislari = () => {
                         sx={{ flex: 1 }}
                         size="small"
                         label="Havale Tutar"
-                        value={formatNumber(satisForm.havale_tutar)}
+                        value={getInputValue('havale_tutar')}
                         onChange={(e) => handlePriceChange('havale_tutar', e.target.value)}
+                        onFocus={() => handlePriceFocus('havale_tutar')}
+                        onBlur={() => handlePriceBlur('havale_tutar')}
                         InputProps={{
                           startAdornment: <InputAdornment position="start">₺</InputAdornment>
                         }}
@@ -781,23 +847,27 @@ const MotorSatislari = () => {
                       sx={{ flex: 1 , mt: 1.1}}
                       size="small"
                       label="Alış Fiyatı"
-                      value={formatNumber(satisForm.alis_fiyati)}
+                      value={getInputValue('alis_fiyati')}
                       onChange={(e) => handlePriceChange('alis_fiyati', e.target.value)}
+                      onFocus={() => handlePriceFocus('alis_fiyati')}
+                      onBlur={() => handlePriceBlur('alis_fiyati')}
                       InputProps={{
                         startAdornment: <InputAdornment position="start">₺</InputAdornment>
                       }}
-                      placeholder="250.000"
+                      placeholder="76.791,67"
                     />
                     <TextField
                       sx={{ flex: 1 , mt: 1.1}}
                       size="small"
                       label="Satış Fiyatı"
-                      value={formatNumber(satisForm.satis_fiyati)}
+                      value={getInputValue('satis_fiyati')}
                       onChange={(e) => handlePriceChange('satis_fiyati', e.target.value)}
+                      onFocus={() => handlePriceFocus('satis_fiyati')}
+                      onBlur={() => handlePriceBlur('satis_fiyati')}
                       InputProps={{
                         startAdornment: <InputAdornment position="start">₺</InputAdornment>
                       }}
-                      placeholder="300.000"
+                      placeholder="105.000"
                     />
                   </Box>
                   <Box sx={{ display: 'flex', gap: 1.5 }}>
@@ -805,12 +875,14 @@ const MotorSatislari = () => {
                       sx={{ flex: 1 , mt: 1.1}}
                       size="small"
                       label="Fatura Fiyatı"
-                      value={formatNumber(satisForm.fatura_fiyati)}
+                      value={getInputValue('fatura_fiyati')}
                       onChange={(e) => handlePriceChange('fatura_fiyati', e.target.value)}
+                      onFocus={() => handlePriceFocus('fatura_fiyati')}
+                      onBlur={() => handlePriceBlur('fatura_fiyati')}
                       InputProps={{
                         startAdornment: <InputAdornment position="start">₺</InputAdornment>
                       }}
-                      placeholder="280.000"
+                      placeholder="100.000"
                     />
                     <TextField
                       sx={{ flex: 1   , mt: 1.1}}
@@ -861,14 +933,17 @@ const MotorSatislari = () => {
                     const satisFiyati = parseFloat(satisForm.satis_fiyati || 0);
                     const faturaFiyati = parseFloat(satisForm.fatura_fiyati || 0);
                     const iskontoOrani = parseFloat(satisForm.iskonto || 0);
-                    // İskonto hesabı
+                    // Doğru hesaplama: Matrah = Fatura / ((1 + ÖTV) × (1 + KDV))
+                    const matrah = faturaFiyati / ((1 + otvOrani / 100) * (1 + KDV_ORANI / 100));
+                    // ÖTV = Matrah × ÖTV Oranı
+                    const otvTutari = matrah * (otvOrani / 100);
+                    // KDV Matrahı = Matrah + ÖTV
+                    const kdvsizTutar = matrah + otvTutari;
+                    // KDV = KDV Matrahı × KDV Oranı
+                    const kdvTutari = kdvsizTutar * (KDV_ORANI / 100);
+                    // İskonto hesabı - doğrudan alış fiyatı üzerinden
                     const iskontoTutari = alisFiyati * (iskontoOrani / 100);
                     const iskontoluAlis = alisFiyati - iskontoTutari;
-                    // KDV ve ÖTV fatura fiyatı üzerinden
-                    const kdvTutari = faturaFiyati * (KDV_ORANI / 100);
-                    const otvTutari = faturaFiyati * (otvOrani / 100);
-                    // Matrah = Fatura - KDV - ÖTV
-                    const matrah = faturaFiyati - kdvTutari - otvTutari;
                     // Vergiler toplamı
                     const vergilerToplami = kdvTutari + otvTutari + DAMGA_VERGISI;
                     // Kar = Satış Fiyatı - Vergiler Toplamı - İskontolu Alış
@@ -1287,7 +1362,7 @@ const MotorSatislari = () => {
         </DialogTitle>
         <DialogContent sx={{ p: 2 }}>
           {selectedSatisDetay && (() => {
-            // Hesaplamaları her zaman fatura fiyatı üzerinden yap
+            // Hesaplamaları her zaman fatura fiyatı üzerinden yap (Türkiye vergi mevzuatına göre)
             const satis = selectedSatisDetay;
             const model = modeller.find(m => m.id === satis.motor_modeli_id);
             const otvOrani = parseFloat(model?.otv_orani || satis.otv_orani || 0);
@@ -1298,17 +1373,22 @@ const MotorSatislari = () => {
             const faturaFiyati = parseFloat(satis.fatura_fiyati || 0);
             const iskontoOrani = parseFloat(satis.iskonto || 0);
             
-            // İskonto hesaplaması
+            // Doğru hesaplama: Fatura Fiyatı = Matrah × (1 + ÖTV) × (1 + KDV)
+            // Matrah = Fatura Fiyatı / ((1 + ÖTV Oranı) × (1 + KDV Oranı))
+            const matrahSatis = faturaFiyati / ((1 + otvOrani / 100) * (1 + KDV_ORANI / 100));
+            
+            // ÖTV = Matrah × ÖTV Oranı
+            const otvTutari = matrahSatis * (otvOrani / 100);
+            
+            // KDV Matrahı (KDV'siz Tutar) = Matrah + ÖTV
+            const kdvsizTutar = matrahSatis + otvTutari;
+            
+            // KDV = KDV Matrahı × KDV Oranı
+            const kdvTutari = kdvsizTutar * (KDV_ORANI / 100);
+            
+            // İskonto hesaplaması - doğrudan alış fiyatı üzerinden
             const iskontoTutari = alisFiyati * (iskontoOrani / 100);
             const iskontoluAlis = alisFiyati - iskontoTutari;
-            
-            // KDV ve ÖTV her zaman fatura fiyatı üzerinden hesaplanır
-            const kdvTutari = faturaFiyati * (KDV_ORANI / 100); // Sabit %20
-            const otvTutari = faturaFiyati * (otvOrani / 100); // Motor modelindeki oran
-            const kdvsizTutar = faturaFiyati - kdvTutari;
-            
-            // Matrah = Fatura Fiyatı - KDV - ÖTV
-            const matrahSatis = faturaFiyati - kdvTutari - otvTutari;
             
             // Vergiler toplamı
             const damgaVergisi = DAMGA_VERGISI;

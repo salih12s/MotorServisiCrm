@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Card,
@@ -31,6 +32,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Collapse,
+  Stack,
 } from '@mui/material';
 import {
   TrendingUp as TrendingUpIcon,
@@ -46,8 +49,11 @@ import {
   ArrowUpward as ArrowUpwardIcon,
   ArrowDownward as ArrowDownwardIcon,
   ShoppingBag as ShoppingBagIcon,
+  TwoWheeler as TwoWheelerIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
 } from '@mui/icons-material';
-import { raporService, authService } from '../services/api';
+import { raporService, authService, motorSatisService } from '../services/api';
 import { useCustomTheme } from '../context/ThemeContext';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -99,7 +105,7 @@ const StatCard = ({ title, value, icon, color, variant = 'default', isMobile = f
 function Raporlar() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const { setAksesuarTheme, setDefaultTheme } = useCustomTheme();
+  const { setAksesuarTheme, setMotorSatisTheme, setDefaultTheme } = useCustomTheme();
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   
@@ -137,6 +143,20 @@ function Raporlar() {
   const [fisKarSortField, setFisKarSortField] = useState('created_at');
   const [fisKarSortDirection, setFisKarSortDirection] = useState('desc');
 
+  // Seçili gün accordion state (modal yerine satır altında açılır)
+  const [expandedGun, setExpandedGun] = useState(null);
+  const [expandedGunIsEmirleri, setExpandedGunIsEmirleri] = useState([]);
+  
+  // Motor Satışları State
+  const [motorSatisSelectedDate, setMotorSatisSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [motorSatisEndDate, setMotorSatisEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [motorSatislar, setMotorSatislar] = useState([]);
+  const [motorModeller, setMotorModeller] = useState([]);
+  const [expandedMotorSatis, setExpandedMotorSatis] = useState(null);
+  
+  // Navigate hook
+  const navigate = useNavigate();
+
   // Kullanıcıları yükle
   useEffect(() => {
     const loadKullanicilar = async () => {
@@ -155,11 +175,14 @@ function Raporlar() {
     if (activeTab === 1) {
       // Aksesuar Satışları sekmesi - mor tema
       setAksesuarTheme();
+    } else if (activeTab === 3) {
+      // Motor Satışları sekmesi - turuncu tema
+      setMotorSatisTheme();
     } else {
       // Diğer sekmeler - varsayılan tema
       setDefaultTheme();
     }
-  }, [activeTab, setAksesuarTheme, setDefaultTheme]);
+  }, [activeTab, setAksesuarTheme, setMotorSatisTheme, setDefaultTheme]);
 
   // Sayfa kapanınca varsayılan temaya dön
   useEffect(() => {
@@ -175,9 +198,11 @@ function Raporlar() {
       loadAksesuarRapor();
     } else if (activeTab === 2) {
       loadFisKarRapor();
+    } else if (activeTab === 3) {
+      loadMotorSatisRapor();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, selectedDate, endDate, fisKarBaslangic, fisKarBitis, aksesuarSelectedDate, aksesuarEndDate]);
+  }, [activeTab, selectedDate, endDate, fisKarBaslangic, fisKarBitis, aksesuarSelectedDate, aksesuarEndDate, motorSatisSelectedDate, motorSatisEndDate]);
 
   const loadGunlukRapor = async () => {
     try {
@@ -186,6 +211,29 @@ function Raporlar() {
       setGunlukRapor(response.data);
     } catch (error) {
       console.error('Günlük rapor hatası:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadMotorSatisRapor = async () => {
+    try {
+      setLoading(true);
+      const [satisRes, modelRes] = await Promise.all([
+        motorSatisService.getAll(),
+        motorSatisService.getModeller()
+      ]);
+      
+      // Tarih aralığına göre filtrele - created_at veya tarih alanını kullan
+      const filteredSatislar = (satisRes.data || []).filter(satis => {
+        const satisTarih = format(new Date(satis.created_at || satis.tarih), 'yyyy-MM-dd');
+        return satisTarih >= motorSatisSelectedDate && satisTarih <= motorSatisEndDate;
+      });
+      
+      setMotorSatislar(filteredSatislar);
+      setMotorModeller(modelRes.data || []);
+    } catch (error) {
+      console.error('Motor satış rapor hatası:', error);
     } finally {
       setLoading(false);
     }
@@ -234,6 +282,33 @@ function Raporlar() {
       console.error('İş emri detay hatası:', error);
     }
   };
+
+  // Günlük özet satırına tıklandığında accordion tarzı aç/kapa
+  const handleGunlukOzetClick = (gunlukVeri) => {
+    const tarih = format(new Date(gunlukVeri.tarih), 'yyyy-MM-dd');
+    
+    // Aynı güne tıklandıysa kapat
+    if (expandedGun === tarih) {
+      setExpandedGun(null);
+      setExpandedGunIsEmirleri([]);
+      return;
+    }
+    
+    // O günün iş emirlerini filtrele - detayli_is_emirleri kullan ve tamamlama_tarihi'ne göre filtrele
+    const gunIsEmirleri = (gunlukRapor.detayli_is_emirleri || []).filter(isEmri => {
+      const isEmriTarih = format(new Date(isEmri.tamamlama_tarihi || isEmri.created_at), 'yyyy-MM-dd');
+      return isEmriTarih === tarih;
+    });
+    
+    setExpandedGun(tarih);
+    setExpandedGunIsEmirleri(gunIsEmirleri);
+  };
+
+  // İş emrine çift tıklayınca detay sayfasına git
+  const handleIsEmriDoubleClick = (isEmriId) => {
+    navigate(`/is-emri/${isEmriId}`);
+  };
+
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('tr-TR', {
       style: 'currency',
@@ -468,47 +543,117 @@ function Raporlar() {
                   <Typography color="text.secondary">Bu tarih aralığında iş emri bulunmuyor</Typography>
                 </Box>
               ) : isMobile ? (
-                /* Mobile Card View for Günlük Özet */
+                /* Mobile Card View for Günlük Özet - Accordion tarzı */
                 <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                  {(gunlukRapor.gunluk_veriler || []).map((item, index) => (
-                    <Card key={index} variant="outlined" sx={{ bgcolor: '#fafafa' }}>
-                      <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                          <Typography variant="subtitle2" fontWeight={700}>
-                            {format(new Date(item.tarih), 'd MMMM yyyy', { locale: tr })}
-                          </Typography>
-                          <Chip label={`${item.is_sayisi} iş`} size="small" color="primary" sx={{ height: 22 }} />
-                        </Box>
-                        <Grid container spacing={1}>
-                          <Grid item xs={4}>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>Gelir</Typography>
-                            <Typography variant="body2" fontWeight={600} sx={{ color: '#2e7d32', fontSize: '0.85rem' }}>
-                              {formatCurrency(item.toplam_gelir)}
-                            </Typography>
-                          </Grid>
-                          <Grid item xs={4}>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>Maliyet</Typography>
-                            <Typography variant="body2" sx={{ color: '#c62828', fontSize: '0.85rem' }}>
-                              {formatCurrency(item.toplam_maliyet)}
-                            </Typography>
-                          </Grid>
-                          <Grid item xs={4}>
-                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>Kar</Typography>
-                            <Typography 
-                              variant="body2" 
-                              fontWeight={700}
-                              sx={{ 
-                                color: parseFloat(item.toplam_kar) >= 0 ? '#2e7d32' : '#c62828',
-                                fontSize: '0.85rem',
-                              }}
-                            >
-                              {formatCurrency(item.toplam_kar)}
-                            </Typography>
-                          </Grid>
-                        </Grid>
-                      </CardContent>
-                    </Card>
-                  ))}
+                  {(gunlukRapor.gunluk_veriler || []).map((item, index) => {
+                    const tarih = format(new Date(item.tarih), 'yyyy-MM-dd');
+                    const isExpanded = expandedGun === tarih;
+                    
+                    return (
+                      <Box key={index}>
+                        <Card 
+                          variant="outlined" 
+                          sx={{ 
+                            bgcolor: isExpanded ? '#e3f2fd' : '#fafafa', 
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            '&:hover': { bgcolor: '#e3f2fd' }
+                          }}
+                          onClick={() => handleGunlukOzetClick(item)}
+                        >
+                          <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                {isExpanded ? <ExpandLessIcon color="primary" fontSize="small" /> : <ExpandMoreIcon color="action" fontSize="small" />}
+                                <Typography variant="subtitle2" fontWeight={700}>
+                                  {format(new Date(item.tarih), 'd MMMM yyyy', { locale: tr })}
+                                </Typography>
+                              </Box>
+                              <Chip label={`${item.is_sayisi} iş`} size="small" color="primary" sx={{ height: 22 }} />
+                            </Box>
+                            <Grid container spacing={1}>
+                              <Grid item xs={4}>
+                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>Gelir</Typography>
+                                <Typography variant="body2" fontWeight={600} sx={{ color: '#2e7d32', fontSize: '0.85rem' }}>
+                                  {formatCurrency(item.toplam_gelir)}
+                                </Typography>
+                              </Grid>
+                              <Grid item xs={4}>
+                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>Maliyet</Typography>
+                                <Typography variant="body2" sx={{ color: '#c62828', fontSize: '0.85rem' }}>
+                                  {formatCurrency(item.toplam_maliyet)}
+                                </Typography>
+                              </Grid>
+                              <Grid item xs={4}>
+                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>Kar</Typography>
+                                <Typography 
+                                  variant="body2" 
+                                  fontWeight={700}
+                                  sx={{ 
+                                    color: parseFloat(item.toplam_kar) >= 0 ? '#2e7d32' : '#c62828',
+                                    fontSize: '0.85rem',
+                                  }}
+                                >
+                                  {formatCurrency(item.toplam_kar)}
+                                </Typography>
+                              </Grid>
+                            </Grid>
+                          </CardContent>
+                        </Card>
+                        {/* Accordion içerik - Mobile */}
+                        <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                          <Box sx={{ bgcolor: '#f5f5f5', p: 1.5, mt: 0.5, borderRadius: 1 }}>
+                            {expandedGunIsEmirleri.length === 0 ? (
+                              <Typography color="text.secondary" sx={{ textAlign: 'center', py: 1 }}>
+                                Bu güne ait iş emri bulunmuyor
+                              </Typography>
+                            ) : (
+                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                {expandedGunIsEmirleri.map((isEmri) => {
+                                  const gelir = parseFloat(isEmri.toplam_tutar || 0);
+                                  const maliyet = parseFloat(isEmri.toplam_maliyet || 0);
+                                  const kar = gelir - maliyet;
+                                  
+                                  return (
+                                    <Card 
+                                      key={isEmri.id} 
+                                      sx={{ bgcolor: 'white', cursor: 'pointer' }}
+                                      onClick={(e) => e.stopPropagation()}
+                                      onDoubleClick={(e) => { e.stopPropagation(); handleViewDetail(isEmri); }}
+                                    >
+                                      <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                          <Typography fontWeight={600} color="primary.main" fontSize="0.8rem">
+                                            {isEmri.fis_no}
+                                          </Typography>
+                                          <Chip 
+                                            label={isEmri.durum || 'Bekliyor'} 
+                                            size="small"
+                                            sx={{ fontSize: '0.6rem', height: 18 }}
+                                          />
+                                        </Box>
+                                        <Typography fontSize="0.75rem" color="text.secondary">
+                                          {isEmri.musteri_ad_soyad} • {isEmri.plaka}
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', gap: 2, mt: 0.5 }}>
+                                          <Typography fontSize="0.75rem" sx={{ color: '#2e7d32' }}>
+                                            Gelir: {formatCurrency(gelir)}
+                                          </Typography>
+                                          <Typography fontSize="0.75rem" fontWeight={600} sx={{ color: kar >= 0 ? '#2e7d32' : '#c62828' }}>
+                                            Kar: {formatCurrency(kar)}
+                                          </Typography>
+                                        </Box>
+                                      </CardContent>
+                                    </Card>
+                                  );
+                                })}
+                              </Box>
+                            )}
+                          </Box>
+                        </Collapse>
+                      </Box>
+                    );
+                  })}
                 </Box>
               ) : (
                 /* Desktop Table View */
@@ -524,36 +669,187 @@ function Raporlar() {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {(gunlukRapor.gunluk_veriler || []).map((item, index) => (
-                        <TableRow key={index} hover>
-                          <TableCell>
-                            <Typography fontWeight={600}>
-                              {format(new Date(item.tarih), 'd MMMM yyyy', { locale: tr })}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="center">
-                            <Chip label={item.is_sayisi} size="small" color="primary" />
-                          </TableCell>
-                          <TableCell align="right">
-                            <Typography fontWeight={600} sx={{ color: '#2e7d32' }}>
-                              {formatCurrency(item.toplam_gelir)}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="right">
-                            <Typography sx={{ color: '#c62828' }}>
-                              {formatCurrency(item.toplam_maliyet)}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="right">
-                            <Typography
-                              fontWeight={700}
-                              sx={{ color: parseFloat(item.toplam_kar) >= 0 ? '#2e7d32' : '#c62828' }}
+                      {(gunlukRapor.gunluk_veriler || []).map((item, index) => {
+                        const tarih = format(new Date(item.tarih), 'yyyy-MM-dd');
+                        const isExpanded = expandedGun === tarih;
+                        
+                        return (
+                          <React.Fragment key={index}>
+                            <TableRow 
+                              hover
+                              onClick={() => handleGunlukOzetClick(item)}
+                              sx={{ 
+                                cursor: 'pointer',
+                                bgcolor: isExpanded ? '#e3f2fd' : 'inherit',
+                                '&:hover': { bgcolor: '#e3f2fd' }
+                              }}
                             >
-                              {formatCurrency(item.toplam_kar)}
-                            </Typography>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                              <TableCell>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  {isExpanded ? <ExpandLessIcon color="primary" /> : <ExpandMoreIcon color="action" />}
+                                  <Typography fontWeight={600}>
+                                    {format(new Date(item.tarih), 'd MMMM yyyy', { locale: tr })}
+                                  </Typography>
+                                </Box>
+                              </TableCell>
+                              <TableCell align="center">
+                                <Chip label={item.is_sayisi} size="small" color="primary" />
+                              </TableCell>
+                              <TableCell align="right">
+                                <Typography fontWeight={600} sx={{ color: '#2e7d32' }}>
+                                  {formatCurrency(item.toplam_gelir)}
+                                </Typography>
+                              </TableCell>
+                              <TableCell align="right">
+                                <Typography sx={{ color: '#c62828' }}>
+                                  {formatCurrency(item.toplam_maliyet)}
+                                </Typography>
+                              </TableCell>
+                              <TableCell align="right">
+                                <Typography
+                                  fontWeight={700}
+                                  sx={{ color: parseFloat(item.toplam_kar) >= 0 ? '#2e7d32' : '#c62828' }}
+                                >
+                                  {formatCurrency(item.toplam_kar)}
+                                </Typography>
+                              </TableCell>
+                            </TableRow>
+                            {/* Accordion İçerik - İş Emirleri */}
+                            <TableRow>
+                              <TableCell colSpan={5} sx={{ p: 0, border: 0 }}>
+                                <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                                  <Box sx={{ bgcolor: '#f5f5f5', p: 2 }}>
+                                    <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                      <DirectionsCarIcon fontSize="small" color="primary" />
+                                      {format(new Date(item.tarih), 'd MMMM yyyy', { locale: tr })} - İş Emirleri
+                                      <Chip label={expandedGunIsEmirleri.length} size="small" color="primary" sx={{ ml: 1 }} />
+                                    </Typography>
+                                    {expandedGunIsEmirleri.length === 0 ? (
+                                      <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+                                        Bu güne ait iş emri bulunmuyor
+                                      </Typography>
+                                    ) : (
+                                      <Table size="small" sx={{ bgcolor: 'white', borderRadius: 1 }}>
+                                        <TableHead>
+                                          <TableRow sx={{ bgcolor: '#e3f2fd' }}>
+                                            <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Fiş No</TableCell>
+                                            <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Tarih</TableCell>
+                                            <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Müşteri</TableCell>
+                                            <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Araç</TableCell>
+                                            <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Oluşturan</TableCell>
+                                            <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Durum</TableCell>
+                                            <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Ödeme Detayları</TableCell>
+                                            <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Maliyet</TableCell>
+                                            <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Gelir</TableCell>
+                                            <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Kar</TableCell>
+                                            <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>İşlem</TableCell>
+                                          </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                          {expandedGunIsEmirleri.map((isEmri) => {
+                                            const gelir = parseFloat(isEmri.gercek_toplam_ucret || isEmri.toplam_tutar || 0);
+                                            const maliyet = parseFloat(isEmri.toplam_maliyet || 0);
+                                            const kar = parseFloat(isEmri.kar) || (gelir - maliyet);
+                                            
+                                            return (
+                                              <TableRow 
+                                                key={isEmri.id}
+                                                hover
+                                                onClick={(e) => e.stopPropagation()}
+                                                onDoubleClick={(e) => { e.stopPropagation(); handleViewDetail(isEmri); }}
+                                                sx={{ cursor: 'pointer', '&:hover': { bgcolor: '#e3f2fd' } }}
+                                              >
+                                                <TableCell>
+                                                  <Typography fontWeight={700} color="primary.main" fontSize="0.8rem">
+                                                    {isEmri.fis_no}
+                                                  </Typography>
+                                                </TableCell>
+                                                <TableCell>
+                                                  <Typography fontSize="0.8rem">
+                                                    {isEmri.created_at ? format(new Date(isEmri.created_at), 'dd.MM.yyyy', { locale: tr }) : '-'}
+                                                  </Typography>
+                                                </TableCell>
+                                                <TableCell>
+                                                  <Typography fontWeight={600} fontSize="0.8rem">{isEmri.musteri_ad_soyad || '-'}</Typography>
+                                                  {isEmri.telefon && <Typography variant="caption" color="text.secondary">{isEmri.telefon}</Typography>}
+                                                </TableCell>
+                                                <TableCell>
+                                                  <Typography fontSize="0.8rem">{isEmri.marka} {isEmri.model_tip || isEmri.arac_bilgisi || '-'}</Typography>
+                                                  {isEmri.km && <Typography variant="caption" color="text.secondary">{isEmri.km} km</Typography>}
+                                                </TableCell>
+                                                <TableCell>
+                                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                    <Avatar sx={{ width: 20, height: 20, fontSize: '0.65rem', bgcolor: 'primary.main' }}>
+                                                      <PersonIcon sx={{ fontSize: 14 }} />
+                                                    </Avatar>
+                                                    <Box>
+                                                      <Typography fontSize="0.75rem" fontWeight={600}>{isEmri.olusturan_ad_soyad || '-'}</Typography>
+                                                      <Typography variant="caption" color="text.secondary">@{isEmri.olusturan_kullanici_adi || '-'}</Typography>
+                                                    </Box>
+                                                  </Box>
+                                                </TableCell>
+                                                <TableCell align="center">
+                                                  <Chip 
+                                                    label={isEmri.durum === 'beklemede' ? 'Beklemede' : 'Tamamlandı'} 
+                                                    size="small"
+                                                    sx={{ 
+                                                      fontSize: '0.65rem',
+                                                      height: 20,
+                                                      bgcolor: isEmri.durum === 'beklemede' ? '#fff3e0' : '#e8f5e9',
+                                                      color: isEmri.durum === 'beklemede' ? '#e65100' : '#2e7d32',
+                                                      fontWeight: 600
+                                                    }}
+                                                  />
+                                                </TableCell>
+                                                <TableCell>
+                                                  <Tooltip title={isEmri.odeme_detaylari || '-'} arrow placement="top">
+                                                    <Typography fontSize="0.75rem" sx={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                      {isEmri.odeme_detaylari || '-'}
+                                                    </Typography>
+                                                  </Tooltip>
+                                                </TableCell>
+                                                <TableCell align="right">
+                                                  <Typography fontWeight={600} sx={{ color: '#c62828' }} fontSize="0.8rem">
+                                                    {formatCurrency(maliyet)}
+                                                  </Typography>
+                                                </TableCell>
+                                                <TableCell align="right">
+                                                  <Typography fontWeight={600} sx={{ color: '#2e7d32' }} fontSize="0.8rem">
+                                                    {formatCurrency(gelir)}
+                                                  </Typography>
+                                                </TableCell>
+                                                <TableCell align="right">
+                                                  <Typography fontWeight={700} sx={{ color: kar >= 0 ? '#2e7d32' : '#c62828' }} fontSize="0.8rem">
+                                                    {formatCurrency(kar)}
+                                                  </Typography>
+                                                </TableCell>
+                                                <TableCell align="center">
+                                                  <Tooltip title="Detayları Gör">
+                                                    <IconButton
+                                                      size="small"
+                                                      onClick={(e) => { e.stopPropagation(); handleViewDetail(isEmri); }}
+                                                      sx={{ color: 'primary.main' }}
+                                                    >
+                                                      <VisibilityIcon fontSize="small" />
+                                                    </IconButton>
+                                                  </Tooltip>
+                                                </TableCell>
+                                              </TableRow>
+                                            );
+                                          })}
+                                        </TableBody>
+                                      </Table>
+                                    )}
+                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1, textAlign: 'center' }}>
+                                      💡 Detayları görmek için iş emri satırına çift tıklayın veya göz simgesine basın
+                                    </Typography>
+                                  </Box>
+                                </Collapse>
+                              </TableCell>
+                            </TableRow>
+                          </React.Fragment>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </TableContainer>
@@ -590,7 +886,17 @@ function Raporlar() {
                   ) : (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                       {filteredIsEmirleri.map((isEmri) => (
-                        <Card key={isEmri.id} sx={{ overflow: 'hidden', bgcolor: '#fafafa' }}>
+                        <Card 
+                          key={isEmri.id} 
+                          sx={{ 
+                            overflow: 'hidden', 
+                            bgcolor: '#fafafa',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            '&:hover': { bgcolor: '#e3f2fd', transform: 'scale(1.01)' }
+                          }}
+                          onDoubleClick={() => handleIsEmriDoubleClick(isEmri.id)}
+                        >
                           <CardContent sx={{ p: 1.5 }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1, gap: 1 }}>
                               <Box sx={{ minWidth: 0, flex: 1 }}>
@@ -758,7 +1064,15 @@ function Raporlar() {
                       </TableRow>
                     ) : (
                       sortedIsEmirleri.map((isEmri) => (
-                        <TableRow key={isEmri.id} hover>
+                        <TableRow 
+                          key={isEmri.id} 
+                          hover
+                          onDoubleClick={() => handleIsEmriDoubleClick(isEmri.id)}
+                          sx={{ 
+                            cursor: 'pointer',
+                            '&:hover': { bgcolor: '#e3f2fd' }
+                          }}
+                        >
                           <TableCell>
                             <Typography fontWeight={700} color="primary.main">{isEmri.fis_no}</Typography>
                           </TableCell>
@@ -1535,6 +1849,541 @@ function Raporlar() {
     </Box>
   );
 
+  // Motor Satışları Raporu - Turuncu Tema
+  const renderMotorSatisRapor = () => (
+    <Box sx={{ 
+      bgcolor: '#fff8f0', 
+      mx: -3, 
+      px: 3, 
+      py: 2, 
+      minHeight: 'calc(100vh - 200px)',
+      borderRadius: 2
+    }}>
+      {/* Tarih Filtresi */}
+      <Card sx={{ mb: 3, borderTop: '4px solid #e65100', boxShadow: 3 }}>
+        <CardContent sx={{ py: 2.5, bgcolor: '#fff3e0' }}>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} sm="auto">
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <TwoWheelerIcon sx={{ color: '#e65100' }} />
+                <Typography variant="body2" fontWeight={700} sx={{ color: '#e65100', display: { xs: 'none', sm: 'block' } }}>
+                  Tarih Aralığı
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={5} md={2}>
+              <TextField
+                type="date"
+                label="Başlangıç Tarihi"
+                value={motorSatisSelectedDate}
+                onChange={(e) => setMotorSatisSelectedDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                size="small"
+                fullWidth
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: 'white',
+                    '&:hover fieldset': { borderColor: '#e65100' },
+                    '&.Mui-focused fieldset': { borderColor: '#e65100' },
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': { color: '#e65100' },
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={5} md={2}>
+              <TextField
+                type="date"
+                label="Bitiş Tarihi"
+                value={motorSatisEndDate}
+                onChange={(e) => setMotorSatisEndDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                size="small"
+                fullWidth
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: 'white',
+                    '&:hover fieldset': { borderColor: '#e65100' },
+                    '&.Mui-focused fieldset': { borderColor: '#e65100' },
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': { color: '#e65100' },
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} sm="auto">
+              <Button
+                variant="contained"
+                onClick={loadMotorSatisRapor}
+                startIcon={<TwoWheelerIcon />}
+                sx={{ 
+                  bgcolor: '#e65100', 
+                  '&:hover': { bgcolor: '#bf360c' },
+                  height: 40,
+                  px: 3
+                }}
+              >
+                Rapor Getir
+              </Button>
+            </Grid>
+            <Grid item xs={12} sm="auto" sx={{ ml: 'auto' }}>
+              <Chip 
+                label={motorSatisSelectedDate && motorSatisEndDate ? 
+                  `${format(new Date(motorSatisSelectedDate), 'd MMM yyyy', { locale: tr })} - ${format(new Date(motorSatisEndDate), 'd MMM yyyy', { locale: tr })}` 
+                  : 'Tarih Seçin'}
+                sx={{ 
+                  width: { xs: '100%', sm: 'auto' },
+                  bgcolor: '#e65100',
+                  color: 'white',
+                  fontWeight: 600
+                }}
+              />
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}>
+          <CircularProgress sx={{ color: '#e65100' }} />
+        </Box>
+      ) : (
+        <>
+          {/* Özet Kartları */}
+          <Grid container spacing={isMobile ? 1 : 2} sx={{ mb: 3 }}>
+            <Grid item xs={6} sm={3}>
+              <Card sx={{ 
+                height: '100%',
+                background: 'linear-gradient(135deg, #ff9800 0%, #e65100 100%)',
+                color: 'white',
+                boxShadow: 3
+              }}>
+                <CardContent sx={{ p: isMobile ? 1.5 : 2, '&:last-child': { pb: isMobile ? 1.5 : 2 } }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                    <TwoWheelerIcon sx={{ fontSize: isMobile ? 16 : 20, opacity: 0.9 }} />
+                    <Typography variant="body2" sx={{ opacity: 0.9, fontSize: isMobile ? '0.7rem' : '0.875rem' }}>
+                      Satış Sayısı
+                    </Typography>
+                  </Box>
+                  <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight={700}>
+                    {motorSatislar.length} Adet
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={6} sm={3}>
+              <Card sx={{ 
+                height: '100%',
+                background: 'linear-gradient(135deg, #66bb6a 0%, #388e3c 100%)',
+                color: 'white',
+                boxShadow: 3
+              }}>
+                <CardContent sx={{ p: isMobile ? 1.5 : 2, '&:last-child': { pb: isMobile ? 1.5 : 2 } }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                    <AttachMoneyIcon sx={{ fontSize: isMobile ? 16 : 20, opacity: 0.9 }} />
+                    <Typography variant="body2" sx={{ opacity: 0.9, fontSize: isMobile ? '0.7rem' : '0.875rem' }}>
+                      Toplam Satış
+                    </Typography>
+                  </Box>
+                  <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight={700}>
+                    {formatCurrency(motorSatislar.reduce((sum, m) => sum + parseFloat(m.satis_fiyati || 0), 0))}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={6} sm={3}>
+              <Card sx={{ 
+                height: '100%',
+                background: 'linear-gradient(135deg, #ef5350 0%, #c62828 100%)',
+                color: 'white',
+                boxShadow: 3
+              }}>
+                <CardContent sx={{ p: isMobile ? 1.5 : 2, '&:last-child': { pb: isMobile ? 1.5 : 2 } }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                    <MoneyOffIcon sx={{ fontSize: isMobile ? 16 : 20, opacity: 0.9 }} />
+                    <Typography variant="body2" sx={{ opacity: 0.9, fontSize: isMobile ? '0.7rem' : '0.875rem' }}>
+                      Toplam Maliyet
+                    </Typography>
+                  </Box>
+                  <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight={700}>
+                    {formatCurrency(motorSatislar.reduce((sum, m) => sum + parseFloat(m.alis_fiyati || 0) - parseFloat(m.iskonto || 0), 0))}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={6} sm={3}>
+              <Card sx={{ 
+                height: '100%',
+                background: 'linear-gradient(135deg, #42a5f5 0%, #1565c0 100%)',
+                color: 'white',
+                boxShadow: 3
+              }}>
+                <CardContent sx={{ p: isMobile ? 1.5 : 2, '&:last-child': { pb: isMobile ? 1.5 : 2 } }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                    <TrendingUpIcon sx={{ fontSize: isMobile ? 16 : 20, opacity: 0.9 }} />
+                    <Typography variant="body2" sx={{ opacity: 0.9, fontSize: isMobile ? '0.7rem' : '0.875rem' }}>
+                      Toplam Kar
+                    </Typography>
+                  </Box>
+                  <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight={700}>
+                    {formatCurrency(motorSatislar.reduce((sum, m) => sum + parseFloat(m.kar || 0), 0))}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+
+          {/* Motor Satışları Listesi */}
+          <Card sx={{ boxShadow: 3, border: '1px solid #ffe0b2' }}>
+            <CardContent sx={{ p: 0 }}>
+              <Box sx={{ 
+                p: 2.5, 
+                borderBottom: '1px solid', 
+                borderColor: '#ffe0b2', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 1,
+                bgcolor: '#fff3e0'
+              }}>
+                <TwoWheelerIcon sx={{ color: '#e65100' }} />
+                <Typography variant="h6" fontWeight={700} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' }, color: '#e65100' }}>
+                  Motor Satışları Listesi
+                </Typography>
+                <Chip 
+                  label={`${motorSatislar.length} kayıt`} 
+                  size="small" 
+                  sx={{ ml: 'auto', bgcolor: '#e65100', color: 'white' }}
+                />
+              </Box>
+
+              {/* Masaüstü Tablo */}
+              {!isMobile ? (
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow sx={{ bgcolor: '#fff8f0' }}>
+                        <TableCell sx={{ fontWeight: 700, width: 40 }}></TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Tarih</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Motor Model</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Müşteri</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700 }}>Satış Fiyatı</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700 }}>Alış Fiyatı</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700, color: '#2e7d32' }}>Kar</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {motorSatislar.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
+                            <TwoWheelerIcon sx={{ fontSize: 48, color: '#ffcc80', mb: 1 }} />
+                            <Typography color="text.secondary">
+                              Bu tarih aralığında motor satışı bulunmuyor
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        motorSatislar.map((motor) => (
+                          <React.Fragment key={motor.id}>
+                            <TableRow 
+                              hover
+                              onClick={() => setExpandedMotorSatis(expandedMotorSatis === motor.id ? null : motor.id)}
+                              sx={{ 
+                                cursor: 'pointer',
+                                bgcolor: expandedMotorSatis === motor.id ? '#fff3e0' : 'inherit',
+                                '&:hover': { bgcolor: '#fff8f0' }
+                              }}
+                            >
+                              <TableCell sx={{ width: 40 }}>
+                                <IconButton size="small" sx={{ color: '#e65100' }}>
+                                  {expandedMotorSatis === motor.id ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                                </IconButton>
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2" fontWeight={500}>
+                                  {motor.created_at ? format(new Date(motor.created_at), 'dd.MM.yyyy', { locale: tr }) : '-'}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                <Typography fontWeight={700} sx={{ color: '#e65100' }}>
+                                  {motor.model_adi || '-'}
+                                </Typography>
+                                {motor.cc && (
+                                  <Typography variant="caption" color="text.secondary">{motor.cc} cc</Typography>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <Typography fontWeight={500}>
+                                  {motor.musteri_adi || '-'}
+                                </Typography>
+                                {motor.musteri_telefon && (
+                                  <Typography variant="caption" color="text.secondary">{motor.musteri_telefon}</Typography>
+                                )}
+                              </TableCell>
+                              <TableCell align="right">
+                                <Typography fontWeight={600} sx={{ color: '#2e7d32' }}>
+                                  {formatCurrency(motor.satis_fiyati)}
+                                </Typography>
+                              </TableCell>
+                              <TableCell align="right">
+                                <Typography sx={{ color: '#c62828' }}>
+                                  {formatCurrency(motor.alis_fiyati)}
+                                </Typography>
+                              </TableCell>
+                              <TableCell align="right">
+                                <Typography
+                                  fontWeight={700}
+                                  sx={{ 
+                                    color: parseFloat(motor.kar) >= 0 ? '#2e7d32' : '#c62828'
+                                  }}
+                                >
+                                  {formatCurrency(motor.kar)}
+                                </Typography>
+                              </TableCell>
+                            </TableRow>
+                            {/* Detay Satırı - Tarih Aralığındaki İş Emirleri tablosu gibi detaylı */}
+                            <TableRow>
+                              <TableCell colSpan={7} sx={{ p: 0, borderBottom: expandedMotorSatis === motor.id ? '2px solid #e65100' : 'none' }}>
+                                <Collapse in={expandedMotorSatis === motor.id} timeout="auto" unmountOnExit>
+                                  <Box sx={{ bgcolor: '#fff8f0', borderLeft: '4px solid #e65100' }}>
+                                    {/* Detay Başlığı */}
+                                    <Box sx={{ p: 2, bgcolor: '#fff3e0', borderBottom: '1px solid #ffe0b2', display: 'flex', alignItems: 'center', gap: 1 }}>
+                                      <TwoWheelerIcon sx={{ color: '#e65100' }} />
+                                      <Typography fontWeight={700} sx={{ color: '#e65100' }}>
+                                        {motor.model_adi || 'Motor'} - Detaylı Bilgiler
+                                      </Typography>
+                                    </Box>
+                                    
+                                    {/* Detay Tablosu */}
+                                    <TableContainer>
+                                      <Table size="small">
+                                        <TableBody>
+                                          {/* Müşteri Bilgileri */}
+                                          <TableRow sx={{ bgcolor: 'white' }}>
+                                            <TableCell sx={{ fontWeight: 600, width: 150, color: '#e65100' }}>Müşteri</TableCell>
+                                            <TableCell>{motor.musteri_adi || '-'}</TableCell>
+                                            <TableCell sx={{ fontWeight: 600, width: 150, color: '#e65100' }}>Telefon</TableCell>
+                                            <TableCell>{motor.musteri_telefon || '-'}</TableCell>
+                                          </TableRow>
+                                          <TableRow>
+                                            <TableCell sx={{ fontWeight: 600, color: '#e65100' }}>Şase No</TableCell>
+                                            <TableCell sx={{ fontFamily: 'monospace' }}>{motor.sase_no || '-'}</TableCell>
+                                            <TableCell sx={{ fontWeight: 600, color: '#e65100' }}>TC Kimlik No</TableCell>
+                                            <TableCell>{motor.tc_kimlik_no || '-'}</TableCell>
+                                          </TableRow>
+                                          <TableRow sx={{ bgcolor: 'white' }}>
+                                            <TableCell sx={{ fontWeight: 600, color: '#e65100' }}>Ödeme Şekli</TableCell>
+                                            <TableCell>
+                                              <Chip
+                                                size="small"
+                                                label={motor.odeme_sekli === 'nakit' ? 'Nakit' : 
+                                                       motor.odeme_sekli === 'kredi_karti' ? 'Kredi Kartı' :
+                                                       motor.odeme_sekli === 'havale' ? 'Havale' :
+                                                       motor.odeme_sekli === 'karisik' ? 'Karışık' : motor.odeme_sekli || '-'}
+                                                sx={{ bgcolor: '#fff3e0', color: '#e65100' }}
+                                              />
+                                            </TableCell>
+                                            <TableCell sx={{ fontWeight: 600, color: '#e65100' }}>Tarih</TableCell>
+                                            <TableCell>{motor.tarih ? format(new Date(motor.tarih), 'dd.MM.yyyy', { locale: tr }) : motor.created_at ? format(new Date(motor.created_at), 'dd.MM.yyyy', { locale: tr }) : '-'}</TableCell>
+                                          </TableRow>
+                                          {/* Fiyat Bilgileri */}
+                                          <TableRow>
+                                            <TableCell sx={{ fontWeight: 600, color: '#e65100' }}>Fatura Fiyatı</TableCell>
+                                            <TableCell sx={{ fontWeight: 600 }}>{formatCurrency(motor.fatura_fiyati)}</TableCell>
+                                            <TableCell sx={{ fontWeight: 600, color: '#e65100' }}>Satış Fiyatı</TableCell>
+                                            <TableCell sx={{ fontWeight: 700, color: '#2e7d32' }}>{formatCurrency(motor.satis_fiyati)}</TableCell>
+                                          </TableRow>
+                                          <TableRow sx={{ bgcolor: 'white' }}>
+                                            <TableCell sx={{ fontWeight: 600, color: '#e65100' }}>Alış Fiyatı</TableCell>
+                                            <TableCell sx={{ color: '#c62828', fontWeight: 600 }}>{formatCurrency(motor.alis_fiyati)}</TableCell>
+                                            <TableCell sx={{ fontWeight: 600, color: '#e65100' }}>İskonto (%{motor.iskonto || 0})</TableCell>
+                                            <TableCell sx={{ color: '#7b1fa2', fontWeight: 600 }}>{formatCurrency(motor.iskonto_tutari)}</TableCell>
+                                          </TableRow>
+                                          {/* Vergi Bilgileri */}
+                                          <TableRow>
+                                            <TableCell sx={{ fontWeight: 600, color: '#e65100' }}>KDV (%20)</TableCell>
+                                            <TableCell>{formatCurrency(motor.kdv_tutari)}</TableCell>
+                                            <TableCell sx={{ fontWeight: 600, color: '#e65100' }}>ÖTV (%{motor.otv_orani || '-'})</TableCell>
+                                            <TableCell>{formatCurrency(motor.otv_tutari)}</TableCell>
+                                          </TableRow>
+                                          <TableRow sx={{ bgcolor: 'white' }}>
+                                            <TableCell sx={{ fontWeight: 600, color: '#e65100' }}>Damga Vergisi</TableCell>
+                                            <TableCell>{formatCurrency(motor.damga_vergisi)}</TableCell>
+                                            <TableCell sx={{ fontWeight: 600, color: '#e65100' }}>Toplam Vergiler</TableCell>
+                                            <TableCell>{formatCurrency(motor.vergiler_toplami)}</TableCell>
+                                          </TableRow>
+                                          {/* Kar */}
+                                          <TableRow sx={{ bgcolor: '#e8f5e9' }}>
+                                            <TableCell colSpan={2} sx={{ fontWeight: 700, fontSize: '1.1rem', color: '#e65100' }}>
+                                              NET KAR
+                                            </TableCell>
+                                            <TableCell colSpan={2} align="right" sx={{ fontWeight: 700, fontSize: '1.25rem', color: parseFloat(motor.kar) >= 0 ? '#2e7d32' : '#c62828' }}>
+                                              {formatCurrency(motor.kar)}
+                                            </TableCell>
+                                          </TableRow>
+                                        </TableBody>
+                                      </Table>
+                                    </TableContainer>
+
+                                    {/* Açıklama ve Buton */}
+                                    {motor.aciklama && (
+                                      <Box sx={{ p: 2, borderTop: '1px solid #ffe0b2' }}>
+                                        <Typography variant="caption" color="text.secondary">Açıklama:</Typography>
+                                        <Typography variant="body2">{motor.aciklama}</Typography>
+                                      </Box>
+                                    )}
+                                    <Box sx={{ p: 2, display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #ffe0b2' }}>
+                                      <Button
+                                        variant="contained"
+                                        size="small"
+                                        startIcon={<VisibilityIcon />}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          navigate(`/motor-satislari`);
+                                        }}
+                                        sx={{ 
+                                          bgcolor: '#e65100', 
+                                          '&:hover': { bgcolor: '#bf360c' }
+                                        }}
+                                      >
+                                        Motor Satışlarına Git
+                                      </Button>
+                                    </Box>
+                                  </Box>
+                                </Collapse>
+                              </TableCell>
+                            </TableRow>
+                          </React.Fragment>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              ) : (
+                /* Mobil Görünüm */
+                <Box sx={{ p: 2 }}>
+                  {motorSatislar.length === 0 ? (
+                    <Box sx={{ textAlign: 'center', py: 6 }}>
+                      <TwoWheelerIcon sx={{ fontSize: 48, color: '#ffcc80', mb: 1 }} />
+                      <Typography color="text.secondary">
+                        Bu tarih aralığında motor satışı bulunmuyor
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <Stack spacing={2}>
+                      {motorSatislar.map((motor) => (
+                        <Card 
+                          key={motor.id} 
+                          sx={{ 
+                            border: expandedMotorSatis === motor.id ? '2px solid #e65100' : '1px solid #ffe0b2',
+                            bgcolor: expandedMotorSatis === motor.id ? '#fff8f0' : 'white'
+                          }}
+                          onClick={() => setExpandedMotorSatis(expandedMotorSatis === motor.id ? null : motor.id)}
+                        >
+                          <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <TwoWheelerIcon sx={{ color: '#e65100', fontSize: 20 }} />
+                                <Typography fontWeight={700} sx={{ color: '#e65100' }}>
+                                  {motor.model_adi || '-'}
+                                </Typography>
+                              </Box>
+                              <IconButton size="small" sx={{ color: '#e65100' }}>
+                                {expandedMotorSatis === motor.id ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                              </IconButton>
+                            </Box>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                              {motor.musteri_adi || '-'}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {motor.created_at ? format(new Date(motor.created_at), 'dd.MM.yyyy', { locale: tr }) : '-'}
+                            </Typography>
+                            <Divider sx={{ my: 1 }} />
+                            <Grid container spacing={1}>
+                              <Grid item xs={6}>
+                                <Typography variant="caption" color="text.secondary">Satış</Typography>
+                                <Typography fontWeight={600} sx={{ color: '#2e7d32' }}>
+                                  {formatCurrency(motor.satis_fiyati)}
+                                </Typography>
+                              </Grid>
+                              <Grid item xs={6}>
+                                <Typography variant="caption" color="text.secondary">Kar</Typography>
+                                <Typography 
+                                  fontWeight={700} 
+                                  sx={{ color: parseFloat(motor.kar) >= 0 ? '#2e7d32' : '#c62828' }}
+                                >
+                                  {formatCurrency(motor.kar)}
+                                </Typography>
+                              </Grid>
+                            </Grid>
+                            
+                            {/* Mobil Detay Alanı */}
+                            <Collapse in={expandedMotorSatis === motor.id} timeout="auto" unmountOnExit>
+                              <Divider sx={{ my: 2 }} />
+                              <Grid container spacing={1}>
+                                <Grid item xs={6}>
+                                  <Typography variant="caption" color="text.secondary">Fatura Fiyatı</Typography>
+                                  <Typography variant="body2" fontWeight={600}>{formatCurrency(motor.fatura_fiyati)}</Typography>
+                                </Grid>
+                                <Grid item xs={6}>
+                                  <Typography variant="caption" color="text.secondary">Alış Fiyatı</Typography>
+                                  <Typography variant="body2" fontWeight={600} sx={{ color: '#c62828' }}>{formatCurrency(motor.alis_fiyati)}</Typography>
+                                </Grid>
+                                <Grid item xs={6}>
+                                  <Typography variant="caption" color="text.secondary">İskonto</Typography>
+                                  <Typography variant="body2" fontWeight={600} sx={{ color: '#7b1fa2' }}>{formatCurrency(motor.iskonto)}</Typography>
+                                </Grid>
+                                <Grid item xs={6}>
+                                  <Typography variant="caption" color="text.secondary">Damga Vergisi</Typography>
+                                  <Typography variant="body2" fontWeight={600}>{formatCurrency(motor.damga_vergisi)}</Typography>
+                                </Grid>
+                                <Grid item xs={6}>
+                                  <Typography variant="caption" color="text.secondary">KDV</Typography>
+                                  <Typography variant="body2" fontWeight={600}>{formatCurrency(motor.kdv_tutari)}</Typography>
+                                </Grid>
+                                <Grid item xs={6}>
+                                  <Typography variant="caption" color="text.secondary">ÖTV</Typography>
+                                  <Typography variant="body2" fontWeight={600}>{formatCurrency(motor.otv_tutari)}</Typography>
+                                </Grid>
+                              </Grid>
+                              <Button
+                                variant="contained"
+                                size="small"
+                                fullWidth
+                                startIcon={<VisibilityIcon />}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/motor-satislari`);
+                                }}
+                                sx={{ 
+                                  mt: 2,
+                                  bgcolor: '#e65100', 
+                                  '&:hover': { bgcolor: '#bf360c' }
+                                }}
+                              >
+                                Motor Satışlarına Git
+                              </Button>
+                            </Collapse>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </Stack>
+                  )}
+                </Box>
+              )}
+              
+              {/* Alt Bilgi */}
+              {motorSatislar.length > 0 && (
+                <Box sx={{ p: 2, bgcolor: '#fff3e0', borderTop: '1px solid #ffe0b2' }}>
+                  <Typography variant="body2" color="text.secondary" align="center">
+                    💡 Detayları görmek için satıra <strong>tıklayın</strong>
+                  </Typography>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
+    </Box>
+  );
+
   return (
     <Box>
       <Box sx={{ mb: 3 }}>
@@ -1574,12 +2423,22 @@ function Raporlar() {
             icon={<ReceiptIcon />} 
             iconPosition="start"
           />
+          <Tab 
+            label="Motor Satışları" 
+            icon={<TwoWheelerIcon />} 
+            iconPosition="start"
+            sx={{ 
+              '&.Mui-selected': { color: '#e65100' },
+              color: '#ff9800'
+            }}
+          />
         </Tabs>
       </Card>
 
       {activeTab === 0 && renderGunlukRapor()}
       {activeTab === 1 && renderAksesuarRapor()}
       {activeTab === 2 && renderFisKarRapor()}
+      {activeTab === 3 && renderMotorSatisRapor()}
 
       {/* İş Emri Detay Modal */}
       <Dialog 
