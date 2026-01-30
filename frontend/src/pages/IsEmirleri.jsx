@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { /* useNavigate, */ useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   Box,
@@ -46,7 +46,7 @@ import {
   Close as CloseIcon,
   Person as PersonIcon,
   AttachMoney as AttachMoneyIcon,
-  Print as PrintIcon,
+  // Print as PrintIcon, // Geçici olarak kaldırıldı
   CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 import { isEmriService } from '../services/api';
@@ -71,7 +71,8 @@ function IsEmirleri() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterDurum, setFilterDurum] = useState('');
-  const [filterTarih, setFilterTarih] = useState('');
+  const [baslangicTarihi, setBaslangicTarihi] = useState('');
+  const [bitisTarihi, setBitisTarihi] = useState('');
   const [filterBugun, setFilterBugun] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -79,7 +80,7 @@ function IsEmirleri() {
   const [selectedIsEmri, setSelectedIsEmri] = useState(null);
   const [completeModalOpen, setCompleteModalOpen] = useState(false);
   const [workOrderToComplete, setWorkOrderToComplete] = useState(null);
-  const navigate = useNavigate();
+  // const navigate = useNavigate(); // Geçici olarak kaldırıldı (yazdırma için)
   const [searchParams, setSearchParams] = useSearchParams();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -157,14 +158,14 @@ function IsEmirleri() {
     }
   };
 
-  const handlePrint = async (isEmri) => {
-    try {
-      // İş emri detay sayfasına yönlendir ve yazdırma modunda aç
-      navigate(`/is-emirleri/${isEmri.id}?print=true`);
-    } catch (error) {
-      console.error('Yazdırma hatası:', error);
-    }
-  };
+  // handlePrint fonksiyonu geçici olarak kaldırıldı
+  // const handlePrint = async (isEmri) => {
+  //   try {
+  //     navigate(`/is-emirleri/${isEmri.id}?print=true`);
+  //   } catch (error) {
+  //     console.error('Yazdırma hatası:', error);
+  //   }
+  // };
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('tr-TR', {
@@ -178,13 +179,14 @@ function IsEmirleri() {
   const clearFilters = () => {
     setSearchQuery('');
     setFilterDurum('');
-    setFilterTarih('');
+    setBaslangicTarihi('');
+    setBitisTarihi('');
     setFilterBugun(false);
     // URL parametrelerini temizle
     setSearchParams({});
   };
 
-  const hasActiveFilters = searchQuery || filterDurum || filterTarih || filterBugun;
+  const hasActiveFilters = searchQuery || filterDurum || baslangicTarihi || bitisTarihi || filterBugun;
 
   // Bugünü başlangıç ve bitiş tarihiyle karşılaştır
   const isToday = (dateStr) => {
@@ -212,6 +214,27 @@ function IsEmirleri() {
     filteredIsEmirleri = filteredIsEmirleri.filter(ie => isToday(ie.created_at));
   }
 
+  // Tarih aralığı filtresi
+  if (baslangicTarihi) {
+    filteredIsEmirleri = filteredIsEmirleri.filter(ie => {
+      if (!ie.created_at) return false;
+      const tarih = new Date(ie.created_at);
+      const baslangic = new Date(baslangicTarihi);
+      baslangic.setHours(0, 0, 0, 0);
+      return tarih >= baslangic;
+    });
+  }
+
+  if (bitisTarihi) {
+    filteredIsEmirleri = filteredIsEmirleri.filter(ie => {
+      if (!ie.created_at) return false;
+      const tarih = new Date(ie.created_at);
+      const bitis = new Date(bitisTarihi);
+      bitis.setHours(23, 59, 59, 999);
+      return tarih <= bitis;
+    });
+  }
+
   // İstatistikler - FİLTRELENMİŞ verilerden hesapla
   const toplamIsEmri = isEmirleri.length;
   const bugunkuIsEmri = isEmirleri.filter(ie => isToday(ie.created_at)).length;
@@ -227,132 +250,129 @@ function IsEmirleri() {
 
   return (
     <Box>
-      {/* Header with Stats in One Line */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="h5" fontWeight={700}>
-              İş Emirleri
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
-            </Typography>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => {
-                setEditingId(null);
-                setIsModalOpen(true);
-              }}
-              sx={{ ml: 2 }}
-            >
-              Yeni İş Emri
-            </Button>
-          </Box>
+      {/* Stats ve Yeni İş Emri - Tek Satır */}
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        mb: 2, 
+        flexWrap: 'wrap', 
+        gap: 1,
+        justifyContent: 'space-between'
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
           {/* Inline Stats - Tıklanabilir Filtreler */}
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <Chip 
+            label={`Toplam: ${toplamIsEmri}`} 
+            size="small"
+            onClick={() => { clearFilters(); }}
+            sx={{ 
+              bgcolor: !filterDurum && !filterBugun ? '#1a237e' : '#e3f2fd', 
+              color: !filterDurum && !filterBugun ? 'white' : '#1a237e', 
+              fontWeight: 600,
+              cursor: 'pointer',
+              '&:hover': { bgcolor: '#1a237e', color: 'white' }
+            }} 
+          />
+          <Chip 
+            label={`Bugün: ${bugunkuIsEmri}`} 
+            size="small"
+            onClick={() => { setFilterDurum(''); setFilterBugun(true); setSearchParams({ bugun: 'true' }); }}
+            sx={{ 
+              bgcolor: filterBugun ? '#1565c0' : '#bbdefb', 
+              color: filterBugun ? 'white' : '#1565c0', 
+              fontWeight: 600,
+              cursor: 'pointer',
+              '&:hover': { bgcolor: '#1565c0', color: 'white' }
+            }} 
+          />
+          <Chip 
+            label={`Beklemede: ${beklemedekiIsEmri}`} 
+            size="small"
+            onClick={() => { setFilterBugun(false); setFilterDurum('beklemede'); setSearchParams({ durum: 'beklemede' }); }}
+            sx={{ 
+              bgcolor: filterDurum === 'beklemede' ? '#e65100' : '#fff3e0', 
+              color: filterDurum === 'beklemede' ? 'white' : '#e65100', 
+              fontWeight: 600,
+              cursor: 'pointer',
+              '&:hover': { bgcolor: '#e65100', color: 'white' }
+            }} 
+          />
+          <Chip 
+            label={`İşlemde: ${islemdekiIsEmri}`} 
+            size="small"
+            onClick={() => { setFilterBugun(false); setFilterDurum('islemde'); setSearchParams({ durum: 'islemde' }); }}
+            sx={{ 
+              bgcolor: filterDurum === 'islemde' ? '#0277bd' : '#e3f2fd', 
+              color: filterDurum === 'islemde' ? 'white' : '#0277bd', 
+              fontWeight: 600,
+              cursor: 'pointer',
+              '&:hover': { bgcolor: '#0277bd', color: 'white' }
+            }} 
+          />
+          <Chip 
+            label={`Ödeme Bekl.: ${odemeBekleyenIsEmri}`} 
+            size="small"
+            onClick={() => { setFilterBugun(false); setFilterDurum('odeme_bekleniyor'); setSearchParams({ durum: 'odeme_bekleniyor' }); }}
+            sx={{ 
+              bgcolor: filterDurum === 'odeme_bekleniyor' ? '#7b1fa2' : '#f3e5f5', 
+              color: filterDurum === 'odeme_bekleniyor' ? 'white' : '#7b1fa2', 
+              fontWeight: 600,
+              cursor: 'pointer',
+              '&:hover': { bgcolor: '#7b1fa2', color: 'white' }
+            }} 
+          />
+          <Chip 
+            label={`Tamamlandı: ${tamamlananIsEmri}`} 
+            size="small"
+            onClick={() => { setFilterBugun(false); setFilterDurum('tamamlandi'); setSearchParams({ durum: 'tamamlandi' }); }}
+            sx={{ 
+              bgcolor: filterDurum === 'tamamlandi' ? '#2e7d32' : '#e8f5e9', 
+              color: filterDurum === 'tamamlandi' ? 'white' : '#2e7d32', 
+              fontWeight: 600,
+              cursor: 'pointer',
+              '&:hover': { bgcolor: '#2e7d32', color: 'white' }
+            }} 
+          />
+          <Chip 
+            label={`İptal: ${iptalIsEmri}`} 
+            size="small"
+            onClick={() => { setFilterBugun(false); setFilterDurum('iptal_edildi'); setSearchParams({ durum: 'iptal_edildi' }); }}
+            sx={{ 
+              bgcolor: filterDurum === 'iptal_edildi' ? '#c62828' : '#ffebee', 
+              color: filterDurum === 'iptal_edildi' ? 'white' : '#c62828', 
+              fontWeight: 600,
+              cursor: 'pointer',
+              '&:hover': { bgcolor: '#c62828', color: 'white' }
+            }} 
+          />
+          <Chip 
+            label={formatCurrency(toplamTutar)} 
+            size="small"
+            sx={{ bgcolor: '#e3f2fd', color: '#1565c0', fontWeight: 600 }} 
+          />
+          {isAdmin && (
             <Chip 
-              label={`Toplam: ${toplamIsEmri}`} 
+              label={`Kar: ${formatCurrency(filtreliToplamKar)}`} 
               size="small"
-              onClick={() => { clearFilters(); }}
               sx={{ 
-                bgcolor: !filterDurum && !filterBugun ? '#1a237e' : '#e3f2fd', 
-                color: !filterDurum && !filterBugun ? 'white' : '#1a237e', 
-                fontWeight: 600,
-                cursor: 'pointer',
-                '&:hover': { bgcolor: '#1a237e', color: 'white' }
+                bgcolor: filtreliToplamKar >= 0 ? '#e8f5e9' : '#ffebee', 
+                color: filtreliToplamKar >= 0 ? '#2e7d32' : '#c62828', 
+                fontWeight: 600 
               }} 
             />
-            <Chip 
-              label={`Bugün: ${bugunkuIsEmri}`} 
-              size="small"
-              onClick={() => { setFilterDurum(''); setFilterBugun(true); setSearchParams({ bugun: 'true' }); }}
-              sx={{ 
-                bgcolor: filterBugun ? '#1565c0' : '#bbdefb', 
-                color: filterBugun ? 'white' : '#1565c0', 
-                fontWeight: 600,
-                cursor: 'pointer',
-                '&:hover': { bgcolor: '#1565c0', color: 'white' }
-              }} 
-            />
-            <Chip 
-              label={`Beklemede: ${beklemedekiIsEmri}`} 
-              size="small"
-              onClick={() => { setFilterBugun(false); setFilterDurum('beklemede'); setSearchParams({ durum: 'beklemede' }); }}
-              sx={{ 
-                bgcolor: filterDurum === 'beklemede' ? '#e65100' : '#fff3e0', 
-                color: filterDurum === 'beklemede' ? 'white' : '#e65100', 
-                fontWeight: 600,
-                cursor: 'pointer',
-                '&:hover': { bgcolor: '#e65100', color: 'white' }
-              }} 
-            />
-            <Chip 
-              label={`İşlemde: ${islemdekiIsEmri}`} 
-              size="small"
-              onClick={() => { setFilterBugun(false); setFilterDurum('islemde'); setSearchParams({ durum: 'islemde' }); }}
-              sx={{ 
-                bgcolor: filterDurum === 'islemde' ? '#0277bd' : '#e3f2fd', 
-                color: filterDurum === 'islemde' ? 'white' : '#0277bd', 
-                fontWeight: 600,
-                cursor: 'pointer',
-                '&:hover': { bgcolor: '#0277bd', color: 'white' }
-              }} 
-            />
-            <Chip 
-              label={`Ödeme Bekl.: ${odemeBekleyenIsEmri}`} 
-              size="small"
-              onClick={() => { setFilterBugun(false); setFilterDurum('odeme_bekleniyor'); setSearchParams({ durum: 'odeme_bekleniyor' }); }}
-              sx={{ 
-                bgcolor: filterDurum === 'odeme_bekleniyor' ? '#7b1fa2' : '#f3e5f5', 
-                color: filterDurum === 'odeme_bekleniyor' ? 'white' : '#7b1fa2', 
-                fontWeight: 600,
-                cursor: 'pointer',
-                '&:hover': { bgcolor: '#7b1fa2', color: 'white' }
-              }} 
-            />
-            <Chip 
-              label={`Tamamlandı: ${tamamlananIsEmri}`} 
-              size="small"
-              onClick={() => { setFilterBugun(false); setFilterDurum('tamamlandi'); setSearchParams({ durum: 'tamamlandi' }); }}
-              sx={{ 
-                bgcolor: filterDurum === 'tamamlandi' ? '#2e7d32' : '#e8f5e9', 
-                color: filterDurum === 'tamamlandi' ? 'white' : '#2e7d32', 
-                fontWeight: 600,
-                cursor: 'pointer',
-                '&:hover': { bgcolor: '#2e7d32', color: 'white' }
-              }} 
-            />
-            <Chip 
-              label={`İptal: ${iptalIsEmri}`} 
-              size="small"
-              onClick={() => { setFilterBugun(false); setFilterDurum('iptal_edildi'); setSearchParams({ durum: 'iptal_edildi' }); }}
-              sx={{ 
-                bgcolor: filterDurum === 'iptal_edildi' ? '#c62828' : '#ffebee', 
-                color: filterDurum === 'iptal_edildi' ? 'white' : '#c62828', 
-                fontWeight: 600,
-                cursor: 'pointer',
-                '&:hover': { bgcolor: '#c62828', color: 'white' }
-              }} 
-            />
-            <Chip 
-              label={formatCurrency(toplamTutar)} 
-              size="small"
-              sx={{ bgcolor: '#e3f2fd', color: '#1565c0', fontWeight: 600 }} 
-            />
-            {isAdmin && (
-              <Chip 
-                label={`Kar: ${formatCurrency(filtreliToplamKar)}`} 
-                size="small"
-                sx={{ 
-                  bgcolor: filtreliToplamKar >= 0 ? '#e8f5e9' : '#ffebee', 
-                  color: filtreliToplamKar >= 0 ? '#2e7d32' : '#c62828', 
-                  fontWeight: 600 
-                }} 
-              />
-            )}
-          </Box>
+          )}
         </Box>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => {
+            setEditingId(null);
+            setIsModalOpen(true);
+          }}
+          sx={{ flexShrink: 0 }}
+        >
+          Yeni İş Emri
+        </Button>
       </Box>
 
       {/* Filters */}
@@ -399,14 +419,25 @@ function IsEmirleri() {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={6} sm={4} md={3}>
+            <Grid item xs={6} sm={4} md={2}>
               <TextField
                 type="date"
                 size="small"
-                label="Tarih"
+                label="Başlangıç"
                 fullWidth
-                value={filterTarih}
-                onChange={(e) => setFilterTarih(e.target.value)}
+                value={baslangicTarihi}
+                onChange={(e) => { setBaslangicTarihi(e.target.value); setFilterBugun(false); }}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={6} sm={4} md={2}>
+              <TextField
+                type="date"
+                size="small"
+                label="Bitiş"
+                fullWidth
+                value={bitisTarihi}
+                onChange={(e) => { setBitisTarihi(e.target.value); setFilterBugun(false); }}
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
@@ -594,15 +625,6 @@ function IsEmirleri() {
                     >
                       Detay
                     </Button>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      startIcon={<PrintIcon sx={{ fontSize: '1rem' }} />}
-                      onClick={() => handlePrint(isEmri)}
-                      sx={{ flex: 1, minWidth: 0, px: 1, fontSize: '0.75rem' }}
-                    >
-                      Yazdır
-                    </Button>
                     {isEmri.durum !== 'tamamlandi' && (
                       <Button
                         size="small"
@@ -646,24 +668,26 @@ function IsEmirleri() {
         /* Desktop Table View */
         <Card>
         <TableContainer sx={{ overflowX: 'auto' }}>
-            <Table size="small" sx={{ minWidth: { xs: 800, sm: '100%' } }}>
+            <Table size="small" sx={{ minWidth: 850, tableLayout: 'fixed' }}>
               <TableHead>
-                <TableRow>
-                  <TableCell>Fiş No</TableCell>
-                  <TableCell>Müşteri</TableCell>
-                  <TableCell>Araç</TableCell>
-                  <TableCell>Telefon</TableCell>
-                  <TableCell>Tarih</TableCell>
-                  <TableCell>Açıklama</TableCell>
-                  <TableCell align="right">Toplam</TableCell>
-                  {isAdmin && <TableCell align="right">Kar</TableCell>}
-                  <TableCell align="center" width={150}>İşlemler</TableCell>
+                <TableRow sx={{ '& th': { py: 0.75, px: 0.5, fontSize: '0.7rem', fontWeight: 600 } }}>
+                  <TableCell sx={{ width: 45 }}>Fiş No</TableCell>
+                  <TableCell sx={{ width: 100 }}>Müşteri</TableCell>
+                  <TableCell sx={{ width: 90 }}>Araç</TableCell>
+                  <TableCell sx={{ width: 40 }}>Telefon</TableCell>
+                  <TableCell sx={{ width: 95 }}>Tarih/Durum</TableCell>
+                  <TableCell sx={{ width: 85 }}>Arıza</TableCell>
+                  <TableCell sx={{ width: 55 }}>Açıklama</TableCell>
+                  <TableCell align="right" sx={{ width: 70 }}>Toplam</TableCell>
+                  {isAdmin && <TableCell align="right" sx={{ width: 65 }}>Maliyet</TableCell>}
+                  {isAdmin && <TableCell align="right" sx={{ width: 60 }}>Kar</TableCell>}
+                  <TableCell align="center" sx={{ width: 120 }}>İşlemler</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {filteredIsEmirleri.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={isAdmin ? 9 : 8} align="center" sx={{ py: 6 }}>
+                    <TableCell colSpan={isAdmin ? 11 : 9} align="center" sx={{ py: 6 }}>
                       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
                         <ReceiptIcon sx={{ fontSize: 48, color: 'text.disabled' }} />
                         <Typography variant="body1" color="text.secondary">
@@ -686,62 +710,48 @@ function IsEmirleri() {
                     <TableRow
                       key={isEmri.id}
                       hover
-                      sx={{ '&:hover': { bgcolor: 'action.hover' } }}
+                      onDoubleClick={() => handleViewDetail(isEmri)}
+                      sx={{ '&:hover': { bgcolor: 'action.hover', cursor: 'pointer' }, '& td': { py: 0.5, px: 0.5 } }}
                     >
                       <TableCell>
-                        <Tooltip title="Fiş Numarası">
-                          <Typography fontWeight={700} color="primary.main" fontSize="0.875rem">
+                        <Tooltip title={`Fiş: ${isEmri.fis_no}`}>
+                          <Typography fontWeight={700} color="primary.main" fontSize="0.7rem" noWrap>
                             {isEmri.fis_no}
                           </Typography>
                         </Tooltip>
                       </TableCell>
                       <TableCell>
                         <Tooltip title={isEmri.musteri_ad_soyad}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Avatar 
-                              sx={{ 
-                                width: 28, 
-                                height: 28, 
-                                bgcolor: 'primary.light',
-                                fontSize: '0.75rem',
-                                fontWeight: 600,
-                              }}
-                            >
-                              {isEmri.musteri_ad_soyad?.charAt(0) || '?'}
-                            </Avatar>
-                            <Typography fontWeight={500} fontSize="0.875rem">
-                              {isEmri.musteri_ad_soyad}
-                            </Typography>
-                          </Box>
+                          <Typography fontWeight={500} fontSize="0.7rem" noWrap sx={{ maxWidth: 95, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {isEmri.musteri_ad_soyad}
+                          </Typography>
                         </Tooltip>
                       </TableCell>
                       <TableCell>
                         <Tooltip title={`${isEmri.marka} ${isEmri.model_tip}`}>
-                          <Typography variant="body2" fontSize="0.875rem">
+                          <Typography variant="body2" fontSize="0.7rem" noWrap sx={{ maxWidth: 85, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {isEmri.marka} {isEmri.model_tip}
                           </Typography>
                         </Tooltip>
                       </TableCell>
                       <TableCell>
-                        <Tooltip title="Telefon">
-                          <Typography variant="body2" fontSize="0.875rem">{isEmri.telefon || '-'}</Typography>
+                        <Tooltip title={isEmri.telefon || 'Telefon yok'}>
+                          <Typography variant="body2" fontSize="0.7rem" noWrap>{isEmri.telefon || '-'}</Typography>
                         </Tooltip>
                       </TableCell>
                       <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Tooltip title="Oluşturma Tarihi">
-                            <Typography variant="body2" fontSize="0.875rem">
-                              {formatDate(isEmri.created_at)}
-                            </Typography>
-                          </Tooltip>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+                          <Typography variant="body2" fontSize="0.7rem">
+                            {formatDate(isEmri.created_at)}
+                          </Typography>
                           <Chip
                             size="small"
                             label={
-                              isEmri.durum === 'beklemede' ? 'Beklemede' :
+                              isEmri.durum === 'beklemede' ? 'Bekl.' :
                               isEmri.durum === 'islemde' ? 'İşlemde' :
-                              isEmri.durum === 'odeme_bekleniyor' ? 'Ödeme Bekleniyor' :
-                              isEmri.durum === 'iptal_edildi' ? 'İptal Edildi' :
-                              'Tamamlandı'
+                              isEmri.durum === 'odeme_bekleniyor' ? 'Ödeme' :
+                              isEmri.durum === 'iptal_edildi' ? 'İptal' :
+                              'Tamam'
                             }
                             sx={{
                               bgcolor: 
@@ -757,19 +767,36 @@ function IsEmirleri() {
                                 isEmri.durum === 'iptal_edildi' ? '#c62828' :
                                 '#2e7d32',
                               fontWeight: 600,
-                              fontSize: '0.7rem',
-                              height: 20,
+                              fontSize: '0.6rem',
+                              height: 18,
+                              '& .MuiChip-label': { px: 0.75 }
                             }}
                           />
                         </Box>
                       </TableCell>
                       <TableCell>
+                        <Tooltip title={isEmri.ariza_sikayetler || 'Arıza/Şikayet yok'}>
+                          <Typography 
+                            variant="body2" 
+                            fontSize="0.65rem"
+                            sx={{ 
+                              maxWidth: 80, 
+                              overflow: 'hidden', 
+                              textOverflow: 'ellipsis', 
+                              whiteSpace: 'nowrap' 
+                            }}
+                          >
+                            {isEmri.ariza_sikayetler || '-'}
+                          </Typography>
+                        </Tooltip>
+                      </TableCell>
+                      <TableCell>
                         <Tooltip title={isEmri.aciklama || 'Açıklama yok'}>
                           <Typography 
                             variant="body2" 
-                            fontSize="0.875rem"
+                            fontSize="0.65rem"
                             sx={{ 
-                              maxWidth: 150, 
+                              maxWidth: 70, 
                               overflow: 'hidden', 
                               textOverflow: 'ellipsis', 
                               whiteSpace: 'nowrap' 
@@ -780,21 +807,29 @@ function IsEmirleri() {
                         </Tooltip>
                       </TableCell>
                       <TableCell align="right">
-                        <Tooltip title="Toplam Ücret">
-                          <Typography fontWeight={700} fontSize="0.875rem">
+                        <Tooltip title={`Toplam: ${formatCurrency(isEmri.gercek_toplam_ucret)}`}>
+                          <Typography fontWeight={700} fontSize="0.65rem" noWrap>
                             {formatCurrency(isEmri.gercek_toplam_ucret)}
                           </Typography>
                         </Tooltip>
                       </TableCell>
                       {isAdmin && (
                         <TableCell align="right">
-                          <Tooltip title="Kar">
+                          <Tooltip title={`Maliyet: ${formatCurrency(isEmri.toplam_maliyet)}`}>
+                            <Typography fontSize="0.65rem" sx={{ color: '#c62828' }} noWrap>
+                              {formatCurrency(isEmri.toplam_maliyet)}
+                            </Typography>
+                          </Tooltip>
+                        </TableCell>
+                      )}
+                      {isAdmin && (
+                        <TableCell align="right">
+                          <Tooltip title={`Kar: ${formatCurrency(isEmri.kar)}`}>
                             <Typography
                               fontWeight={700}
-                              fontSize="0.875rem"
-                              sx={{ 
-                                color: parseFloat(isEmri.kar) >= 0 ? '#2e7d32' : '#c62828',
-                              }}
+                              fontSize="0.65rem"
+                              sx={{ color: parseFloat(isEmri.kar) >= 0 ? '#2e7d32' : '#c62828' }}
+                              noWrap
                             >
                               {formatCurrency(isEmri.kar)}
                             </Typography>
@@ -810,15 +845,6 @@ function IsEmirleri() {
                               sx={{ color: 'primary.main' }}
                             >
                               <VisibilityIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Yazdır">
-                            <IconButton
-                              size="small"
-                              onClick={() => handlePrint(isEmri)}
-                              sx={{ color: 'info.main' }}
-                            >
-                              <PrintIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
                           {isEmri.durum !== 'tamamlandi' && (
@@ -900,17 +926,6 @@ function IsEmirleri() {
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', gap: 1 }}>
-            <Tooltip title="Yazdır">
-              <IconButton 
-                onClick={() => {
-                  setDetailModalOpen(false);
-                  navigate(`/is-emirleri/${selectedIsEmri?.id}?print=true`);
-                }}
-                sx={{ color: 'white' }}
-              >
-                <PrintIcon />
-              </IconButton>
-            </Tooltip>
             <IconButton onClick={() => setDetailModalOpen(false)} sx={{ color: 'white' }}>
               <CloseIcon />
             </IconButton>
@@ -1159,16 +1174,6 @@ function IsEmirleri() {
         </DialogContent>
         <Divider />
         <DialogActions sx={{ p: 2 }}>
-          <Button 
-            variant="outlined"
-            startIcon={<PrintIcon />}
-            onClick={() => {
-              setDetailModalOpen(false);
-              navigate(`/is-emirleri/${selectedIsEmri?.id}?print=true`);
-            }}
-          >
-            Yazdır
-          </Button>
           <Button 
             variant="outlined"
             startIcon={<EditIcon />}

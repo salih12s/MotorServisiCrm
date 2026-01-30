@@ -196,32 +196,22 @@ function Giderler() {
     <Box>
       {/* Header with Stats */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap' }}>
-          <Box>
-            <Typography variant="h5" fontWeight={700}>
-              Giderler
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
-            </Typography>
-          </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
           {/* Inline Stats */}
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Chip 
+            label={`Kayıt: ${giderler.length}`} 
+            sx={{ bgcolor: '#e3f2fd', color: '#1a237e', fontWeight: 600 }} 
+          />
+          <Chip 
+            label={formatCurrency(toplamGider)} 
+            sx={{ bgcolor: '#ffebee', color: '#c62828', fontWeight: 600 }} 
+          />
+          {kategoriStats.length > 0 && (
             <Chip 
-              label={`Kayıt: ${giderler.length}`} 
-              sx={{ bgcolor: '#e3f2fd', color: '#1a237e', fontWeight: 600 }} 
+              label={`${kategoriStats[0]?.value}: ${formatCurrency(kategoriStats[0]?.toplam)}`} 
+              sx={{ bgcolor: `${kategoriStats[0]?.color}15`, color: kategoriStats[0]?.color, fontWeight: 600 }} 
             />
-            <Chip 
-              label={formatCurrency(toplamGider)} 
-              sx={{ bgcolor: '#ffebee', color: '#c62828', fontWeight: 600 }} 
-            />
-            {kategoriStats.length > 0 && (
-              <Chip 
-                label={`${kategoriStats[0]?.value}: ${formatCurrency(kategoriStats[0]?.toplam)}`} 
-                sx={{ bgcolor: `${kategoriStats[0]?.color}15`, color: kategoriStats[0]?.color, fontWeight: 600 }} 
-              />
-            )}
-          </Box>
+          )}
         </Box>
         <Button 
           variant="contained" 

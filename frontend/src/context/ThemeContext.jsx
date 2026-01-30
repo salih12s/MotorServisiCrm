@@ -21,6 +21,16 @@ const aksesuarTheme = {
   secondaryDark: '#320048',
 };
 
+// Motor Satış (Turuncu) tema
+const motorSatisTheme = {
+  primary: '#E65100',
+  primaryLight: '#FF8A50',
+  primaryDark: '#AC1900',
+  secondary: '#E65100',
+  secondaryLight: '#FF6D00',
+  secondaryDark: '#BF360C',
+};
+
 const ThemeContext = createContext(null);
 
 export const useCustomTheme = () => {
@@ -34,9 +44,14 @@ export const useCustomTheme = () => {
 export const CustomThemeProvider = ({ children }) => {
   const [currentTheme, setCurrentTheme] = useState('default');
 
-  const themeColors = currentTheme === 'aksesuar' ? aksesuarTheme : defaultTheme;
+  const themeColors = currentTheme === 'aksesuar' 
+    ? aksesuarTheme 
+    : currentTheme === 'motorSatis' 
+      ? motorSatisTheme 
+      : defaultTheme;
 
   const setAksesuarTheme = useCallback(() => setCurrentTheme('aksesuar'), []);
+  const setMotorSatisTheme = useCallback(() => setCurrentTheme('motorSatis'), []);
   const setDefaultTheme = useCallback(() => setCurrentTheme('default'), []);
 
   const theme = useMemo(() => createTheme({
@@ -149,6 +164,7 @@ export const CustomThemeProvider = ({ children }) => {
       theme, 
       currentTheme, 
       setAksesuarTheme, 
+      setMotorSatisTheme,
       setDefaultTheme,
       themeColors 
     }}>

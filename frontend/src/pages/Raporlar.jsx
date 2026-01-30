@@ -132,8 +132,8 @@ function Raporlar() {
   // Sıralama State'leri
   const [isEmriSortField, setIsEmriSortField] = useState('created_at');
   const [isEmriSortDirection, setIsEmriSortDirection] = useState('desc');
-  const [aksesuarSortField, setAksesuarSortField] = useState('satis_tarihi');
-  const [aksesuarSortDirection, setAksesuarSortDirection] = useState('desc');
+  const [aksesuarSortField] = useState('satis_tarihi');
+  const [aksesuarSortDirection] = useState('desc');
   const [fisKarSortField, setFisKarSortField] = useState('created_at');
   const [fisKarSortDirection, setFisKarSortDirection] = useState('desc');
 
@@ -297,16 +297,6 @@ function Raporlar() {
     }
   };
 
-  // Aksesuar sıralama toggle
-  const toggleAksesuarSort = (field) => {
-    if (aksesuarSortField === field) {
-      setAksesuarSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
-    } else {
-      setAksesuarSortField(field);
-      setAksesuarSortDirection('desc');
-    }
-  };
-
   // Fiş kar sıralama toggle
   const toggleFisKarSort = (field) => {
     if (fisKarSortField === field) {
@@ -320,11 +310,6 @@ function Raporlar() {
   // Sıralanmış aksesuar verileri
   const sortedAksesuarlar = aksesuarRapor?.detayli_aksesuarlar 
     ? sortData(aksesuarRapor.detayli_aksesuarlar, aksesuarSortField, aksesuarSortDirection) 
-    : [];
-
-  // Sıralanmış fiş kar verileri
-  const sortedFisler = fisKarRapor?.fisler 
-    ? sortData(fisKarRapor.fisler, fisKarSortField, fisKarSortDirection) 
     : [];
 
   // Sıralama ikonu
@@ -404,7 +389,7 @@ function Raporlar() {
                 >
                   <MenuItem value="">Tümü</MenuItem>
                   <MenuItem value="nakit">Nakit</MenuItem>
-                  <MenuItem value="kredi">Kredi Kartı</MenuItem>
+                  <MenuItem value="kart">Kart</MenuItem>
                   <MenuItem value="havale">Havale/EFT</MenuItem>
                 </Select>
               </FormControl>
@@ -727,10 +712,19 @@ function Raporlar() {
                       </TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Müşteri</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Araç</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Arıza/Şikayet</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Oluşturan</TableCell>
                       <TableCell align="center" sx={{ fontWeight: 700 }}>Durum</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Ödeme Detayları</TableCell>
+                      <TableCell 
+                        align="right" 
+                        sx={{ fontWeight: 700, cursor: 'pointer', userSelect: 'none' }}
+                        onClick={() => toggleIsEmriSort('toplam_maliyet')}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                          Maliyet
+                          <SortIcon field="toplam_maliyet" currentField={isEmriSortField} direction={isEmriSortDirection} />
+                        </Box>
+                      </TableCell>
                       <TableCell 
                         align="right" 
                         sx={{ fontWeight: 700, cursor: 'pointer', userSelect: 'none' }}
@@ -782,19 +776,6 @@ function Raporlar() {
                             {isEmri.km && <Typography variant="caption" color="text.secondary">{isEmri.km} km</Typography>}
                           </TableCell>
                           <TableCell>
-                            <Typography 
-                              variant="body2" 
-                              sx={{ 
-                                maxWidth: 200, 
-                                overflow: 'hidden', 
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap'
-                              }}
-                            >
-                              {isEmri.ariza_sikayetler || '-'}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                               <Avatar sx={{ width: 24, height: 24, fontSize: '0.75rem', bgcolor: 'primary.main' }}>
                                 <PersonIcon fontSize="small" />
@@ -826,6 +807,11 @@ function Raporlar() {
                                 {isEmri.odeme_detaylari || '-'}
                               </Typography>
                             </Tooltip>
+                          </TableCell>
+                          <TableCell align="right">
+                            <Typography fontWeight={600} sx={{ color: '#c62828' }}>
+                              {formatCurrency(isEmri.toplam_maliyet || 0)}
+                            </Typography>
                           </TableCell>
                           <TableCell align="right">
                             <Typography fontWeight={600} sx={{ color: '#2e7d32' }}>

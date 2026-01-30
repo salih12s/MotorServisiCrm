@@ -16,6 +16,7 @@ import Raporlar from './pages/Raporlar';
 import Giderler from './pages/Giderler';
 import Kullanicilar from './pages/Kullanicilar';
 import Aksesuarlar from './pages/Aksesuarlar';
+import MotorSatislari from './pages/MotorSatislari';
 
 // Components
 import Layout from './components/Layout';
@@ -158,6 +159,14 @@ function AppRoutes() {
           element={
             <AdminRoute>
               <Kullanicilar />
+            </AdminRoute>
+          } 
+        />
+        <Route 
+          path="motor-satislari" 
+          element={
+            <AdminRoute>
+              <MotorSatislari />
             </AdminRoute>
           } 
         />

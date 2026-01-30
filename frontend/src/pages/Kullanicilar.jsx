@@ -272,10 +272,6 @@ function Kullanicilar() {
 
   return (
     <Box>
-      <Typography variant="h5" fontWeight={700} sx={{ mb: 3, color: '#036B74' }}>
-        Kullanıcı Yönetimi
-      </Typography>
-
       {/* Pending Users Alert */}
       {pendingUsers.length > 0 && (
         <Alert 

@@ -146,15 +146,7 @@ function Musteriler() {
     <Box>
       {/* Header with Stats */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap' }}>
-          <Box>
-            <Typography variant="h5" fontWeight={700}>
-              Müşteriler
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
-            </Typography>
-          </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
           {/* Inline Stats */}
           <Chip 
             label={`Toplam: ${musteriler.length}`} 
@@ -344,7 +336,12 @@ function Musteriler() {
                   </TableRow>
                 ) : (
                   filteredMusteriler.map((musteri) => (
-                    <TableRow key={musteri.id} hover>
+                    <TableRow 
+                      key={musteri.id} 
+                      hover
+                      onDoubleClick={() => handleOpenDialog(musteri)}
+                      sx={{ cursor: 'pointer' }}
+                    >
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                           <Avatar 

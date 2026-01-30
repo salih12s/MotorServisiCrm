@@ -42,7 +42,7 @@ import {
   Receipt as ReceiptIcon,
 } from '@mui/icons-material';
 import { aksesuarService } from '../services/api';
-import { format, isValid, parseISO, isToday } from 'date-fns';
+import { format, isValid, parseISO, isToday, startOfDay, endOfDay, isAfter, isBefore } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import AksesuarModal from '../components/AksesuarModal';
 
@@ -72,6 +72,8 @@ function Aksesuarlar() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterBugun, setFilterBugun] = useState(false);
   const [filterDurum, setFilterDurum] = useState('');
+  const [baslangicTarihi, setBaslangicTarihi] = useState('');
+  const [bitisTarihi, setBitisTarihi] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
@@ -174,6 +176,43 @@ function Aksesuarlar() {
     });
   }
 
+  // Tarih aralığı filtresi
+  if (baslangicTarihi) {
+    filteredAksesuarlar = filteredAksesuarlar.filter(a => {
+      try {
+        const tarih = parseISO(a.satis_tarihi || a.created_at);
+        return isAfter(tarih, startOfDay(new Date(baslangicTarihi))) || 
+               tarih.toDateString() === new Date(baslangicTarihi).toDateString();
+      } catch {
+        return false;
+      }
+    });
+  }
+
+  if (bitisTarihi) {
+    filteredAksesuarlar = filteredAksesuarlar.filter(a => {
+      try {
+        const tarih = parseISO(a.satis_tarihi || a.created_at);
+        return isBefore(tarih, endOfDay(new Date(bitisTarihi))) || 
+               tarih.toDateString() === new Date(bitisTarihi).toDateString();
+      } catch {
+        return false;
+      }
+    });
+  }
+
+  // Aktif filtre kontrolü
+  const hasActiveFilters = searchQuery || filterDurum || filterBugun || baslangicTarihi || bitisTarihi;
+
+  // Filtreleri temizle
+  const clearFilters = () => {
+    setSearchQuery('');
+    setFilterDurum('');
+    setFilterBugun(false);
+    setBaslangicTarihi('');
+    setBitisTarihi('');
+  };
+
   // İstatistikler
   const toplamSatis = aksesuarlar.length;
   const bugunkuSatis = aksesuarlar.filter(a => {
@@ -188,6 +227,7 @@ function Aksesuarlar() {
   const tamamlananSatis = aksesuarlar.filter(a => a.durum === 'tamamlandi').length;
   const iptalSatis = aksesuarlar.filter(a => a.durum === 'iptal_edildi').length;
   const toplamTutar = aksesuarlar.reduce((sum, a) => sum + parseFloat(a.toplam_satis || a.odeme_tutari || 0), 0);
+  const toplamKar = aksesuarlar.reduce((sum, a) => sum + parseFloat(a.kar || 0), 0);
 
   // Filtre chip'ine tıklandığında
   const handleFilterClick = (type) => {
@@ -216,105 +256,100 @@ function Aksesuarlar() {
     <Box>
       {/* Header with Stats */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="h5" fontWeight={700}>
-              Aksesuar Satışları
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
-            </Typography>
-          </Box>
-          
-          {/* İstatistik Chip'leri */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+          {/* İstatistik Chip'leri - Renkli ve Tıklanabilir */}
+          <Chip
+            label={`Toplam: ${toplamSatis}`}
+            size="small"
+            onClick={() => handleFilterClick('toplam')}
+            sx={{
+              bgcolor: !filterBugun && !filterDurum ? '#1a237e' : '#e3f2fd',
+              color: !filterBugun && !filterDurum ? 'white' : '#1a237e',
+              fontWeight: 600,
+              cursor: 'pointer',
+              '&:hover': { bgcolor: '#1a237e', color: 'white' },
+            }}
+          />
+          <Chip
+            label={`Bugün: ${bugunkuSatis}`}
+            size="small"
+            onClick={() => handleFilterClick('bugun')}
+            sx={{
+              bgcolor: filterBugun ? '#1565c0' : '#bbdefb',
+              color: filterBugun ? 'white' : '#1565c0',
+              fontWeight: 600,
+              cursor: 'pointer',
+              '&:hover': { bgcolor: '#1565c0', color: 'white' },
+            }}
+          />
+          <Chip
+            label={`Beklemede: ${beklemedeSatis}`}
+            size="small"
+            onClick={() => handleFilterClick('beklemede')}
+            sx={{
+              bgcolor: filterDurum === 'beklemede' ? '#e65100' : '#fff3e0',
+              color: filterDurum === 'beklemede' ? 'white' : '#e65100',
+              fontWeight: 600,
+              cursor: 'pointer',
+              '&:hover': { bgcolor: '#e65100', color: 'white' },
+            }}
+          />
+          <Chip
+            label={`İşlemde: ${islemdeSatis}`}
+            size="small"
+            onClick={() => handleFilterClick('islemde')}
+            sx={{
+              bgcolor: filterDurum === 'islemde' ? '#0277bd' : '#e3f2fd',
+              color: filterDurum === 'islemde' ? 'white' : '#0277bd',
+              fontWeight: 600,
+              cursor: 'pointer',
+              '&:hover': { bgcolor: '#0277bd', color: 'white' },
+            }}
+          />
+          <Chip
+            label={`Tamamlandı: ${tamamlananSatis}`}
+            size="small"
+            onClick={() => handleFilterClick('tamamlandi')}
+            sx={{
+              bgcolor: filterDurum === 'tamamlandi' ? '#2e7d32' : '#e8f5e9',
+              color: filterDurum === 'tamamlandi' ? 'white' : '#2e7d32',
+              fontWeight: 600,
+              cursor: 'pointer',
+              '&:hover': { bgcolor: '#2e7d32', color: 'white' },
+            }}
+          />
+          <Chip
+            label={`İptal: ${iptalSatis}`}
+            size="small"
+            onClick={() => handleFilterClick('iptal_edildi')}
+            sx={{
+              bgcolor: filterDurum === 'iptal_edildi' ? '#c62828' : '#ffebee',
+              color: filterDurum === 'iptal_edildi' ? 'white' : '#c62828',
+              fontWeight: 600,
+              cursor: 'pointer',
+              '&:hover': { bgcolor: '#c62828', color: 'white' },
+            }}
+          />
+          <Chip
+            label={formatCurrency(toplamTutar)}
+            size="small"
+            sx={{
+              bgcolor: '#e3f2fd',
+              color: '#1565c0',
+              fontWeight: 600,
+            }}
+          />
+          {isAdmin && (
             <Chip
-              label={`Toplam: ${toplamSatis}`}
+              label={`Kar: ${formatCurrency(toplamKar)}`}
               size="small"
-              onClick={() => handleFilterClick('toplam')}
               sx={{
-                bgcolor: !filterBugun && !filterDurum ? themeColors.primary : 'grey.100',
-                color: !filterBugun && !filterDurum ? 'white' : 'text.primary',
+                bgcolor: toplamKar >= 0 ? '#e8f5e9' : '#ffebee',
+                color: toplamKar >= 0 ? '#2e7d32' : '#c62828',
                 fontWeight: 600,
-                cursor: 'pointer',
-                '&:hover': { opacity: 0.9 },
               }}
             />
-            <Chip
-              label={`Bugün: ${bugunkuSatis}`}
-              size="small"
-              onClick={() => handleFilterClick('bugun')}
-              sx={{
-                bgcolor: filterBugun ? '#ff9800' : 'grey.100',
-                color: filterBugun ? 'white' : 'text.primary',
-                fontWeight: 600,
-                cursor: 'pointer',
-                '&:hover': { opacity: 0.9 },
-              }}
-            />
-            <Chip
-              label={`Beklemede: ${beklemedeSatis}`}
-              size="small"
-              onClick={() => handleFilterClick('beklemede')}
-              sx={{
-                bgcolor: filterDurum === 'beklemede' ? '#ff9800' : 'grey.100',
-                color: filterDurum === 'beklemede' ? 'white' : 'text.primary',
-                fontWeight: 600,
-                cursor: 'pointer',
-                '&:hover': { opacity: 0.9 },
-              }}
-            />
-            <Chip
-              label={`İşlemde: ${islemdeSatis}`}
-              size="small"
-              onClick={() => handleFilterClick('islemde')}
-              sx={{
-                bgcolor: filterDurum === 'islemde' ? '#2196f3' : 'grey.100',
-                color: filterDurum === 'islemde' ? 'white' : 'text.primary',
-                fontWeight: 600,
-                cursor: 'pointer',
-                '&:hover': { opacity: 0.9 },
-              }}
-            />
-            <Chip
-              label={`Tamamlandı: ${tamamlananSatis}`}
-              size="small"
-              onClick={() => handleFilterClick('tamamlandi')}
-              sx={{
-                bgcolor: filterDurum === 'tamamlandi' ? '#4caf50' : 'grey.100',
-                color: filterDurum === 'tamamlandi' ? 'white' : 'text.primary',
-                fontWeight: 600,
-                cursor: 'pointer',
-                '&:hover': { opacity: 0.9 },
-              }}
-            />
-            <Chip
-              label={`İptal: ${iptalSatis}`}
-              size="small"
-              onClick={() => handleFilterClick('iptal_edildi')}
-              sx={{
-                bgcolor: filterDurum === 'iptal_edildi' ? '#f44336' : 'grey.100',
-                color: filterDurum === 'iptal_edildi' ? 'white' : 'text.primary',
-                fontWeight: 600,
-                cursor: 'pointer',
-                '&:hover': { opacity: 0.9 },
-              }}
-            />
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                ml: 1, 
-                color: themeColors.primary, 
-                fontWeight: 700,
-                bgcolor: `${themeColors.primary}15`,
-                px: 1.5,
-                py: 0.5,
-                borderRadius: 1,
-              }}
-            >
-              {formatCurrency(toplamTutar)}
-            </Typography>
-          </Box>
+          )}
         </Box>
 
         <Button
@@ -339,7 +374,7 @@ function Aksesuarlar() {
               placeholder="Ad veya telefon ara..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              sx={{ minWidth: 250, flex: { xs: 1, sm: 'none' } }}
+              sx={{ minWidth: 200, flex: { xs: 1, sm: 'none' } }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -355,16 +390,32 @@ function Aksesuarlar() {
                 ),
               }}
             />
+
+            {/* Tarih Filtreleri */}
+            <TextField
+              size="small"
+              type="date"
+              label="Başlangıç Tarihi"
+              value={baslangicTarihi}
+              onChange={(e) => { setBaslangicTarihi(e.target.value); setFilterBugun(false); }}
+              InputLabelProps={{ shrink: true }}
+              sx={{ width: 160 }}
+            />
+            <TextField
+              size="small"
+              type="date"
+              label="Bitiş Tarihi"
+              value={bitisTarihi}
+              onChange={(e) => { setBitisTarihi(e.target.value); setFilterBugun(false); }}
+              InputLabelProps={{ shrink: true }}
+              sx={{ width: 160 }}
+            />
             
-            {(filterBugun || filterDurum || searchQuery) && (
+            {hasActiveFilters && (
               <Button
                 size="small"
                 startIcon={<ClearIcon />}
-                onClick={() => {
-                  setFilterBugun(false);
-                  setFilterDurum('');
-                  setSearchQuery('');
-                }}
+                onClick={clearFilters}
                 color="inherit"
               >
                 Filtreleri Temizle
@@ -449,13 +500,20 @@ function Aksesuarlar() {
                     <TableCell sx={{ fontWeight: 700 }}>Ödeme Şekli</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>Durum</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 700 }}>Tutar</TableCell>
+                    {isAdmin && <TableCell align="right" sx={{ fontWeight: 700 }}>Maliyet</TableCell>}
+                    {isAdmin && <TableCell align="right" sx={{ fontWeight: 700 }}>Net Kar</TableCell>}
                     <TableCell sx={{ fontWeight: 700 }}>Satış Tarihi</TableCell>
                     <TableCell align="center" sx={{ fontWeight: 700 }}>İşlemler</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {filteredAksesuarlar.map((aksesuar) => (
-                    <TableRow key={aksesuar.id} hover>
+                    <TableRow 
+                      key={aksesuar.id} 
+                      hover
+                      onDoubleClick={() => handleViewDetails(aksesuar)}
+                      sx={{ cursor: 'pointer' }}
+                    >
                       <TableCell>{aksesuar.ad_soyad}</TableCell>
                       <TableCell>{aksesuar.telefon || '-'}</TableCell>
                       <TableCell>
@@ -482,6 +540,23 @@ function Aksesuarlar() {
                           {formatCurrency(aksesuar.toplam_satis || aksesuar.odeme_tutari)}
                         </Typography>
                       </TableCell>
+                      {isAdmin && (
+                        <TableCell align="right">
+                          <Typography sx={{ color: '#c62828' }}>
+                            {formatCurrency(aksesuar.toplam_maliyet || 0)}
+                          </Typography>
+                        </TableCell>
+                      )}
+                      {isAdmin && (
+                        <TableCell align="right">
+                          <Typography 
+                            fontWeight={700} 
+                            sx={{ color: parseFloat(aksesuar.kar || 0) >= 0 ? '#2e7d32' : '#c62828' }}
+                          >
+                            {formatCurrency(aksesuar.kar || 0)}
+                          </Typography>
+                        </TableCell>
+                      )}
                       <TableCell>{formatDate(aksesuar.satis_tarihi || aksesuar.created_at, 'dd.MM.yyyy')}</TableCell>
                       <TableCell align="center">
                         <IconButton size="small" onClick={() => handleViewDetails(aksesuar)} sx={{ color: themeColors.primary }}>

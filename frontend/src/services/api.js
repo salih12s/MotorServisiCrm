@@ -114,4 +114,21 @@ export const aksesuarService = {
   getStats: () => api.get('/aksesuarlar/stats/genel'),
 };
 
+// Motor Satışları
+export const motorSatisService = {
+  // Satışlar
+  getAll: () => api.get('/motor-satislari'),
+  getById: (id) => api.get(`/motor-satislari/${id}`),
+  create: (data) => api.post('/motor-satislari', data),
+  update: (id, data) => api.put(`/motor-satislari/${id}`, data),
+  delete: (id) => api.delete(`/motor-satislari/${id}`),
+  getStats: () => api.get('/motor-satislari/stats/ozet'),
+  
+  // Motor Modelleri
+  getModeller: () => api.get('/motor-satislari/modeller'),
+  createModel: (data) => api.post('/motor-satislari/modeller', data),
+  updateModel: (id, data) => api.put(`/motor-satislari/modeller/${id}`, data),
+  deleteModel: (id) => api.delete(`/motor-satislari/modeller/${id}`),
+};
+
 export default api;

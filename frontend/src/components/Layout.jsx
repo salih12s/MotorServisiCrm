@@ -26,6 +26,7 @@ import {
   Menu as MenuIcon,
   Group as GroupIcon,
   ShoppingBag as ShoppingBagIcon,
+  TwoWheeler as TwoWheelerIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { useCustomTheme } from '../context/ThemeContext';
@@ -35,16 +36,16 @@ const drawerWidth = 260;
 
 const menuItems = [
   { 
-    title: 'İş Emirleri', 
-    path: '/', 
-    icon: <AssignmentIcon />,
-    roles: ['admin', 'user', 'personel'],
-    hideForAksesuarOnly: true, // Aksesuar yetkisi olanlardan gizle
+    title: 'Motorsiklet Satış', 
+    path: '/motor-satislari', 
+    icon: <TwoWheelerIcon />,
+    roles: ['admin'],
+    color: '#E65100',
   },
   { 
-    title: 'Müşteriler', 
-    path: '/musteriler', 
-    icon: <PeopleIcon />,
+    title: 'Servis', 
+    path: '/', 
+    icon: <AssignmentIcon />,
     roles: ['admin', 'user', 'personel'],
     hideForAksesuarOnly: true, // Aksesuar yetkisi olanlardan gizle
   },
@@ -68,24 +69,33 @@ const menuItems = [
     icon: <GroupIcon />,
     roles: ['admin'],
   },
+  { 
+    title: 'Müşteriler', 
+    path: '/musteriler', 
+    icon: <PeopleIcon />,
+    roles: ['admin', 'user', 'personel'],
+    hideForAksesuarOnly: true, // Aksesuar yetkisi olanlardan gizle
+  },
 ];
 
 function Layout() {
   const [anchorEl, setAnchorEl] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, logout } = useAuth();
-  const { setAksesuarTheme, setDefaultTheme, themeColors } = useCustomTheme();
+  const { setAksesuarTheme, setMotorSatisTheme, setDefaultTheme, themeColors } = useCustomTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Aksesuar sayfasında temayı değiştir
+  // Sayfa yoluna göre temayı değiştir
   useEffect(() => {
     if (location.pathname === '/aksesuarlar') {
       setAksesuarTheme();
+    } else if (location.pathname === '/motor-satislari') {
+      setMotorSatisTheme();
     } else {
       setDefaultTheme();
     }
-  }, [location.pathname, setAksesuarTheme, setDefaultTheme]);
+  }, [location.pathname, setAksesuarTheme, setMotorSatisTheme, setDefaultTheme]);
 
   // Kullanıcı rolüne göre ve aksesuar yetkisine göre menu filtrele
   const filteredMenuItems = menuItems.filter(item => {
