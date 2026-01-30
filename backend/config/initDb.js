@@ -313,16 +313,80 @@ const initDatabase = async () => {
         iskonto DECIMAL(12,2) DEFAULT 0,
         alis_fiyati DECIMAL(12,2) DEFAULT 0,
         satis_fiyati DECIMAL(12,2) DEFAULT 0,
+        fatura_fiyati DECIMAL(12,2) DEFAULT 0,
         kar DECIMAL(12,2) DEFAULT 0,
         odeme_sekli VARCHAR(50) DEFAULT 'nakit',
+        nakit_tutar DECIMAL(12,2) DEFAULT 0,
+        kart_tutar DECIMAL(12,2) DEFAULT 0,
+        havale_tutar DECIMAL(12,2) DEFAULT 0,
         musteri_adi VARCHAR(255),
         musteri_telefon VARCHAR(50),
+        tc_kimlik_no VARCHAR(20),
+        adres TEXT,
         aciklama TEXT,
+        iskonto_tutari DECIMAL(12,2) DEFAULT 0,
+        iskontolu_alis_fiyati DECIMAL(12,2) DEFAULT 0,
+        matrah_satis DECIMAL(12,2) DEFAULT 0,
+        kdv_tutari DECIMAL(12,2) DEFAULT 0,
+        kdvsiz_tutar DECIMAL(12,2) DEFAULT 0,
+        otv_tutari DECIMAL(12,2) DEFAULT 0,
+        damga_vergisi DECIMAL(12,2) DEFAULT 791,
+        vergiler_toplami DECIMAL(12,2) DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
     console.log('✓ Motor Satışları tablosu oluşturuldu');
+
+    // Motor satışları tablosuna eksik kolonları ekle (mevcut tablolar için)
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='motor_satislari' AND column_name='fatura_fiyati') THEN
+          ALTER TABLE motor_satislari ADD COLUMN fatura_fiyati DECIMAL(12,2) DEFAULT 0;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='motor_satislari' AND column_name='nakit_tutar') THEN
+          ALTER TABLE motor_satislari ADD COLUMN nakit_tutar DECIMAL(12,2) DEFAULT 0;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='motor_satislari' AND column_name='kart_tutar') THEN
+          ALTER TABLE motor_satislari ADD COLUMN kart_tutar DECIMAL(12,2) DEFAULT 0;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='motor_satislari' AND column_name='havale_tutar') THEN
+          ALTER TABLE motor_satislari ADD COLUMN havale_tutar DECIMAL(12,2) DEFAULT 0;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='motor_satislari' AND column_name='tc_kimlik_no') THEN
+          ALTER TABLE motor_satislari ADD COLUMN tc_kimlik_no VARCHAR(20);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='motor_satislari' AND column_name='adres') THEN
+          ALTER TABLE motor_satislari ADD COLUMN adres TEXT;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='motor_satislari' AND column_name='iskonto_tutari') THEN
+          ALTER TABLE motor_satislari ADD COLUMN iskonto_tutari DECIMAL(12,2) DEFAULT 0;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='motor_satislari' AND column_name='iskontolu_alis_fiyati') THEN
+          ALTER TABLE motor_satislari ADD COLUMN iskontolu_alis_fiyati DECIMAL(12,2) DEFAULT 0;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='motor_satislari' AND column_name='matrah_satis') THEN
+          ALTER TABLE motor_satislari ADD COLUMN matrah_satis DECIMAL(12,2) DEFAULT 0;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='motor_satislari' AND column_name='kdv_tutari') THEN
+          ALTER TABLE motor_satislari ADD COLUMN kdv_tutari DECIMAL(12,2) DEFAULT 0;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='motor_satislari' AND column_name='kdvsiz_tutar') THEN
+          ALTER TABLE motor_satislari ADD COLUMN kdvsiz_tutar DECIMAL(12,2) DEFAULT 0;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='motor_satislari' AND column_name='otv_tutari') THEN
+          ALTER TABLE motor_satislari ADD COLUMN otv_tutari DECIMAL(12,2) DEFAULT 0;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='motor_satislari' AND column_name='damga_vergisi') THEN
+          ALTER TABLE motor_satislari ADD COLUMN damga_vergisi DECIMAL(12,2) DEFAULT 791;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='motor_satislari' AND column_name='vergiler_toplami') THEN
+          ALTER TABLE motor_satislari ADD COLUMN vergiler_toplami DECIMAL(12,2) DEFAULT 0;
+        END IF;
+      END $$;
+    `);
+    console.log('✓ Motor Satışları tablosuna eksik kolonlar eklendi');
 
     // Varsayılan admin kullanıcısı oluştur
     const adminExists = await pool.query(
