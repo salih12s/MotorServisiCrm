@@ -80,7 +80,32 @@ const AksesuarRoute = ({ children }) => {
   return children;
 };
 
-// Normal sayfalar için route - aksesuar_yetkisi olanlar erişemez
+// Motor Satış Route - motor_satis_yetkisi olanlar sadece bu sayfayı görebilir
+const MotorSatisRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return null;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Admin her zaman erişebilir
+  if (user.role === 'admin') {
+    return children;
+  }
+
+  // Motor satış yetkisi olmayanlar erişemez
+  if (!user.motor_satis_yetkisi) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+};
+
+// Normal sayfalar için route - aksesuar_yetkisi veya motor_satis_yetkisi olanlar erişemez
 const NormalRoute = ({ children }) => {
   const { user, loading } = useAuth();
 
@@ -97,8 +122,18 @@ const NormalRoute = ({ children }) => {
     return children;
   }
 
-  // Aksesuar yetkisi olanlar normal sayfalara erişemez
-  if (user.aksesuar_yetkisi) {
+  // Sadece aksesuar yetkisi olanlar aksesuar sayfasına yönlendirilir
+  if (user.aksesuar_yetkisi && !user.motor_satis_yetkisi) {
+    return <Navigate to="/aksesuarlar" replace />;
+  }
+
+  // Sadece motor satış yetkisi olanlar motor satış sayfasına yönlendirilir
+  if (user.motor_satis_yetkisi && !user.aksesuar_yetkisi) {
+    return <Navigate to="/motor-satislari" replace />;
+  }
+
+  // Her iki yetkisi de olanlar da normal sayfalara erişemez
+  if (user.aksesuar_yetkisi && user.motor_satis_yetkisi) {
     return <Navigate to="/aksesuarlar" replace />;
   }
 
@@ -165,9 +200,9 @@ function AppRoutes() {
         <Route 
           path="motor-satislari" 
           element={
-            <AdminRoute>
+            <MotorSatisRoute>
               <MotorSatislari />
-            </AdminRoute>
+            </MotorSatisRoute>
           } 
         />
         <Route path="aksesuarlar" element={<AksesuarRoute><Aksesuarlar /></AksesuarRoute>} />

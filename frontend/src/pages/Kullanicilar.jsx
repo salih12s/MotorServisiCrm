@@ -155,6 +155,16 @@ function Kullanicilar() {
     }
   };
 
+  const handleMotorSatisYetkisiToggle = async (userId, currentValue) => {
+    try {
+      await authService.updateMotorSatisYetkisi(userId, !currentValue);
+      setSnackbar({ open: true, message: `Motor satış yetkisi ${!currentValue ? 'verildi' : 'kaldırıldı'}`, severity: 'success' });
+      loadData();
+    } catch (error) {
+      setSnackbar({ open: true, message: 'Yetki güncelleme başarısız', severity: 'error' });
+    }
+  };
+
   const handleDelete = async () => {
     if (!userToDelete) return;
     try {
@@ -365,6 +375,25 @@ function Kullanicilar() {
                     />
                   </Box>
 
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+                    <Typography variant="caption" sx={{ fontSize: '0.7rem', fontWeight: 600 }}>
+                      Motor Satış Yetkisi:
+                    </Typography>
+                    <Switch
+                      size="small"
+                      checked={user.motor_satis_yetkisi || false}
+                      onChange={() => handleMotorSatisYetkisiToggle(user.id, user.motor_satis_yetkisi)}
+                      sx={{
+                        '& .MuiSwitch-switchBase.Mui-checked': {
+                          color: '#E65100',
+                        },
+                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                          backgroundColor: '#E65100',
+                        },
+                      }}
+                    />
+                  </Box>
+
                   <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
                     <Button
                       size="small"
@@ -432,6 +461,7 @@ function Kullanicilar() {
                 <TableCell>Rol</TableCell>
                 <TableCell>Durum</TableCell>
                 <TableCell>Aksesuar</TableCell>
+                <TableCell>Motor Satış</TableCell>
                 <TableCell>Kayıt Tarihi</TableCell>
                 <TableCell align="right">İşlemler</TableCell>
               </TableRow>
@@ -477,6 +507,21 @@ function Kullanicilar() {
                       checked={user.aksesuar_yetkisi || false}
                       onChange={() => handleAksesuarYetkisiToggle(user.id, user.aksesuar_yetkisi)}
                       color="secondary"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Switch
+                      size="small"
+                      checked={user.motor_satis_yetkisi || false}
+                      onChange={() => handleMotorSatisYetkisiToggle(user.id, user.motor_satis_yetkisi)}
+                      sx={{
+                        '& .MuiSwitch-switchBase.Mui-checked': {
+                          color: '#E65100',
+                        },
+                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                          backgroundColor: '#E65100',
+                        },
+                      }}
                     />
                   </TableCell>
                   <TableCell>

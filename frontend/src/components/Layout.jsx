@@ -39,8 +39,9 @@ const menuItems = [
     title: 'Motorsiklet Satış', 
     path: '/motor-satislari', 
     icon: <TwoWheelerIcon />,
-    roles: ['admin'],
+    roles: ['admin', 'user', 'personel'],
     color: '#E65100',
+    showForMotorSatisOnly: true, // Motor satış yetkisi olanlara göster
   },
   { 
     title: 'Servis', 
@@ -48,6 +49,7 @@ const menuItems = [
     icon: <AssignmentIcon />,
     roles: ['admin', 'user', 'personel'],
     hideForAksesuarOnly: true, // Aksesuar yetkisi olanlardan gizle
+    hideForMotorSatisOnly: true, // Motor satış yetkisi olanlardan gizle
   },
   { 
     title: 'Aksesuarlar', 
@@ -75,6 +77,7 @@ const menuItems = [
     icon: <PeopleIcon />,
     roles: ['admin', 'user', 'personel'],
     hideForAksesuarOnly: true, // Aksesuar yetkisi olanlardan gizle
+    hideForMotorSatisOnly: true, // Motor satış yetkisi olanlardan gizle
   },
 ];
 
@@ -97,7 +100,7 @@ function Layout() {
     }
   }, [location.pathname, setAksesuarTheme, setMotorSatisTheme, setDefaultTheme]);
 
-  // Kullanıcı rolüne göre ve aksesuar yetkisine göre menu filtrele
+  // Kullanıcı rolüne göre ve yetkilerine göre menu filtrele
   const filteredMenuItems = menuItems.filter(item => {
     // Rol kontrolü
     if (item.roles && !item.roles.includes(user?.role || 'user')) {
@@ -109,14 +112,27 @@ function Layout() {
       return true;
     }
     
-    // Aksesuar yetkisi olan kullanıcılar SADECE aksesuar sayfasını görebilir
-    if (user?.aksesuar_yetkisi) {
-      // showForAksesuarOnly olanları göster, diğerlerini gizle
+    // Sadece aksesuar yetkisi olan kullanıcılar (motor satış yetkisi yok)
+    if (user?.aksesuar_yetkisi && !user?.motor_satis_yetkisi) {
       return item.showForAksesuarOnly === true;
     }
     
-    // Aksesuar yetkisi olmayan kullanıcılar aksesuar sayfasını göremez
+    // Sadece motor satış yetkisi olan kullanıcılar (aksesuar yetkisi yok)
+    if (user?.motor_satis_yetkisi && !user?.aksesuar_yetkisi) {
+      return item.showForMotorSatisOnly === true;
+    }
+    
+    // Her iki yetkisi de olan kullanıcılar
+    if (user?.aksesuar_yetkisi && user?.motor_satis_yetkisi) {
+      return item.showForAksesuarOnly === true || item.showForMotorSatisOnly === true;
+    }
+    
+    // Hiçbir özel yetkisi olmayan kullanıcılar
     if (item.showForAksesuarOnly && !user?.aksesuar_yetkisi) {
+      return false;
+    }
+    
+    if (item.showForMotorSatisOnly && !user?.motor_satis_yetkisi) {
       return false;
     }
     

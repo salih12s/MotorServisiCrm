@@ -422,7 +422,7 @@ const MotorSatislari = () => {
         justifyContent: 'space-between', 
         alignItems: 'center', 
         mb: 3,
-        flexWrap: 'wrap',
+        flexDirection: { xs: 'column', sm: 'row' },
         gap: 2
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -433,30 +433,42 @@ const MotorSatislari = () => {
           />
         </Box>
         
-        <Box sx={{ display: 'flex', gap: 1 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 1, 
+          flexWrap: 'wrap',
+          justifyContent: { xs: 'center', sm: 'flex-end' },
+          width: { xs: '100%', sm: 'auto' }
+        }}>
           <Button
             variant="outlined"
-            startIcon={<ListIcon />}
+            startIcon={!isMobile && <ListIcon />}
             onClick={() => setModellerListModalOpen(true)}
             color="primary"
+            size={isMobile ? 'small' : 'medium'}
+            sx={{ flex: { xs: 1, sm: 'none' }, minWidth: { xs: 0, sm: 'auto' } }}
           >
-            Tanımlı Modeller ({modeller.length})
+            {isMobile ? <ListIcon /> : `Tanımlı Modeller (${modeller.length})`}
           </Button>
           <Button
             variant="outlined"
-            startIcon={<SettingsIcon />}
+            startIcon={!isMobile && <SettingsIcon />}
             onClick={() => handleOpenModelModal()}
             color="primary"
+            size={isMobile ? 'small' : 'medium'}
+            sx={{ flex: { xs: 1, sm: 'none' }, minWidth: { xs: 0, sm: 'auto' } }}
           >
-            Motor Tanımla
+            {isMobile ? <SettingsIcon /> : 'Motor Tanımla'}
           </Button>
           <Button
             variant="contained"
-            startIcon={<AddIcon />}
+            startIcon={!isMobile && <AddIcon />}
             onClick={() => handleOpenSatisModal()}
             color="primary"
+            size={isMobile ? 'small' : 'medium'}
+            sx={{ flex: { xs: 1, sm: 'none' }, minWidth: { xs: 0, sm: 'auto' } }}
           >
-            Yeni Motor Satış
+            {isMobile ? <AddIcon /> : 'Yeni Motor Satış'}
           </Button>
         </Box>
       </Box>
@@ -485,7 +497,132 @@ const MotorSatislari = () => {
         />
       </Paper>
 
-      {/* Satışlar Tablosu */}
+      {/* Satışlar - Masaüstü Tablo / Mobil Kart Görünümü */}
+      {isMobile ? (
+        /* Mobil Kart Görünümü */
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {filteredSatislar.length === 0 ? (
+            <Paper sx={{ p: 4, textAlign: 'center' }}>
+              <MotorIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
+              <Typography color="text.secondary">
+                {searchTerm ? 'Arama sonucu bulunamadı' : 'Henüz motor satışı yok'}
+              </Typography>
+            </Paper>
+          ) : (
+            filteredSatislar.map((satis) => {
+              const model = modeller.find(m => m.id === satis.motor_modeli_id);
+              const otvOrani = parseFloat(model?.otv_orani || satis.otv_orani || 0);
+              const alisFiyati = parseFloat(satis.alis_fiyati || 0);
+              const satisFiyati = parseFloat(satis.satis_fiyati || 0);
+              const faturaFiyati = parseFloat(satis.fatura_fiyati || 0);
+              const iskontoOrani = parseFloat(satis.iskonto || 0);
+              const matrahSatis = faturaFiyati / ((1 + otvOrani / 100) * (1 + KDV_ORANI / 100));
+              const otvTutari = matrahSatis * (otvOrani / 100);
+              const kdvsizTutar = matrahSatis + otvTutari;
+              const kdvTutari = kdvsizTutar * (KDV_ORANI / 100);
+              const iskontoTutari = alisFiyati * (iskontoOrani / 100);
+              const iskontoluAlis = alisFiyati - iskontoTutari;
+              const vergilerToplami = kdvTutari + otvTutari + DAMGA_VERGISI;
+              const kar = satis.kar || (satisFiyati - vergilerToplami - iskontoluAlis);
+
+              return (
+                <Card key={satis.id} sx={{ overflow: 'hidden' }} onClick={() => handleOpenDetayModal(satis)}>
+                  <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                    {/* Üst Kısım - Model ve Tarih */}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
+                        <Avatar sx={{ bgcolor: 'primary.main', width: 36, height: 36 }}>
+                          <MotorIcon sx={{ fontSize: 20 }} />
+                        </Avatar>
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography variant="subtitle2" fontWeight={700} noWrap>
+                            {satis.model_adi || '-'} {satis.cc ? `${satis.cc}cc` : ''}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" fontSize="0.7rem">
+                            {formatDate(satis.tarih)}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Chip 
+                        label={satis.odeme_sekli === 'nakit' ? 'Nakit' : satis.odeme_sekli === 'kredi_karti' ? 'K.Kartı' : satis.odeme_sekli === 'havale' ? 'Havale' : 'Taksit'} 
+                        size="small"
+                        sx={{ height: 20, fontSize: '0.65rem' }}
+                        color={satis.odeme_sekli === 'nakit' ? 'success' : 'info'}
+                      />
+                    </Box>
+
+                    {/* Müşteri Bilgileri */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, bgcolor: 'grey.50', p: 0.75, borderRadius: 1 }}>
+                      <PersonIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                      <Typography variant="body2" fontWeight={500} noWrap sx={{ flex: 1 }}>
+                        {satis.musteri_adi || 'Müşteri belirtilmemiş'}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {satis.musteri_telefon || '-'}
+                      </Typography>
+                    </Box>
+
+                    <Divider sx={{ my: 1 }} />
+
+                    {/* Fiyat Bilgileri */}
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 0.5, mb: 1 }}>
+                      <Box sx={{ textAlign: 'center', p: 0.5, bgcolor: 'error.50', borderRadius: 1 }}>
+                        <Typography variant="caption" color="error.main" fontSize="0.6rem">Alış</Typography>
+                        <Typography variant="body2" fontWeight={600} color="error.main" fontSize="0.7rem">
+                          {formatCurrency(alisFiyati)}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ textAlign: 'center', p: 0.5, bgcolor: 'success.50', borderRadius: 1 }}>
+                        <Typography variant="caption" color="success.main" fontSize="0.6rem">Satış</Typography>
+                        <Typography variant="body2" fontWeight={600} color="success.main" fontSize="0.7rem">
+                          {formatCurrency(satisFiyati)}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ textAlign: 'center', p: 0.5, bgcolor: 'info.50', borderRadius: 1 }}>
+                        <Typography variant="caption" color="info.main" fontSize="0.6rem">Fatura</Typography>
+                        <Typography variant="body2" fontWeight={600} color="info.main" fontSize="0.7rem">
+                          {formatCurrency(faturaFiyati)}
+                        </Typography>
+                      </Box>
+                    </Box>
+
+                    {/* Kar ve İşlemler */}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Chip label={`%${satis.iskonto || 0} İsk.`} size="small" sx={{ height: 20, fontSize: '0.6rem' }} />
+                        <Box sx={{ 
+                          bgcolor: kar >= 0 ? 'success.100' : 'error.100', 
+                          px: 1, 
+                          py: 0.25, 
+                          borderRadius: 1,
+                          border: '1px solid',
+                          borderColor: kar >= 0 ? 'success.main' : 'error.main'
+                        }}>
+                          <Typography variant="caption" fontWeight={700} color={kar >= 0 ? 'success.main' : 'error.main'}>
+                            Kar: {formatCurrency(kar)}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Box sx={{ display: 'flex', gap: 0.5 }} onClick={(e) => e.stopPropagation()}>
+                        <IconButton size="small" onClick={() => handleOpenDetayModal(satis)} color="info" sx={{ p: 0.5 }}>
+                          <VisibilityIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                        <IconButton size="small" onClick={() => handleOpenSatisModal(satis)} color="primary" sx={{ p: 0.5 }}>
+                          <EditIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                        <IconButton size="small" onClick={() => handleDeleteSatis(satis.id)} color="error" sx={{ p: 0.5 }}>
+                          <DeleteIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              );
+            })
+          )}
+        </Box>
+      ) : (
+        /* Masaüstü Tablo Görünümü */
       <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
         <Table size="small" sx={{ minWidth: 950, tableLayout: 'fixed' }}>
           <TableHead>
@@ -611,6 +748,7 @@ const MotorSatislari = () => {
           </TableBody>
         </Table>
       </TableContainer>
+      )}
 
       {/* Satış Modal - İş Emri Tarzı Dizayn */}
       <Dialog 
@@ -668,7 +806,7 @@ const MotorSatislari = () => {
           <Grid container spacing={2}>
             {/* Motor Bilgileri */}
             <Grid item xs={12} md={6}>
-              <Card sx={{ height: '100%' , width : 550}}>
+              <Card sx={{ height: '100%' }}>
                 <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1.5 }}>
                     <Avatar sx={{ bgcolor: 'primary.lighter', color: 'primary.main', width: 28, height: 28 }}>
@@ -678,7 +816,7 @@ const MotorSatislari = () => {
                       Motor Bilgileri
                     </Typography>
                   </Box>
-                  <Box sx={{ display: 'flex', gap: 1.5, mb: 1.5 }}>
+                  <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1.5, mb: 1.5 }}>
                     <TextField
                       sx={{ flex: 1, mt: 1.1}}
                       size="small"
@@ -698,7 +836,7 @@ const MotorSatislari = () => {
                       placeholder="Şase numarasını girin"
                     />
                   </Box>
-                  <Box sx={{ display: 'flex', gap: 1.5 }}>
+                  <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1.5 }}>
                     <FormControl size="small" sx={{ flex: 1 , mt: 1}} required>
                       <InputLabel>Motor Modeli</InputLabel>
                       <Select
@@ -731,7 +869,7 @@ const MotorSatislari = () => {
                   
                   {/* Karışık Ödeme Detayları */}
                   {satisForm.odeme_sekli === 'karisik' && (
-                    <Box sx={{ display: 'flex', gap: 1.5, mt: 1.5 }}>
+                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1.5, mt: 1.5 }}>
                       <TextField
                         sx={{ flex: 1 }}
                         size="small"
@@ -779,7 +917,7 @@ const MotorSatislari = () => {
 
             {/* Müşteri Bilgileri */}
             <Grid item xs={12} md={6}>
-              <Card sx={{ height: '100%'  , width : 550}}>
+              <Card sx={{ height: '100%' }}>
                 <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1.5 }}>
                     <Avatar sx={{ bgcolor: 'secondary.lighter', color: 'secondary.main', width: 28, height: 28 }}>
@@ -789,7 +927,7 @@ const MotorSatislari = () => {
                       Müşteri Bilgileri
                     </Typography>
                   </Box>
-                  <Box sx={{ display: 'flex', gap: 1.5, mb: 1.5 }}>
+                  <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1.5, mb: 1.5 }}>
                     <TextField
                       sx={{ flex: 1 }}
                       size="small"
@@ -807,7 +945,7 @@ const MotorSatislari = () => {
                       placeholder="0555 555 55 55"
                     />
                   </Box>
-                  <Box sx={{ display: 'flex', gap: 1.5 }}>
+                  <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1.5 }}>
                     <TextField
                       sx={{ flex: 1 }}
                       size="small"
@@ -842,7 +980,7 @@ const MotorSatislari = () => {
                       Fiyat Bilgileri
                     </Typography>
                   </Box>
-                  <Box sx={{ display: 'flex', gap: 1.5, mb: 1.5 }}>
+                  <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1.5, mb: 1.5 }}>
                     <TextField
                       sx={{ flex: 1 , mt: 1.1}}
                       size="small"
@@ -870,7 +1008,7 @@ const MotorSatislari = () => {
                       placeholder="105.000"
                     />
                   </Box>
-                  <Box sx={{ display: 'flex', gap: 1.5 }}>
+                  <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1.5 }}>
                     <TextField
                       sx={{ flex: 1 , mt: 1.1}}
                       size="small"
@@ -903,7 +1041,7 @@ const MotorSatislari = () => {
 
             {/* Açıklama ve Kâr Özeti */}
             <Grid item xs={12} md={6}>
-              <Card sx={{ height: '100%' , width : 550}}>
+              <Card sx={{ height: '100%' }}>
                 <CardContent sx={{ p: 1.5, '&:last-child': { pb: 2.5 } }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1.5 }}>
                     <Avatar sx={{ bgcolor: 'warning.lighter', color: 'warning.main', width: 28, height: 28 }}>
@@ -1068,9 +1206,11 @@ const MotorSatislari = () => {
         onClose={handleCloseModelModal} 
         maxWidth="sm" 
         fullWidth
+        fullScreen={isMobile}
         PaperProps={{
           sx: { 
-            borderRadius: 2,
+            borderRadius: { xs: 0, sm: 2 },
+            m: { xs: 0, sm: 2 },
           }
         }}
       >
@@ -1079,22 +1219,22 @@ const MotorSatislari = () => {
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'space-between',
-            p: 2, 
+            p: { xs: 1.5, sm: 2 }, 
             pb: 1,
             borderBottom: '1px solid',
             borderColor: 'divider',
             bgcolor: 'grey.50'
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar sx={{ bgcolor: 'primary.main', width: 36, height: 36 }}>
-              <SettingsIcon />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
+            <Avatar sx={{ bgcolor: 'primary.main', width: { xs: 32, sm: 36 }, height: { xs: 32, sm: 36 } }}>
+              <SettingsIcon sx={{ fontSize: { xs: 18, sm: 22 } }} />
             </Avatar>
             <Box>
-              <Typography variant="h6" fontWeight={700}>
+              <Typography variant={isMobile ? 'subtitle1' : 'h6'} fontWeight={700}>
                 {editingModel ? 'Motor Modeli Düzenle' : 'Yeni Motor Modeli Tanımla'}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="caption" color="text.secondary">
                 Motor modeli bilgilerini girin
               </Typography>
             </Box>
@@ -1131,7 +1271,7 @@ const MotorSatislari = () => {
                 placeholder="Örn: Yamaha YZF-R3, Honda CB500X"
                 sx={{ mb: 1.5 }}
               />
-              <Box sx={{ display: 'flex', gap: 1.5 }}>
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1.5 }}>
                 <TextField
                   sx={{ flex: 1 }}
                   size="small"
@@ -1172,9 +1312,11 @@ const MotorSatislari = () => {
         onClose={() => setModellerListModalOpen(false)} 
         maxWidth="md" 
         fullWidth
+        fullScreen={isMobile}
         PaperProps={{
           sx: { 
-            borderRadius: 2,
+            borderRadius: { xs: 0, sm: 2 },
+            m: { xs: 0, sm: 2 },
           }
         }}
       >
@@ -1183,7 +1325,7 @@ const MotorSatislari = () => {
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'space-between',
-            p: 2, 
+            p: { xs: 1.5, sm: 2 }, 
             pb: 1,
             borderBottom: '1px solid',
             borderColor: 'divider',
@@ -1217,7 +1359,7 @@ const MotorSatislari = () => {
             <CloseIcon />
           </IconButton>
         </DialogTitle>
-        <DialogContent sx={{ p: 2 }}>
+        <DialogContent sx={{ p: { xs: 1, sm: 2 } }}>
           {modeller.length === 0 ? (
             <Paper variant="outlined" sx={{ p: 4, textAlign: 'center' }}>
               <MotorIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
@@ -1236,7 +1378,53 @@ const MotorSatislari = () => {
                 İlk Modeli Tanımla
               </Button>
             </Paper>
+          ) : isMobile ? (
+            /* Mobil Kart Görünümü */
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {modeller.map((model) => (
+                <Card key={model.id} variant="outlined">
+                  <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
+                        <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>
+                          <MotorIcon sx={{ fontSize: 18 }} />
+                        </Avatar>
+                        <Box>
+                          <Typography variant="subtitle2" fontWeight={600}>{model.model_adi}</Typography>
+                          <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5 }}>
+                            {model.cc && <Chip label={`${model.cc} cc`} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.65rem' }} />}
+                            {model.otv_orani && <Chip label={`ÖTV %${model.otv_orani}`} size="small" color="warning" variant="outlined" sx={{ height: 20, fontSize: '0.65rem' }} />}
+                          </Box>
+                        </Box>
+                      </Box>
+                      <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => {
+                            setModellerListModalOpen(false);
+                            handleOpenModelModal(model);
+                          }}
+                          color="primary"
+                          sx={{ p: 0.5 }}
+                        >
+                          <EditIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleDeleteModel(model.id)}
+                          color="error"
+                          sx={{ p: 0.5 }}
+                        >
+                          <DeleteIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              ))}
+            </Box>
           ) : (
+            /* Masaüstü Tablo Görünümü */
             <TableContainer component={Paper} variant="outlined">
               <Table size="small">
                 <TableHead>
@@ -1316,9 +1504,11 @@ const MotorSatislari = () => {
         onClose={() => setDetayModalOpen(false)} 
         maxWidth="lg" 
         fullWidth
+        fullScreen={isMobile}
         PaperProps={{
           sx: { 
-            borderRadius: 2,
+            borderRadius: { xs: 0, sm: 2 },
+            m: { xs: 0, sm: 2 },
           }
         }}
       >
@@ -1327,23 +1517,23 @@ const MotorSatislari = () => {
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'space-between',
-            p: 2, 
+            p: { xs: 1.5, sm: 2 }, 
             pb: 1,
             borderBottom: '1px solid',
             borderColor: 'divider',
             bgcolor: 'grey.50'
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar sx={{ bgcolor: 'info.main', width: 40, height: 40 }}>
-              <InfoIcon />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
+            <Avatar sx={{ bgcolor: 'info.main', width: { xs: 32, sm: 40 }, height: { xs: 32, sm: 40 } }}>
+              <InfoIcon sx={{ fontSize: { xs: 18, sm: 24 } }} />
             </Avatar>
             <Box>
-              <Typography variant="h6" fontWeight={700}>
+              <Typography variant={isMobile ? 'subtitle1' : 'h6'} fontWeight={700}>
                 Satış Detayları
               </Typography>
               {selectedSatisDetay && (
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="caption" color="text.secondary">
                   Şase No: {selectedSatisDetay.sase_no}
                 </Typography>
               )}
@@ -1360,7 +1550,7 @@ const MotorSatislari = () => {
             <CloseIcon />
           </IconButton>
         </DialogTitle>
-        <DialogContent sx={{ p: 2 }}>
+        <DialogContent sx={{ p: { xs: 1, sm: 2 } }}>
           {selectedSatisDetay && (() => {
             // Hesaplamaları her zaman fatura fiyatı üzerinden yap (Türkiye vergi mevzuatına göre)
             const satis = selectedSatisDetay;
