@@ -710,8 +710,8 @@ function IsEmirleri() {
                     <TableRow
                       key={isEmri.id}
                       hover
-                      onDoubleClick={() => handleViewDetail(isEmri)}
-                      sx={{ '&:hover': { bgcolor: 'action.hover', cursor: 'pointer' }, '& td': { py: 0.5, px: 0.5 } }}
+                      onDoubleClick={() => isAdmin && handleViewDetail(isEmri)}
+                      sx={{ '&:hover': { bgcolor: 'action.hover', cursor: isAdmin ? 'pointer' : 'default' }, '& td': { py: 0.5, px: 0.5 } }}
                     >
                       <TableCell>
                         <Tooltip title={`Fiş: ${isEmri.fis_no}`}>

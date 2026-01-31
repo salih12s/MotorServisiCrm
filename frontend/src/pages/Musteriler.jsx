@@ -39,6 +39,7 @@ import {
   Close as CloseIcon,
 } from '@mui/icons-material';
 import { musteriService } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
@@ -50,6 +51,8 @@ function Musteriler() {
   const [editingMusteri, setEditingMusteri] = useState(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [formData, setFormData] = useState({
     ad_soyad: '',
     telefon: '',
@@ -339,8 +342,8 @@ function Musteriler() {
                     <TableRow 
                       key={musteri.id} 
                       hover
-                      onDoubleClick={() => handleOpenDialog(musteri)}
-                      sx={{ cursor: 'pointer' }}
+                      onDoubleClick={() => isAdmin && handleOpenDialog(musteri)}
+                      sx={{ cursor: isAdmin ? 'pointer' : 'default' }}
                     >
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>

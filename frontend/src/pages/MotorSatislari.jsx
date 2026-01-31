@@ -342,8 +342,8 @@ const MotorSatislari = () => {
   const bugunkuSatis = satislar.filter(s => isToday(s.tarih)).length;
   const beklemedeSatis = satislar.filter(s => s.durum === 'beklemede').length;
   const tamamlananSatis = satislar.filter(s => s.durum === 'tamamlandi').length;
-  const iptalSatis = satislar.filter(s => s.durum === 'iptal').length;
   const toplamKar = satislar.reduce((sum, s) => sum + parseFloat(s.kar || 0), 0);
+  const toplamSatisFiyati = satislar.reduce((sum, s) => sum + parseFloat(s.satis_fiyati || 0), 0);
 
   // Durum chip renkleri
   const getDurumColor = (durum) => {
@@ -527,28 +527,27 @@ const MotorSatislari = () => {
               '&:hover': { bgcolor: '#2e7d32', color: 'white' }
             }} 
           />
-          <Chip 
-            label={`İptal: ${iptalSatis}`} 
-            size="small"
-            onClick={() => setFilterDurum(filterDurum === 'iptal' ? '' : 'iptal')}
-            sx={{ 
-              bgcolor: filterDurum === 'iptal' ? '#c62828' : '#ffebee', 
-              color: filterDurum === 'iptal' ? 'white' : '#c62828', 
-              fontWeight: 600,
-              cursor: 'pointer',
-              '&:hover': { bgcolor: '#c62828', color: 'white' }
-            }} 
-          />
           {isAdmin && (
-            <Chip 
-              label={`Kar: ${formatCurrency(toplamKar)}`} 
-              size="small"
-              sx={{ 
-                bgcolor: toplamKar >= 0 ? '#e8f5e9' : '#ffebee', 
-                color: toplamKar >= 0 ? '#2e7d32' : '#c62828', 
-                fontWeight: 600 
-              }} 
-            />
+            <>
+              <Chip 
+                label={`Satış: ${formatCurrency(toplamSatisFiyati)}`} 
+                size="small"
+                sx={{ 
+                  bgcolor: '#e3f2fd', 
+                  color: '#1565c0', 
+                  fontWeight: 600 
+                }} 
+              />
+              <Chip 
+                label={`Kar: ${formatCurrency(toplamKar)}`} 
+                size="small"
+                sx={{ 
+                  bgcolor: toplamKar >= 0 ? '#e8f5e9' : '#ffebee', 
+                  color: toplamKar >= 0 ? '#2e7d32' : '#c62828', 
+                  fontWeight: 600 
+                }} 
+              />
+            </>
           )}
         </Box>
         
@@ -675,7 +674,18 @@ const MotorSatislari = () => {
                           }}
                         />
                         <Chip 
-                          label={satis.odeme_sekli === 'nakit' ? 'Nakit' : satis.odeme_sekli === 'kredi_karti' ? 'K.Kartı' : satis.odeme_sekli === 'havale' ? 'Havale' : 'Taksit'} 
+                          label={satis.odeme_sekli === 'nakit' ? 'Nakit' : 
+                                 satis.odeme_sekli === 'kart' ? 'Kart' : 
+                                 satis.odeme_sekli === 'kredi_karti' ? 'Kart' : 
+                                 satis.odeme_sekli === 'havale' ? 'Havale' : 
+                                 satis.odeme_sekli === 'kredi' ? 'Kredi' :
+                                 satis.odeme_sekli === 'karisik' ? (() => {
+                                   const o = [];
+                                   if (parseFloat(satis.nakit_tutar || 0) > 0) o.push('Nakit');
+                                   if (parseFloat(satis.kart_tutar || 0) > 0) o.push('Kart');
+                                   if (parseFloat(satis.havale_tutar || 0) > 0) o.push('Havale');
+                                   return o.join('/');
+                                 })() : satis.odeme_sekli} 
                           size="small"
                           sx={{ height: 18, fontSize: '0.6rem' }}
                           color={satis.odeme_sekli === 'nakit' ? 'success' : 'info'}
@@ -722,29 +732,35 @@ const MotorSatislari = () => {
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Chip label={`%${satis.iskonto || 0} İsk.`} size="small" sx={{ height: 20, fontSize: '0.6rem' }} />
-                        <Box sx={{ 
-                          bgcolor: kar >= 0 ? 'success.100' : 'error.100', 
-                          px: 1, 
-                          py: 0.25, 
-                          borderRadius: 1,
-                          border: '1px solid',
-                          borderColor: kar >= 0 ? 'success.main' : 'error.main'
-                        }}>
-                          <Typography variant="caption" fontWeight={700} color={kar >= 0 ? 'success.main' : 'error.main'}>
-                            Kar: {formatCurrency(kar)}
-                          </Typography>
-                        </Box>
+                        {isAdmin && (
+                          <Box sx={{ 
+                            bgcolor: kar >= 0 ? 'success.100' : 'error.100', 
+                            px: 1, 
+                            py: 0.25, 
+                            borderRadius: 1,
+                            border: '1px solid',
+                            borderColor: kar >= 0 ? 'success.main' : 'error.main'
+                          }}>
+                            <Typography variant="caption" fontWeight={700} color={kar >= 0 ? 'success.main' : 'error.main'}>
+                              Kar: {formatCurrency(kar)}
+                            </Typography>
+                          </Box>
+                        )}
                       </Box>
                       <Box sx={{ display: 'flex', gap: 0.5 }} onClick={(e) => e.stopPropagation()}>
-                        <IconButton size="small" onClick={() => handleOpenDetayModal(satis)} color="info" sx={{ p: 0.5 }}>
-                          <VisibilityIcon sx={{ fontSize: 18 }} />
-                        </IconButton>
+                        {isAdmin && (
+                          <IconButton size="small" onClick={() => handleOpenDetayModal(satis)} color="info" sx={{ p: 0.5 }}>
+                            <VisibilityIcon sx={{ fontSize: 18 }} />
+                          </IconButton>
+                        )}
                         <IconButton size="small" onClick={() => handleOpenSatisModal(satis)} color="primary" sx={{ p: 0.5 }}>
                           <EditIcon sx={{ fontSize: 18 }} />
                         </IconButton>
-                        <IconButton size="small" onClick={() => handleDeleteSatis(satis.id)} color="error" sx={{ p: 0.5 }}>
-                          <DeleteIcon sx={{ fontSize: 18 }} />
-                        </IconButton>
+                        {isAdmin && (
+                          <IconButton size="small" onClick={() => handleDeleteSatis(satis.id)} color="error" sx={{ p: 0.5 }}>
+                            <DeleteIcon sx={{ fontSize: 18 }} />
+                          </IconButton>
+                        )}
                       </Box>
                     </Box>
                   </CardContent>
@@ -764,19 +780,19 @@ const MotorSatislari = () => {
               <TableCell sx={{ color: 'white', fontWeight: 'bold', width: 100 }}>Müşteri</TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold', width: 85 }}>Telefon</TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold', width: 50 }}>İsk.</TableCell>
-              <TableCell sx={{ color: 'white', fontWeight: 'bold', width: 85 }}>Alış</TableCell>
+              {isAdmin && <TableCell sx={{ color: 'white', fontWeight: 'bold', width: 85 }}>Alış</TableCell>}
               <TableCell sx={{ color: 'white', fontWeight: 'bold', width: 85 }}>Satış</TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold', width: 85 }}>Fatura</TableCell>
-              <TableCell sx={{ color: 'white', fontWeight: 'bold', width: 80 }}>Kar</TableCell>
+              {isAdmin && <TableCell sx={{ color: 'white', fontWeight: 'bold', width: 80 }}>Kar</TableCell>}
               <TableCell sx={{ color: 'white', fontWeight: 'bold', width: 70 }}>Durum</TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold', width: 70 }}>Ödeme</TableCell>
-              <TableCell sx={{ color: 'white', fontWeight: 'bold', width: 90 }} align="center">İşlemler</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold', width: isAdmin ? 90 : 60 }} align="center">İşlemler</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {filteredSatislar.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={12} align="center" sx={{ py: 4 }}>
+                <TableCell colSpan={isAdmin ? 12 : 10} align="center" sx={{ py: 4 }}>
                   <Typography color="text.secondary">
                     {searchTerm ? 'Arama sonucu bulunamadı' : 'Henüz motor satışı yok'}
                   </Typography>
@@ -807,8 +823,8 @@ const MotorSatislari = () => {
                 <TableRow 
                   key={satis.id} 
                   hover 
-                  onDoubleClick={() => handleOpenDetayModal(satis)}
-                  sx={{ '& td': { py: 0.5, px: 0.5, fontSize: '0.7rem' }, cursor: 'pointer' }}
+                  onDoubleClick={() => isAdmin && handleOpenDetayModal(satis)}
+                  sx={{ '& td': { py: 0.5, px: 0.5, fontSize: '0.7rem' }, cursor: isAdmin ? 'pointer' : 'default' }}
                 >
                   <TableCell>
                     <Typography fontSize="0.7rem">{formatDate(satis.tarih)}</Typography>
@@ -833,20 +849,24 @@ const MotorSatislari = () => {
                   <TableCell>
                     <Chip label={`%${satis.iskonto || 0}`} size="small" sx={{ height: 18, fontSize: '0.6rem', '& .MuiChip-label': { px: 0.5 } }} />
                   </TableCell>
-                  <TableCell>
-                    <Typography fontSize="0.65rem" noWrap>{formatCurrency(satis.alis_fiyati)}</Typography>
-                  </TableCell>
+                  {isAdmin && (
+                    <TableCell>
+                      <Typography fontSize="0.65rem" noWrap>{formatCurrency(satis.alis_fiyati)}</Typography>
+                    </TableCell>
+                  )}
                   <TableCell>
                     <Typography fontSize="0.65rem" fontWeight={700} noWrap>{formatCurrency(satis.satis_fiyati)}</Typography>
                   </TableCell>
                   <TableCell>
                     <Typography fontSize="0.65rem" noWrap>{formatCurrency(satis.fatura_fiyati)}</Typography>
                   </TableCell>
-                  <TableCell>
-                    <Typography fontSize="0.7rem" fontWeight={700} sx={{ color: kar >= 0 ? 'success.main' : 'error.main' }} noWrap>
-                      {formatCurrency(kar)}
-                    </Typography>
-                  </TableCell>
+                  {isAdmin && (
+                    <TableCell>
+                      <Typography fontSize="0.7rem" fontWeight={700} sx={{ color: kar >= 0 ? 'success.main' : 'error.main' }} noWrap>
+                        {formatCurrency(kar)}
+                      </Typography>
+                    </TableCell>
+                  )}
                   <TableCell>
                     <Chip 
                       label={getDurumLabel(satis.durum)} 
@@ -863,7 +883,18 @@ const MotorSatislari = () => {
                   </TableCell>
                   <TableCell>
                     <Chip 
-                      label={satis.odeme_sekli === 'nakit' ? 'Nakit' : satis.odeme_sekli === 'kredi_karti' ? 'K.Kartı' : satis.odeme_sekli === 'havale' ? 'Havale' : 'Taksit'} 
+                      label={satis.odeme_sekli === 'nakit' ? 'Nakit' : 
+                             satis.odeme_sekli === 'kart' ? 'Kart' : 
+                             satis.odeme_sekli === 'kredi_karti' ? 'Kart' : 
+                             satis.odeme_sekli === 'havale' ? 'Havale' : 
+                             satis.odeme_sekli === 'kredi' ? 'Kredi' :
+                             satis.odeme_sekli === 'karisik' ? (() => {
+                               const o = [];
+                               if (parseFloat(satis.nakit_tutar || 0) > 0) o.push('Nakit');
+                               if (parseFloat(satis.kart_tutar || 0) > 0) o.push('Kart');
+                               if (parseFloat(satis.havale_tutar || 0) > 0) o.push('Havale');
+                               return o.join('/');
+                             })() : satis.odeme_sekli} 
                       size="small"
                       sx={{ height: 18, fontSize: '0.55rem', '& .MuiChip-label': { px: 0.5 } }}
                       color={satis.odeme_sekli === 'nakit' ? 'success' : 'info'}
@@ -871,21 +902,25 @@ const MotorSatislari = () => {
                   </TableCell>
                   <TableCell align="center">
                     <Box sx={{ display: 'flex', gap: 0.25, justifyContent: 'center' }}>
-                      <Tooltip title="Detaylar">
-                        <IconButton size="small" onClick={() => handleOpenDetayModal(satis)} color="info" sx={{ p: 0.25 }}>
-                          <VisibilityIcon sx={{ fontSize: 16 }} />
-                        </IconButton>
-                      </Tooltip>
+                      {isAdmin && (
+                        <Tooltip title="Detaylar">
+                          <IconButton size="small" onClick={() => handleOpenDetayModal(satis)} color="info" sx={{ p: 0.25 }}>
+                            <VisibilityIcon sx={{ fontSize: 16 }} />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                       <Tooltip title="Düzenle">
                         <IconButton size="small" onClick={() => handleOpenSatisModal(satis)} color="primary" sx={{ p: 0.25 }}>
                           <EditIcon sx={{ fontSize: 16 }} />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title="Sil">
-                        <IconButton size="small" onClick={() => handleDeleteSatis(satis.id)} color="error" sx={{ p: 0.25 }}>
-                          <DeleteIcon sx={{ fontSize: 16 }} />
-                        </IconButton>
-                      </Tooltip>
+                      {isAdmin && (
+                        <Tooltip title="Sil">
+                          <IconButton size="small" onClick={() => handleDeleteSatis(satis.id)} color="error" sx={{ p: 0.25 }}>
+                            <DeleteIcon sx={{ fontSize: 16 }} />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                     </Box>
                   </TableCell>
                 </TableRow>
@@ -1129,22 +1164,14 @@ const MotorSatislari = () => {
                       placeholder="12345678901"
                       inputProps={{ maxLength: 11 }}
                     />
-                    <TextField
-                      sx={{ flex: 1 }}
-                      size="small"
-                      label="Adres"
-                      value={satisForm.adres}
-                      onChange={(e) => setSatisForm({ ...satisForm, adres: e.target.value })}
-                      placeholder="Müşteri adresi"
-                    />
                   </Box>
                 </CardContent>
               </Card>
             </Grid>
 
             {/* Fiyat Bilgileri */}
-            <Grid item xs={12} md={6}>
-              <Card sx={{ height: '100%' }}>
+            <Grid item xs={12} md={8}>
+              <Card sx={{ height: '100%' , width : 595}}>
                 <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1.5 }}>
                     <Avatar sx={{ bgcolor: 'success.lighter', color: 'success.main', width: 28, height: 28 }}>
@@ -1215,7 +1242,7 @@ const MotorSatislari = () => {
 
             {/* Açıklama ve Kâr Özeti */}
             <Grid item xs={12} md={6}>
-              <Card sx={{ height: '100%' }}>
+              <Card sx={{ height: '100%', width : 500}}>
                 <CardContent sx={{ p: 1.5, '&:last-child': { pb: 2.5 } }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1.5 }}>
                     <Avatar sx={{ bgcolor: 'warning.lighter', color: 'warning.main', width: 28, height: 28 }}>
@@ -1225,17 +1252,28 @@ const MotorSatislari = () => {
                       Açıklama / Özet
                     </Typography>
                   </Box>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="Açıklama / Not"
-                    multiline
-                    rows={3}
-                    value={satisForm.aciklama}
-                    onChange={(e) => setSatisForm({ ...satisForm, aciklama: e.target.value })}
-                    placeholder="Satış ile ilgili notlar..."
-                    sx={{ mb: 1.5 }}
-                  />
+                  <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1.5, mb: 1.5 }}>
+                    <TextField
+                      sx={{ flex: 1 }}
+                      size="small"
+                      label="Açıklama / Not"
+                      multiline
+                      rows={4}
+                      value={satisForm.aciklama}
+                      onChange={(e) => setSatisForm({ ...satisForm, aciklama: e.target.value })}
+                      placeholder="Satış ile ilgili notlar..."
+                    />
+                    <TextField
+                      sx={{ flex: 1 }}
+                      size="small"
+                      label="Adres"
+                      multiline
+                      rows={4}
+                      value={satisForm.adres}
+                      onChange={(e) => setSatisForm({ ...satisForm, adres: e.target.value })}
+                      placeholder="Müşteri adresi..."
+                    />
+                  </Box>
                   
                   {/* Kâr Hesabı Özeti - Sadece Admin */}
                   {isAdmin && (satisForm.alis_fiyati || satisForm.satis_fiyati || satisForm.fatura_fiyati) && (() => {
@@ -1886,7 +1924,13 @@ const MotorSatislari = () => {
                            satis.odeme_sekli === 'kart' ? '💳 Kart' : 
                            satis.odeme_sekli === 'havale' ? '🏦 Havale/EFT' : 
                            satis.odeme_sekli === 'kredi' ? '📅 Kredi' :
-                           satis.odeme_sekli === 'karisik' ? '🔀 Karışık' : 
+                           satis.odeme_sekli === 'karisik' ? (() => {
+                             const odemeler = [];
+                             if (parseFloat(satis.nakit_tutar || 0) > 0) odemeler.push('Nakit');
+                             if (parseFloat(satis.kart_tutar || 0) > 0) odemeler.push('Kart');
+                             if (parseFloat(satis.havale_tutar || 0) > 0) odemeler.push('Havale');
+                             return `🔀 ${odemeler.join(' / ')}`;
+                           })() : 
                            satis.odeme_sekli}
                         </Typography>
                         {satis.odeme_sekli === 'karisik' && (
@@ -1944,7 +1988,7 @@ const MotorSatislari = () => {
                   </Card>
                 </Grid>
 
-                {/* Açıklama / Not - TABLODA OLMAYAN */}
+                {/* Açıklama / Adres */}
                 <Grid item xs={12} md={6}>
                   <Card sx={{ height: '100%', borderLeft: '4px solid', borderColor: 'grey.500' }}>
                     <CardContent sx={{ p: 1.5 }}>
@@ -1952,13 +1996,36 @@ const MotorSatislari = () => {
                         <Avatar sx={{ bgcolor: 'grey.500', width: 28, height: 28 }}>
                           <InfoIcon sx={{ fontSize: 16 }} />
                         </Avatar>
-                        <Typography variant="subtitle2" fontWeight={700}>Açıklama / Not</Typography>
+                        <Typography variant="subtitle2" fontWeight={700}>Açıklama / Adres</Typography>
                       </Box>
-                      <Paper sx={{ p: 1.5, bgcolor: 'grey.50', minHeight: 60 }}>
-                        <Typography variant="body2" color="text.secondary" fontSize="0.8rem">
-                          {satis.aciklama || 'Açıklama girilmemiş'}
-                        </Typography>
-                      </Paper>
+                      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.75 }}>
+                        <Tooltip title={satis.aciklama || 'Açıklama girilmemiş'} arrow placement="top">
+                          <Paper sx={{ p: 1, bgcolor: 'grey.50', cursor: 'pointer', height: 50, overflow: 'hidden' }}>
+                            <Typography variant="caption" color="text.secondary" fontSize="0.65rem">Açıklama</Typography>
+                            <Typography 
+                              variant="body2" 
+                              color="text.secondary" 
+                              fontSize="0.75rem" 
+                              noWrap
+                            >
+                              {satis.aciklama || '-'}
+                            </Typography>
+                          </Paper>
+                        </Tooltip>
+                        <Tooltip title={satis.adres || 'Adres girilmemiş'} arrow placement="top">
+                          <Paper sx={{ p: 1, bgcolor: 'grey.50', cursor: 'pointer', height: 50, overflow: 'hidden' }}>
+                            <Typography variant="caption" color="text.secondary" fontSize="0.65rem">Adres</Typography>
+                            <Typography 
+                              variant="body2" 
+                              color="text.secondary" 
+                              fontSize="0.75rem" 
+                              noWrap
+                            >
+                              {satis.adres || '-'}
+                            </Typography>
+                          </Paper>
+                        </Tooltip>
+                      </Box>
                     </CardContent>
                   </Card>
                 </Grid>

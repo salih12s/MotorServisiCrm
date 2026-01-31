@@ -511,8 +511,8 @@ function Aksesuarlar() {
                     <TableRow 
                       key={aksesuar.id} 
                       hover
-                      onDoubleClick={() => handleViewDetails(aksesuar)}
-                      sx={{ cursor: 'pointer' }}
+                      onDoubleClick={() => isAdmin && handleViewDetails(aksesuar)}
+                      sx={{ cursor: isAdmin ? 'pointer' : 'default' }}
                     >
                       <TableCell>{aksesuar.ad_soyad}</TableCell>
                       <TableCell>{aksesuar.telefon || '-'}</TableCell>
