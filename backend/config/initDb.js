@@ -194,6 +194,17 @@ const initDatabase = async () => {
     `);
     console.log('✓ Kullanıcılar tablosuna plain_sifre kolonu eklendi');
 
+    // Kullanıcılar tablosuna aksesuar_yetkisi sütunu ekle (eğer yoksa)
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='kullanicilar' AND column_name='aksesuar_yetkisi') THEN
+          ALTER TABLE kullanicilar ADD COLUMN aksesuar_yetkisi BOOLEAN DEFAULT FALSE;
+        END IF;
+      END $$;
+    `);
+    console.log('✓ Kullanıcılar tablosuna aksesuar_yetkisi sütunu eklendi');
+
     // İş emirlerine odeme_detaylari kolonu ekle (eğer yoksa)
     await pool.query(`
       DO $$
@@ -332,6 +343,7 @@ const initDatabase = async () => {
         otv_tutari DECIMAL(12,2) DEFAULT 0,
         damga_vergisi DECIMAL(12,2) DEFAULT 791,
         vergiler_toplami DECIMAL(12,2) DEFAULT 0,
+        durum VARCHAR(50) DEFAULT 'beklemede',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -384,9 +396,23 @@ const initDatabase = async () => {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='motor_satislari' AND column_name='vergiler_toplami') THEN
           ALTER TABLE motor_satislari ADD COLUMN vergiler_toplami DECIMAL(12,2) DEFAULT 0;
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='motor_satislari' AND column_name='durum') THEN
+          ALTER TABLE motor_satislari ADD COLUMN durum VARCHAR(50) DEFAULT 'beklemede';
+        END IF;
       END $$;
     `);
     console.log('✓ Motor Satışları tablosuna eksik kolonlar eklendi');
+
+    // Kullanıcılar tablosuna motor_satis_yetkisi sütunu ekle (eğer yoksa)
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='kullanicilar' AND column_name='motor_satis_yetkisi') THEN
+          ALTER TABLE kullanicilar ADD COLUMN motor_satis_yetkisi BOOLEAN DEFAULT FALSE;
+        END IF;
+      END $$;
+    `);
+    console.log('✓ Kullanıcılar tablosuna motor_satis_yetkisi sütunu eklendi');
 
     // Varsayılan admin kullanıcısı oluştur
     const adminExists = await pool.query(

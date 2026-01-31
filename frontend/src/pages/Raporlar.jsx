@@ -224,9 +224,13 @@ function Raporlar() {
         motorSatisService.getModeller()
       ]);
       
-      // Tarih aralığına göre filtrele - created_at veya tarih alanını kullan
+      // Tarih aralığına göre filtrele ve sadece tamamlanan satışları göster
       const filteredSatislar = (satisRes.data || []).filter(satis => {
-        const satisTarih = format(new Date(satis.created_at || satis.tarih), 'yyyy-MM-dd');
+        // Sadece tamamlandi durumundakileri göster
+        if (satis.durum !== 'tamamlandi') return false;
+        
+        // tarih alanını kullan (backend'den YYYY-MM-DD formatında geliyor)
+        const satisTarih = satis.tarih || '';
         return satisTarih >= motorSatisSelectedDate && satisTarih <= motorSatisEndDate;
       });
       
@@ -2098,7 +2102,7 @@ function Raporlar() {
                               </TableCell>
                               <TableCell>
                                 <Typography variant="body2" fontWeight={500}>
-                                  {motor.created_at ? format(new Date(motor.created_at), 'dd.MM.yyyy', { locale: tr }) : '-'}
+                                  {motor.tarih ? format(new Date(motor.tarih + 'T12:00:00'), 'dd.MM.yyyy', { locale: tr }) : '-'}
                                 </Typography>
                               </TableCell>
                               <TableCell>
@@ -2293,7 +2297,7 @@ function Raporlar() {
                               {motor.musteri_adi || '-'}
                             </Typography>
                             <Typography variant="caption" color="text.secondary">
-                              {motor.created_at ? format(new Date(motor.created_at), 'dd.MM.yyyy', { locale: tr }) : '-'}
+                              {motor.tarih ? format(new Date(motor.tarih + 'T12:00:00'), 'dd.MM.yyyy', { locale: tr }) : '-'}
                             </Typography>
                             <Divider sx={{ my: 1 }} />
                             <Grid container spacing={1}>

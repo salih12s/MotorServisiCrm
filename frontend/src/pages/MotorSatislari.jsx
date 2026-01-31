@@ -41,6 +41,7 @@ const MotorSatislari = () => {
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterDurum, setFilterDurum] = useState('');
   
   // Modal states
   const [satisModalOpen, setSatisModalOpen] = useState(false);
@@ -72,7 +73,8 @@ const MotorSatislari = () => {
     musteri_telefon: '',
     tc_kimlik_no: '',
     adres: '',
-    aciklama: ''
+    aciklama: '',
+    durum: 'beklemede'
   });
   
   // Form states - Model
@@ -114,8 +116,21 @@ const MotorSatislari = () => {
   const handleOpenSatisModal = (satis = null) => {
     if (satis) {
       setEditingSatis(satis);
+      // Tarih düzeltmesi - UTC timezone sorununu gidermek için
+      let satisTarihi = new Date().toISOString().split('T')[0];
+      if (satis.tarih) {
+        // Tarih string ise direkt al, Date objesi oluşturmadan
+        const tarihStr = String(satis.tarih);
+        if (tarihStr.includes('T')) {
+          // ISO format: 2024-01-31T00:00:00.000Z -> sadece tarih kısmını al
+          satisTarihi = tarihStr.split('T')[0];
+        } else if (tarihStr.length >= 10) {
+          // Zaten YYYY-MM-DD formatında
+          satisTarihi = tarihStr.substring(0, 10);
+        }
+      }
       setSatisForm({
-        tarih: satis.tarih?.split('T')[0] || new Date().toISOString().split('T')[0],
+        tarih: satisTarihi,
         sase_no: satis.sase_no || '',
         motor_modeli_id: satis.motor_modeli_id || '',
         iskonto: satis.iskonto || '',
@@ -130,7 +145,8 @@ const MotorSatislari = () => {
         musteri_telefon: satis.musteri_telefon || '',
         tc_kimlik_no: satis.tc_kimlik_no || '',
         adres: satis.adres || '',
-        aciklama: satis.aciklama || ''
+        aciklama: satis.aciklama || '',
+        durum: satis.durum || 'beklemede'
       });
     } else {
       setEditingSatis(null);
@@ -150,7 +166,8 @@ const MotorSatislari = () => {
         musteri_telefon: '',
         tc_kimlik_no: '',
         adres: '',
-        aciklama: ''
+        aciklama: '',
+        durum: 'beklemede'
       });
     }
     setSatisModalOpen(true);
@@ -303,12 +320,50 @@ const MotorSatislari = () => {
   // Filtreleme
   const filteredSatislar = satislar.filter(satis => {
     const searchLower = searchTerm.toLowerCase();
-    return (
+    const matchesSearch = (
       (satis.sase_no?.toLowerCase() || '').includes(searchLower) ||
       (satis.model_adi?.toLowerCase() || '').includes(searchLower) ||
       (satis.musteri_adi?.toLowerCase() || '').includes(searchLower)
     );
+    const matchesDurum = !filterDurum || satis.durum === filterDurum;
+    return matchesSearch && matchesDurum;
   });
+
+  // Bugünü kontrol et
+  const isToday = (dateStr) => {
+    if (!dateStr) return false;
+    const today = new Date();
+    const date = new Date(dateStr);
+    return date.toDateString() === today.toDateString();
+  };
+
+  // İstatistikler
+  const toplamSatis = satislar.length;
+  const bugunkuSatis = satislar.filter(s => isToday(s.tarih)).length;
+  const beklemedeSatis = satislar.filter(s => s.durum === 'beklemede').length;
+  const tamamlananSatis = satislar.filter(s => s.durum === 'tamamlandi').length;
+  const iptalSatis = satislar.filter(s => s.durum === 'iptal').length;
+  const toplamKar = satislar.reduce((sum, s) => sum + parseFloat(s.kar || 0), 0);
+
+  // Durum chip renkleri
+  const getDurumColor = (durum) => {
+    switch (durum) {
+      case 'beklemede': return { bg: '#fff3e0', color: '#e65100' };
+      case 'tamamlandi': return { bg: '#e8f5e9', color: '#2e7d32' };
+      case 'iptal': return { bg: '#ffebee', color: '#c62828' };
+      default: return { bg: '#f5f5f5', color: '#757575' };
+    }
+  };
+
+  // Durum etiketi
+  const getDurumLabel = (durum) => {
+    switch (durum) {
+      case 'beklemede': return 'Beklemede';
+      case 'tamamlandi': return 'Tamamlandı';
+      case 'iptal': return 'İptal';
+      default: return 'Beklemede';
+    }
+  };
 
   // Para formatla
   const formatCurrency = (value) => {
@@ -419,18 +474,82 @@ const MotorSatislari = () => {
       {/* Header */}
       <Box sx={{ 
         display: 'flex', 
-        justifyContent: 'space-between', 
         alignItems: 'center', 
-        mb: 3,
-        flexDirection: { xs: 'column', sm: 'row' },
-        gap: 2
+        mb: 2, 
+        flexWrap: 'wrap', 
+        gap: 1,
+        justifyContent: 'space-between'
       }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+          {/* İstatistik Chipleri - Tıklanabilir Filtreler */}
           <Chip 
-            label={`Toplam: ${satislar.length} satış`} 
-            color="primary" 
-            variant="outlined" 
+            label={`Toplam: ${toplamSatis}`} 
+            size="small"
+            onClick={() => setFilterDurum('')}
+            sx={{ 
+              bgcolor: !filterDurum ? '#1a237e' : '#e3f2fd', 
+              color: !filterDurum ? 'white' : '#1a237e', 
+              fontWeight: 600,
+              cursor: 'pointer',
+              '&:hover': { bgcolor: '#1a237e', color: 'white' }
+            }} 
           />
+          <Chip 
+            label={`Bugün: ${bugunkuSatis}`} 
+            size="small"
+            sx={{ 
+              bgcolor: '#bbdefb', 
+              color: '#1565c0', 
+              fontWeight: 600
+            }} 
+          />
+          <Chip 
+            label={`Beklemede: ${beklemedeSatis}`} 
+            size="small"
+            onClick={() => setFilterDurum(filterDurum === 'beklemede' ? '' : 'beklemede')}
+            sx={{ 
+              bgcolor: filterDurum === 'beklemede' ? '#e65100' : '#fff3e0', 
+              color: filterDurum === 'beklemede' ? 'white' : '#e65100', 
+              fontWeight: 600,
+              cursor: 'pointer',
+              '&:hover': { bgcolor: '#e65100', color: 'white' }
+            }} 
+          />
+          <Chip 
+            label={`Tamamlandı: ${tamamlananSatis}`} 
+            size="small"
+            onClick={() => setFilterDurum(filterDurum === 'tamamlandi' ? '' : 'tamamlandi')}
+            sx={{ 
+              bgcolor: filterDurum === 'tamamlandi' ? '#2e7d32' : '#e8f5e9', 
+              color: filterDurum === 'tamamlandi' ? 'white' : '#2e7d32', 
+              fontWeight: 600,
+              cursor: 'pointer',
+              '&:hover': { bgcolor: '#2e7d32', color: 'white' }
+            }} 
+          />
+          <Chip 
+            label={`İptal: ${iptalSatis}`} 
+            size="small"
+            onClick={() => setFilterDurum(filterDurum === 'iptal' ? '' : 'iptal')}
+            sx={{ 
+              bgcolor: filterDurum === 'iptal' ? '#c62828' : '#ffebee', 
+              color: filterDurum === 'iptal' ? 'white' : '#c62828', 
+              fontWeight: 600,
+              cursor: 'pointer',
+              '&:hover': { bgcolor: '#c62828', color: 'white' }
+            }} 
+          />
+          {isAdmin && (
+            <Chip 
+              label={`Kar: ${formatCurrency(toplamKar)}`} 
+              size="small"
+              sx={{ 
+                bgcolor: toplamKar >= 0 ? '#e8f5e9' : '#ffebee', 
+                color: toplamKar >= 0 ? '#2e7d32' : '#c62828', 
+                fontWeight: 600 
+              }} 
+            />
+          )}
         </Box>
         
         <Box sx={{ 
@@ -543,12 +662,25 @@ const MotorSatislari = () => {
                           </Typography>
                         </Box>
                       </Box>
-                      <Chip 
-                        label={satis.odeme_sekli === 'nakit' ? 'Nakit' : satis.odeme_sekli === 'kredi_karti' ? 'K.Kartı' : satis.odeme_sekli === 'havale' ? 'Havale' : 'Taksit'} 
-                        size="small"
-                        sx={{ height: 20, fontSize: '0.65rem' }}
-                        color={satis.odeme_sekli === 'nakit' ? 'success' : 'info'}
-                      />
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, alignItems: 'flex-end' }}>
+                        <Chip 
+                          label={getDurumLabel(satis.durum)} 
+                          size="small"
+                          sx={{ 
+                            height: 20, 
+                            fontSize: '0.65rem',
+                            bgcolor: getDurumColor(satis.durum).bg,
+                            color: getDurumColor(satis.durum).color,
+                            fontWeight: 600
+                          }}
+                        />
+                        <Chip 
+                          label={satis.odeme_sekli === 'nakit' ? 'Nakit' : satis.odeme_sekli === 'kredi_karti' ? 'K.Kartı' : satis.odeme_sekli === 'havale' ? 'Havale' : 'Taksit'} 
+                          size="small"
+                          sx={{ height: 18, fontSize: '0.6rem' }}
+                          color={satis.odeme_sekli === 'nakit' ? 'success' : 'info'}
+                        />
+                      </Box>
                     </Box>
 
                     {/* Müşteri Bilgileri */}
@@ -624,7 +756,7 @@ const MotorSatislari = () => {
       ) : (
         /* Masaüstü Tablo Görünümü */
       <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
-        <Table size="small" sx={{ minWidth: 950, tableLayout: 'fixed' }}>
+        <Table size="small" sx={{ minWidth: 1020, tableLayout: 'fixed' }}>
           <TableHead>
             <TableRow sx={{ backgroundColor: 'primary.main', '& th': { py: 0.75, px: 0.5, fontSize: '0.7rem' } }}>
               <TableCell sx={{ color: 'white', fontWeight: 'bold', width: 75 }}>Tarih</TableCell>
@@ -636,6 +768,7 @@ const MotorSatislari = () => {
               <TableCell sx={{ color: 'white', fontWeight: 'bold', width: 85 }}>Satış</TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold', width: 85 }}>Fatura</TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold', width: 80 }}>Kar</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold', width: 70 }}>Durum</TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold', width: 70 }}>Ödeme</TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold', width: 90 }} align="center">İşlemler</TableCell>
             </TableRow>
@@ -643,7 +776,7 @@ const MotorSatislari = () => {
           <TableBody>
             {filteredSatislar.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={11} align="center" sx={{ py: 4 }}>
+                <TableCell colSpan={12} align="center" sx={{ py: 4 }}>
                   <Typography color="text.secondary">
                     {searchTerm ? 'Arama sonucu bulunamadı' : 'Henüz motor satışı yok'}
                   </Typography>
@@ -713,6 +846,20 @@ const MotorSatislari = () => {
                     <Typography fontSize="0.7rem" fontWeight={700} sx={{ color: kar >= 0 ? 'success.main' : 'error.main' }} noWrap>
                       {formatCurrency(kar)}
                     </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Chip 
+                      label={getDurumLabel(satis.durum)} 
+                      size="small"
+                      sx={{ 
+                        height: 18, 
+                        fontSize: '0.55rem', 
+                        '& .MuiChip-label': { px: 0.5 },
+                        bgcolor: getDurumColor(satis.durum).bg,
+                        color: getDurumColor(satis.durum).color,
+                        fontWeight: 600
+                      }}
+                    />
                   </TableCell>
                   <TableCell>
                     <Chip 
@@ -835,6 +982,33 @@ const MotorSatislari = () => {
                       required
                       placeholder="Şase numarasını girin"
                     />
+                    <FormControl size="small" sx={{ flex: 1, mt: 1.1 }}>
+                      <InputLabel>Durum</InputLabel>
+                      <Select
+                        value={satisForm.durum}
+                        onChange={(e) => setSatisForm({ ...satisForm, durum: e.target.value })}
+                        label="Durum"
+                      >
+                        <MenuItem value="beklemede">
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#ff9800' }} />
+                            Beklemede
+                          </Box>
+                        </MenuItem>
+                        <MenuItem value="tamamlandi">
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#4caf50' }} />
+                            Tamamlandı
+                          </Box>
+                        </MenuItem>
+                        <MenuItem value="iptal">
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#f44336' }} />
+                            İptal
+                          </Box>
+                        </MenuItem>
+                      </Select>
+                    </FormControl>
                   </Box>
                   <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1.5 }}>
                     <FormControl size="small" sx={{ flex: 1 , mt: 1}} required>

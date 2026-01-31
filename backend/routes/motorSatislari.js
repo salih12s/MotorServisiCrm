@@ -91,7 +91,9 @@ router.delete('/modeller/:id', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT ms.*, mm.model_adi, mm.cc, mm.otv_orani
+      `SELECT ms.*, 
+       TO_CHAR(ms.tarih, 'YYYY-MM-DD') as tarih,
+       mm.model_adi, mm.cc, mm.otv_orani
        FROM motor_satislari ms
        LEFT JOIN motor_modelleri mm ON ms.motor_modeli_id = mm.id
        ORDER BY ms.created_at DESC`
@@ -147,6 +149,7 @@ router.post('/', async (req, res) => {
       tc_kimlik_no,
       adres,
       aciklama,
+      durum,
       // Hesaplanan değerler
       iskonto_tutari,
       iskontolu_alis_fiyati,
@@ -166,10 +169,10 @@ router.post('/', async (req, res) => {
     const result = await pool.query(
       `INSERT INTO motor_satislari 
         (tarih, sase_no, motor_modeli_id, iskonto, alis_fiyati, satis_fiyati, fatura_fiyati,
-         odeme_sekli, nakit_tutar, kart_tutar, havale_tutar, musteri_adi, musteri_telefon, tc_kimlik_no, adres, aciklama,
+         odeme_sekli, nakit_tutar, kart_tutar, havale_tutar, musteri_adi, musteri_telefon, tc_kimlik_no, adres, aciklama, durum,
          iskonto_tutari, iskontolu_alis_fiyati, matrah_satis, kdv_tutari, kdvsiz_tutar,
          otv_tutari, damga_vergisi, vergiler_toplami, kar) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26) 
        RETURNING *`,
       [
         tarih || new Date().toISOString().split('T')[0], 
@@ -188,6 +191,7 @@ router.post('/', async (req, res) => {
         tc_kimlik_no || null,
         adres || null,
         aciklama || null,
+        durum || 'beklemede',
         iskonto_tutari || 0,
         iskontolu_alis_fiyati || 0,
         matrah_satis || 0,
@@ -228,6 +232,7 @@ router.put('/:id', async (req, res) => {
       tc_kimlik_no,
       adres,
       aciklama,
+      durum,
       // Hesaplanan değerler
       iskonto_tutari,
       iskontolu_alis_fiyati,
@@ -245,15 +250,15 @@ router.put('/:id', async (req, res) => {
        SET tarih = $1, sase_no = $2, motor_modeli_id = $3, iskonto = $4, 
            alis_fiyati = $5, satis_fiyati = $6, fatura_fiyati = $7, odeme_sekli = $8,
            nakit_tutar = $9, kart_tutar = $10, havale_tutar = $11,
-           musteri_adi = $12, musteri_telefon = $13, tc_kimlik_no = $14, adres = $15, aciklama = $16,
-           iskonto_tutari = $17, iskontolu_alis_fiyati = $18, matrah_satis = $19,
-           kdv_tutari = $20, kdvsiz_tutar = $21, otv_tutari = $22, damga_vergisi = $23,
-           vergiler_toplami = $24, kar = $25,
+           musteri_adi = $12, musteri_telefon = $13, tc_kimlik_no = $14, adres = $15, aciklama = $16, durum = $17,
+           iskonto_tutari = $18, iskontolu_alis_fiyati = $19, matrah_satis = $20,
+           kdv_tutari = $21, kdvsiz_tutar = $22, otv_tutari = $23, damga_vergisi = $24,
+           vergiler_toplami = $25, kar = $26,
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $26 RETURNING *`,
+       WHERE id = $27 RETURNING *`,
       [tarih, sase_no, motor_modeli_id, iskonto, alis_fiyati, satis_fiyati, fatura_fiyati, odeme_sekli, 
        nakit_tutar || 0, kart_tutar || 0, havale_tutar || 0,
-       musteri_adi, musteri_telefon, tc_kimlik_no, adres, aciklama,
+       musteri_adi, musteri_telefon, tc_kimlik_no, adres, aciklama, durum || 'beklemede',
        iskonto_tutari || 0, iskontolu_alis_fiyati || 0, matrah_satis || 0,
        kdv_tutari || 0, kdvsiz_tutar || 0, otv_tutari || 0, damga_vergisi || 791,
        vergiler_toplami || 0, kar || 0, id]
@@ -301,7 +306,10 @@ router.get('/stats/ozet', async (req, res) => {
         COUNT(*) as toplam_satis,
         COALESCE(SUM(satis_fiyati), 0) as toplam_ciro,
         COALESCE(SUM(kar), 0) as toplam_kar,
-        COUNT(CASE WHEN DATE(tarih) = $1 THEN 1 END) as bugunki_satis
+        COUNT(CASE WHEN DATE(tarih) = $1 THEN 1 END) as bugunki_satis,
+        COUNT(CASE WHEN durum = 'beklemede' THEN 1 END) as beklemede,
+        COUNT(CASE WHEN durum = 'tamamlandi' THEN 1 END) as tamamlandi,
+        COUNT(CASE WHEN durum = 'iptal' THEN 1 END) as iptal
       FROM motor_satislari
     `, [today]);
     
