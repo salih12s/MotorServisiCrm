@@ -355,9 +355,15 @@ function Raporlar() {
     setExpandedGunIsEmirleri(gunIsEmirleri);
   };
 
-  // İş emrine çift tıklayınca detay sayfasına git
-  const handleIsEmriDoubleClick = (isEmriId) => {
-    navigate(`/is-emri/${isEmriId}`);
+  // İş emrine çift tıklayınca detay modalını aç
+  const handleIsEmriDoubleClick = async (isEmri) => {
+    try {
+      const response = await raporService.getIsEmriDetay(isEmri.id);
+      setSelectedWorkOrder(response.data);
+      setDetailModalOpen(true);
+    } catch (error) {
+      console.error('İş emri detay hatası:', error);
+    }
   };
 
   const formatCurrency = (value) => {
@@ -946,7 +952,7 @@ function Raporlar() {
                             transition: 'all 0.2s',
                             '&:hover': { bgcolor: '#e3f2fd', transform: 'scale(1.01)' }
                           }}
-                          onDoubleClick={() => handleIsEmriDoubleClick(isEmri.id)}
+                          onDoubleClick={() => handleViewDetail(isEmri)}
                         >
                           <CardContent sx={{ p: 1.5 }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1, gap: 1 }}>
@@ -1118,7 +1124,7 @@ function Raporlar() {
                         <TableRow 
                           key={isEmri.id} 
                           hover
-                          onDoubleClick={() => handleIsEmriDoubleClick(isEmri.id)}
+                          onDoubleClick={() => handleViewDetail(isEmri)}
                           sx={{ 
                             cursor: 'pointer',
                             '&:hover': { bgcolor: '#e3f2fd' }
