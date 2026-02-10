@@ -2801,6 +2801,23 @@ function Raporlar() {
                 </CardContent>
               </Card>
 
+              {/* Ödeme Detayları */}
+              {selectedWorkOrder.odeme_detaylari && (
+                <Card sx={{ mb: 2 }}>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                      <ReceiptIcon sx={{ color: '#2e7d32', fontSize: 20 }} />
+                      <Typography variant="subtitle2" color="text.secondary">
+                        Ödeme Detayları
+                      </Typography>
+                    </Box>
+                    <Typography variant="body1" sx={{ bgcolor: '#f5f5f5', p: 1.5, borderRadius: 1, whiteSpace: 'pre-wrap' }}>
+                      {selectedWorkOrder.odeme_detaylari}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Parçalar */}
               {selectedWorkOrder.parcalar && selectedWorkOrder.parcalar.length > 0 && (
                 <Card sx={{ mb: 2 }}>
@@ -2986,6 +3003,14 @@ function Raporlar() {
                       <Typography variant="caption" color="text.secondary">Ödeme Şekli</Typography>
                       <Typography variant="body1">{selectedAksesuar.odeme_sekli || '-'}</Typography>
                     </Grid>
+                    {selectedAksesuar.odeme_detaylari && (
+                      <Grid item xs={12}>
+                        <Typography variant="caption" color="text.secondary">Ödeme Detayları</Typography>
+                        <Typography variant="body1" sx={{ bgcolor: '#f5f5f5', p: 1.5, borderRadius: 1, whiteSpace: 'pre-wrap', mt: 0.5 }}>
+                          {selectedAksesuar.odeme_detaylari}
+                        </Typography>
+                      </Grid>
+                    )}
                     <Grid item xs={12}>
                       <Typography variant="caption" color="text.secondary">Satış Tarihi</Typography>
                       <Typography variant="body1">
@@ -3193,6 +3218,42 @@ function Raporlar() {
                     </Grid>
                   </Grid>
                   
+                  <Divider sx={{ my: 2 }} />
+                  <Typography variant="subtitle2" fontWeight={700} gutterBottom>Ödeme Bilgileri</Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={6}>
+                      <Typography variant="body2" color="text.secondary">Ödeme Şekli</Typography>
+                      <Typography fontWeight={600}>
+                        {selectedMotorSatis.odeme_sekli === 'nakit' ? 'Nakit' : 
+                         selectedMotorSatis.odeme_sekli === 'kredi_karti' ? 'Kredi Kartı' :
+                         selectedMotorSatis.odeme_sekli === 'havale' ? 'Havale' :
+                         selectedMotorSatis.odeme_sekli === 'karisik' ? 'Karışık' : selectedMotorSatis.odeme_sekli || '-'}
+                      </Typography>
+                    </Grid>
+                    {selectedMotorSatis.odeme_sekli === 'karisik' && (
+                      <>
+                        {selectedMotorSatis.nakit_tutar > 0 && (
+                          <Grid item xs={6} sm={4}>
+                            <Typography variant="body2" color="text.secondary">Nakit</Typography>
+                            <Typography fontWeight={600}>{formatCurrency(selectedMotorSatis.nakit_tutar)}</Typography>
+                          </Grid>
+                        )}
+                        {selectedMotorSatis.kart_tutar > 0 && (
+                          <Grid item xs={6} sm={4}>
+                            <Typography variant="body2" color="text.secondary">Kredi Kartı</Typography>
+                            <Typography fontWeight={600}>{formatCurrency(selectedMotorSatis.kart_tutar)}</Typography>
+                          </Grid>
+                        )}
+                        {selectedMotorSatis.havale_tutar > 0 && (
+                          <Grid item xs={6} sm={4}>
+                            <Typography variant="body2" color="text.secondary">Havale</Typography>
+                            <Typography fontWeight={600}>{formatCurrency(selectedMotorSatis.havale_tutar)}</Typography>
+                          </Grid>
+                        )}
+                      </>
+                    )}
+                  </Grid>
+
                   {selectedMotorSatis.aciklama && (
                     <>
                       <Divider sx={{ my: 2 }} />
