@@ -95,8 +95,9 @@ const PORT = process.env.PORT || 5000;
 // Environment bilgilerini logla (debug için)
 console.log('\n🔧 Environment Configuration:');
 console.log('NODE_ENV:', process.env.NODE_ENV || 'development');
-console.log('DB_HOST:', process.env.DB_HOST || 'localhost');
-console.log('DB_PORT:', process.env.DB_PORT || '5432');
+console.log('DATABASE_URL:', process.env.DATABASE_URL ? '✅ Set' : '❌ Not set');
+console.log('DB_HOST:', process.env.DB_HOST || 'not set');
+console.log('DB_PORT:', process.env.DB_PORT || 'not set');
 console.log('DB_NAME:', process.env.DB_NAME || 'not set');
 console.log('DB_USER:', process.env.DB_USER || 'not set');
 console.log('JWT_SECRET:', process.env.JWT_SECRET ? '✅ Set' : '❌ Not set');
