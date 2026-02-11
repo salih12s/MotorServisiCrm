@@ -104,19 +104,31 @@ console.log('PORT:', PORT);
 console.log('');
 
 // Veritabanını başlat ve sunucuyu çalıştır
-initDatabase()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`\n🚀 Sunucu http://localhost:${PORT} adresinde çalışıyor`);
-      console.log('📦 API Endpoints:');
-      console.log('   - POST /api/auth/login');
-      console.log('   - GET  /api/musteriler');
-      console.log('   - GET  /api/is-emirleri');
-      console.log('   - GET  /api/raporlar/gunluk');
-      console.log('   - GET  /api/raporlar/genel');
-    });
-  })
-  .catch((err) => {
-    console.error('Sunucu başlatılamadı:', err);
-    process.exit(1);
+// DB bağlanamasa bile sunucu ayakta kalsın, arka planda tekrar denesin
+const startServer = async () => {
+  // Sunucuyu hemen başlat (DB'den bağımsız)
+  app.listen(PORT, () => {
+    console.log(`\n🚀 Sunucu http://localhost:${PORT} adresinde çalışıyor`);
   });
+
+  // DB init'i arka planda dene (max 10 deneme, artan bekleme)
+  const MAX_INIT_RETRIES = 10;
+  for (let attempt = 1; attempt <= MAX_INIT_RETRIES; attempt++) {
+    try {
+      await initDatabase();
+      console.log('✅ Veritabanı başarıyla başlatıldı!');
+      return;
+    } catch (err) {
+      console.error(`❌ DB init denemesi ${attempt}/${MAX_INIT_RETRIES} başarısız: ${err.message}`);
+      if (attempt < MAX_INIT_RETRIES) {
+        const waitSec = Math.min(attempt * 5, 30); // 5s, 10s, 15s... max 30s
+        console.log(`⏳ ${waitSec} saniye sonra tekrar denenecek...`);
+        await new Promise(r => setTimeout(r, waitSec * 1000));
+      } else {
+        console.error('❌ Veritabanı başlatılamadı! Sunucu çalışmaya devam ediyor, DB gelince istekler çalışacak.');
+      }
+    }
+  }
+};
+
+startServer();
