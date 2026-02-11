@@ -177,7 +177,21 @@ router.post('/login', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Login hatası:', error);
+    console.error('Login hatası:', error.message);
+    
+    // Bağlantı hatalarında kullanıcıya anlamlı mesaj ver
+    const isConnectionError = 
+      error.code === 'ECONNRESET' || 
+      error.code === 'ECONNREFUSED' ||
+      error.code === 'ETIMEDOUT' ||
+      error.message?.includes('ECONNRESET') ||
+      error.message?.includes('Connection terminated');
+
+    if (isConnectionError) {
+      return res.status(503).json({ 
+        message: 'Veritabanı bağlantı hatası. Lütfen birkaç saniye sonra tekrar deneyin.' 
+      });
+    }
     res.status(500).json({ message: 'Sunucu hatası' });
   }
 });
