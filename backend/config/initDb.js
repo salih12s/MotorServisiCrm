@@ -426,6 +426,25 @@ const initDatabase = async () => {
     `);
     console.log('✓ Kullanıcılar tablosuna motor_satis_yetkisi sütunu eklendi');
 
+    // Aksesuar Stok tablosu
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS aksesuar_stok (
+        id SERIAL PRIMARY KEY,
+        stok_kodu VARCHAR(20) UNIQUE NOT NULL,
+        stok_adi VARCHAR(255) NOT NULL,
+        giren_miktar INTEGER DEFAULT 0,
+        cikan_miktar INTEGER DEFAULT 0,
+        mevcut INTEGER DEFAULT 0,
+        birimi VARCHAR(20) DEFAULT 'Adet',
+        alis_fiyati DECIMAL(10, 2) DEFAULT 0,
+        satis_fiyati DECIMAL(10, 2) DEFAULT 0,
+        envanter_degeri DECIMAL(12, 2) DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✓ Aksesuar Stok tablosu oluşturuldu');
+
     // Varsayılan admin kullanıcısı oluştur
     const adminExists = await pool.query(
       'SELECT * FROM kullanicilar WHERE kullanici_adi = $1',

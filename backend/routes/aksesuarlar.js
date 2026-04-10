@@ -103,6 +103,22 @@ router.post('/', async (req, res) => {
         [aksesuarId, parca.urun_adi, parseInt(parca.adet) || 1, parseFloat(parca.maliyet) || 0, parseFloat(parca.satis_fiyati) || 0]
       );
     }
+
+    // Sadece durum 'tamamlandi' ise stoktan düş
+    if ((durum || 'beklemede') === 'tamamlandi') {
+      for (const parca of parcalar) {
+        const adet = parseInt(parca.adet) || 1;
+        await client.query(
+          `UPDATE aksesuar_stok 
+           SET cikan_miktar = cikan_miktar + $1,
+               mevcut = giren_miktar - (cikan_miktar + $1),
+               envanter_degeri = (giren_miktar - (cikan_miktar + $1)) * satis_fiyati,
+               updated_at = CURRENT_TIMESTAMP
+           WHERE stok_adi = $2`,
+          [adet, parca.urun_adi]
+        );
+      }
+    }
     
     await client.query('COMMIT');
     
@@ -193,6 +209,23 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ message: 'Aksesuar kaydı bulunamadı' });
     }
     
+    // Eski durum tamamlandı ise eski parçaları stoğa geri ekle
+    if (eskiDurum === 'tamamlandi') {
+      const eskiParcalar = await client.query('SELECT urun_adi, adet FROM aksesuar_parcalar WHERE aksesuar_id = $1', [id]);
+      for (const eskiParca of eskiParcalar.rows) {
+        const adet = parseInt(eskiParca.adet) || 1;
+        await client.query(
+          `UPDATE aksesuar_stok 
+           SET cikan_miktar = GREATEST(cikan_miktar - $1, 0),
+               mevcut = giren_miktar - GREATEST(cikan_miktar - $1, 0),
+               envanter_degeri = (giren_miktar - GREATEST(cikan_miktar - $1, 0)) * satis_fiyati,
+               updated_at = CURRENT_TIMESTAMP
+           WHERE stok_adi = $2`,
+          [adet, eskiParca.urun_adi]
+        );
+      }
+    }
+
     // Mevcut parçaları sil
     await client.query('DELETE FROM aksesuar_parcalar WHERE aksesuar_id = $1', [id]);
     
@@ -203,6 +236,22 @@ router.put('/:id', async (req, res) => {
          VALUES ($1, $2, $3, $4, $5)`,
         [id, parca.urun_adi, parseInt(parca.adet) || 1, parseFloat(parca.maliyet) || 0, parseFloat(parca.satis_fiyati) || 0]
       );
+    }
+
+    // Yeni durum tamamlandı ise stoktan düş
+    if (durum === 'tamamlandi') {
+      for (const parca of parcalar) {
+        const adet = parseInt(parca.adet) || 1;
+        await client.query(
+          `UPDATE aksesuar_stok 
+           SET cikan_miktar = cikan_miktar + $1,
+               mevcut = giren_miktar - (cikan_miktar + $1),
+               envanter_degeri = (giren_miktar - (cikan_miktar + $1)) * satis_fiyati,
+               updated_at = CURRENT_TIMESTAMP
+           WHERE stok_adi = $2`,
+          [adet, parca.urun_adi]
+        );
+      }
     }
     
     await client.query('COMMIT');
@@ -228,22 +277,47 @@ router.put('/:id', async (req, res) => {
 
 // Aksesuar kaydını sil
 router.delete('/:id', async (req, res) => {
+  const client = await pool.connect();
   try {
+    await client.query('BEGIN');
     const { id } = req.params;
-    
-    const result = await pool.query(
-      'DELETE FROM aksesuarlar WHERE id = $1 RETURNING *',
-      [id]
-    );
-    
-    if (result.rows.length === 0) {
+
+    // Mevcut durumu ve parçaları al
+    const mevcutKayit = await client.query('SELECT durum FROM aksesuarlar WHERE id = $1', [id]);
+    if (mevcutKayit.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ message: 'Aksesuar kaydı bulunamadı' });
     }
+
+    const eskiDurum = mevcutKayit.rows[0].durum;
+
+    // Tamamlandı ise stokları geri ekle
+    if (eskiDurum === 'tamamlandi') {
+      const eskiParcalar = await client.query('SELECT urun_adi, adet FROM aksesuar_parcalar WHERE aksesuar_id = $1', [id]);
+      for (const parca of eskiParcalar.rows) {
+        const adet = parseInt(parca.adet) || 1;
+        await client.query(
+          `UPDATE aksesuar_stok 
+           SET cikan_miktar = GREATEST(cikan_miktar - $1, 0),
+               mevcut = giren_miktar - GREATEST(cikan_miktar - $1, 0),
+               envanter_degeri = (giren_miktar - GREATEST(cikan_miktar - $1, 0)) * satis_fiyati,
+               updated_at = CURRENT_TIMESTAMP
+           WHERE stok_adi = $2`,
+          [adet, parca.urun_adi]
+        );
+      }
+    }
+
+    await client.query('DELETE FROM aksesuarlar WHERE id = $1', [id]);
+    await client.query('COMMIT');
     
     res.json({ message: 'Aksesuar kaydı silindi' });
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('Aksesuar silme hatası:', error);
     res.status(500).json({ message: 'Sunucu hatası' });
+  } finally {
+    client.release();
   }
 });
 

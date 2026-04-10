@@ -17,6 +17,7 @@ import {
   ListItemButton,
   ListItemText,
   Tooltip,
+  Collapse,
 } from '@mui/material';
 import {
   Logout as LogoutIcon,
@@ -27,6 +28,9 @@ import {
   Group as GroupIcon,
   ShoppingBag as ShoppingBagIcon,
   TwoWheeler as TwoWheelerIcon,
+  Inventory as InventoryIcon,
+  ExpandLess,
+  ExpandMore,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { useCustomTheme } from '../context/ThemeContext';
@@ -57,7 +61,11 @@ const menuItems = [
     icon: <ShoppingBagIcon />,
     roles: ['admin', 'user', 'personel'],
     color: '#630094',
-    showForAksesuarOnly: true, // Sadece aksesuar yetkisi olanlara göster (admin hariç)
+    showForAksesuarOnly: true,
+    subItems: [
+      { title: 'Aksesuar Satış', path: '/aksesuarlar', icon: <ShoppingBagIcon /> },
+      { title: 'Aksesuar Stok', path: '/aksesuar-stok', icon: <InventoryIcon /> },
+    ],
   },
   { 
     title: 'Raporlar', 
@@ -84,6 +92,7 @@ const menuItems = [
 function Layout() {
   const [anchorEl, setAnchorEl] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [aksesuarOpen, setAksesuarOpen] = useState(false);
   const { user, logout } = useAuth();
   const { setAksesuarTheme, setMotorSatisTheme, setDefaultTheme, themeColors } = useCustomTheme();
   const navigate = useNavigate();
@@ -91,8 +100,9 @@ function Layout() {
 
   // Sayfa yoluna göre temayı değiştir
   useEffect(() => {
-    if (location.pathname === '/aksesuarlar') {
+    if (location.pathname === '/aksesuarlar' || location.pathname === '/aksesuar-stok') {
       setAksesuarTheme();
+      setAksesuarOpen(true);
     } else if (location.pathname === '/motor-satislari') {
       setMotorSatisTheme();
     } else {
@@ -157,6 +167,7 @@ function Layout() {
   };
 
   const getCurrentPageTitle = () => {
+    if (location.pathname === '/aksesuar-stok') return 'Aksesuar Stok';
     const item = filteredMenuItems.find(item => item.path === location.pathname);
     if (item) return item.title;
     if (location.pathname.startsWith('/is-emirleri/')) return 'İş Emri Detay';
@@ -214,54 +225,121 @@ function Layout() {
         {filteredMenuItems.map((item) => {
           const isActive = location.pathname === item.path || 
             (item.path !== '/' && location.pathname.startsWith(item.path));
+          const hasSubItems = item.subItems && item.subItems.length > 0;
+          const isSubActive = hasSubItems && item.subItems.some(sub => location.pathname === sub.path);
           
           return (
-            <ListItem key={item.path} disablePadding sx={{ mb: 0.5 }}>
-              <ListItemButton
-                onClick={() => {
-                  navigate(item.path);
-                  setMobileOpen(false);
-                }}
-                sx={{
-                  borderRadius: 2,
-                  py: 1.25,
-                  bgcolor: isActive ? `${themeColors.primary}40` : 'transparent',
-                  transition: 'background-color 0.3s ease',
-                  '&:hover': {
-                    bgcolor: isActive ? `${themeColors.primary}60` : 'rgba(255,255,255,0.08)',
-                  },
-                }}
-              >
-                <ListItemIcon 
-                  sx={{ 
-                    minWidth: 40,
-                    color: isActive ? themeColors.primaryLight : 'rgba(255,255,255,0.7)',
-                    transition: 'color 0.3s ease',
+            <React.Fragment key={item.path}>
+              <ListItem disablePadding sx={{ mb: 0.5 }}>
+                <ListItemButton
+                  onClick={() => {
+                    if (hasSubItems) {
+                      setAksesuarOpen(!aksesuarOpen);
+                    } else {
+                      navigate(item.path);
+                      setMobileOpen(false);
+                    }
+                  }}
+                  sx={{
+                    borderRadius: 2,
+                    py: 1.25,
+                    bgcolor: (isActive || isSubActive) ? `${themeColors.primary}40` : 'transparent',
+                    transition: 'background-color 0.3s ease',
+                    '&:hover': {
+                      bgcolor: (isActive || isSubActive) ? `${themeColors.primary}60` : 'rgba(255,255,255,0.08)',
+                    },
                   }}
                 >
-                  {item.icon}
-                </ListItemIcon>
-                <ListItemText 
-                  primary={item.title} 
-                  primaryTypographyProps={{ 
-                    fontWeight: isActive ? 700 : 500,
-                    fontSize: '0.9rem',
-                    color: isActive ? 'white' : 'rgba(255,255,255,0.85)',
-                  }}
-                />
-                {isActive && (
-                  <Box
-                    sx={{
-                      width: 3,
-                      height: 20,
-                      borderRadius: 2,
-                      bgcolor: themeColors.primary,
-                      transition: 'background-color 0.3s ease',
+                  <ListItemIcon 
+                    sx={{ 
+                      minWidth: 40,
+                      color: (isActive || isSubActive) ? themeColors.primaryLight : 'rgba(255,255,255,0.7)',
+                      transition: 'color 0.3s ease',
+                    }}
+                  >
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary={item.title} 
+                    primaryTypographyProps={{ 
+                      fontWeight: (isActive || isSubActive) ? 700 : 500,
+                      fontSize: '0.9rem',
+                      color: (isActive || isSubActive) ? 'white' : 'rgba(255,255,255,0.85)',
                     }}
                   />
-                )}
-              </ListItemButton>
-            </ListItem>
+                  {hasSubItems ? (
+                    aksesuarOpen ? <ExpandLess sx={{ color: 'rgba(255,255,255,0.7)' }} /> : <ExpandMore sx={{ color: 'rgba(255,255,255,0.7)' }} />
+                  ) : (
+                    (isActive && !hasSubItems) && (
+                      <Box
+                        sx={{
+                          width: 3,
+                          height: 20,
+                          borderRadius: 2,
+                          bgcolor: themeColors.primary,
+                          transition: 'background-color 0.3s ease',
+                        }}
+                      />
+                    )
+                  )}
+                </ListItemButton>
+              </ListItem>
+              {hasSubItems && (
+                <Collapse in={aksesuarOpen} timeout="auto" unmountOnExit>
+                  <List component="div" disablePadding>
+                    {item.subItems.map((subItem) => {
+                      const isSubItemActive = location.pathname === subItem.path;
+                      return (
+                        <ListItem key={subItem.path} disablePadding sx={{ mb: 0.3 }}>
+                          <ListItemButton
+                            onClick={() => {
+                              navigate(subItem.path);
+                              setMobileOpen(false);
+                            }}
+                            sx={{
+                              borderRadius: 2,
+                              py: 0.9,
+                              pl: 4,
+                              bgcolor: isSubItemActive ? `${themeColors.primary}30` : 'transparent',
+                              '&:hover': {
+                                bgcolor: isSubItemActive ? `${themeColors.primary}50` : 'rgba(255,255,255,0.05)',
+                              },
+                            }}
+                          >
+                            <ListItemIcon
+                              sx={{
+                                minWidth: 32,
+                                color: isSubItemActive ? themeColors.primaryLight : 'rgba(255,255,255,0.5)',
+                              }}
+                            >
+                              {React.cloneElement(subItem.icon, { sx: { fontSize: 18 } })}
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={subItem.title}
+                              primaryTypographyProps={{
+                                fontWeight: isSubItemActive ? 700 : 400,
+                                fontSize: '0.82rem',
+                                color: isSubItemActive ? 'white' : 'rgba(255,255,255,0.7)',
+                              }}
+                            />
+                            {isSubItemActive && (
+                              <Box
+                                sx={{
+                                  width: 3,
+                                  height: 16,
+                                  borderRadius: 2,
+                                  bgcolor: themeColors.primary,
+                                }}
+                              />
+                            )}
+                          </ListItemButton>
+                        </ListItem>
+                      );
+                    })}
+                  </List>
+                </Collapse>
+              )}
+            </React.Fragment>
           );
         })}
       </List>

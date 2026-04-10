@@ -115,6 +115,16 @@ export const aksesuarService = {
   getStats: () => api.get('/aksesuarlar/stats/genel'),
 };
 
+// Aksesuar Stok
+export const aksesuarStokService = {
+  getAll: () => api.get('/aksesuar-stok'),
+  search: (q) => api.get('/aksesuar-stok/ara', { params: { q } }),
+  create: (data) => api.post('/aksesuar-stok', data),
+  update: (id, data) => api.put(`/aksesuar-stok/${id}`, data),
+  delete: (id) => api.delete(`/aksesuar-stok/${id}`),
+  topluEkle: (stoklar) => api.post('/aksesuar-stok/toplu', { stoklar }),
+};
+
 // Motor Satışları
 export const motorSatisService = {
   // Satışlar

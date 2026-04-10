@@ -16,6 +16,7 @@ import Raporlar from './pages/Raporlar';
 import Giderler from './pages/Giderler';
 import Kullanicilar from './pages/Kullanicilar';
 import Aksesuarlar from './pages/Aksesuarlar';
+import AksesuarStok from './pages/AksesuarStok';
 import MotorSatislari from './pages/MotorSatislari';
 
 // Components
@@ -206,6 +207,7 @@ function AppRoutes() {
           } 
         />
         <Route path="aksesuarlar" element={<AksesuarRoute><Aksesuarlar /></AksesuarRoute>} />
+        <Route path="aksesuar-stok" element={<AksesuarRoute><AksesuarStok /></AksesuarRoute>} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

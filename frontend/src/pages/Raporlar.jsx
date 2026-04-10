@@ -382,6 +382,8 @@ function Raporlar() {
       if (selectedKullanici === 'Ortak') {
         if (isEmri.olusturan_kisi !== 'Ortak') return false;
       } else {
+        // Ortak olarak kaydedilmişleri hariç tut
+        if (isEmri.olusturan_kisi === 'Ortak') return false;
         const kullaniciMatch = isEmri.olusturan_kisi === selectedKullanici ||
                isEmri.olusturan_kullanici_adi === selectedKullanici || 
                isEmri.olusturan_ad_soyad === selectedKullanici;

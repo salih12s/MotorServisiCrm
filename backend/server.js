@@ -12,6 +12,7 @@ const isEmriRoutes = require('./routes/isEmirleri');
 const raporRoutes = require('./routes/raporlar');
 const giderRoutes = require('./routes/giderler');
 const aksesuarRoutes = require('./routes/aksesuarlar');
+const aksesuarStokRoutes = require('./routes/aksesuarStok');
 const motorSatisRoutes = require('./routes/motorSatislari');
 
 const app = express();
@@ -65,6 +66,7 @@ app.use('/api/is-emirleri', authenticateToken, isEmriRoutes);
 app.use('/api/raporlar', authenticateToken, raporRoutes);
 app.use('/api/giderler', authenticateToken, giderRoutes);
 app.use('/api/aksesuarlar', authenticateToken, aksesuarRoutes);
+app.use('/api/aksesuar-stok', authenticateToken, aksesuarStokRoutes);
 app.use('/api/motor-satislari', authenticateToken, motorSatisRoutes);
 
 // Ana sayfa

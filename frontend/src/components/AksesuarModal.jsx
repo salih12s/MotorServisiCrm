@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -30,6 +30,7 @@ import {
   InputAdornment,
   useTheme,
   useMediaQuery,
+  Autocomplete,
 } from '@mui/material';
 import {
   Save as SaveIcon,
@@ -41,7 +42,7 @@ import {
   Receipt as ReceiptIcon,
   LocalShipping as ShippingIcon,
 } from '@mui/icons-material';
-import { aksesuarService } from '../services/api';
+import { aksesuarService, aksesuarStokService } from '../services/api';
 import { useCustomTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -73,6 +74,35 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
     maliyet: 0,
     satis_fiyati: 0,
   });
+
+  // Stok arama state'leri
+  const [stokOptions, setStokOptions] = useState([]);
+  const [stokSearchLoading, setStokSearchLoading] = useState(false);
+  const [selectedStok, setSelectedStok] = useState(null);
+
+  // Stok arama fonksiyonu (debounce ile)
+  const searchTimeoutRef = React.useRef(null);
+  const searchStok = useCallback((query) => {
+    if (!query || query.length < 2) {
+      setStokOptions([]);
+      return;
+    }
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    searchTimeoutRef.current = setTimeout(async () => {
+      setStokSearchLoading(true);
+      try {
+        const response = await aksesuarStokService.search(query);
+        setStokOptions(response.data || []);
+      } catch (err) {
+        console.error('Stok arama hatası:', err);
+        setStokOptions([]);
+      } finally {
+        setStokSearchLoading(false);
+      }
+    }, 300);
+  }, []);
 
   // Edit modunda veriyi yükle
   useEffect(() => {
@@ -159,6 +189,8 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
       maliyet: 0,
       satis_fiyati: 0,
     });
+    setSelectedStok(null);
+    setStokOptions([]);
   };
 
   const removeParca = (index) => {
@@ -420,15 +452,65 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
                         borderStyle: 'dashed'
                       }}
                     >
-                      <TextField
-                        fullWidth
-                        size="small"
-                        label="Ürün / Aksesuar Adı"
-                        name="urun_adi"
-                        value={newParca.urun_adi}
-                        onChange={handleParcaChange}
-                        placeholder="Örn: Kask, Eldiven, Rüzgarlık..."
-                        sx={{ mb: 1, }}
+                      <Autocomplete
+                        freeSolo
+                        filterOptions={(x) => x}
+                        options={stokOptions}
+                        getOptionLabel={(option) => {
+                          if (typeof option === 'string') return option;
+                          return option.stok_adi || '';
+                        }}
+                        renderOption={(props, option) => (
+                          <li {...props} key={option.id}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                              <Typography variant="body2" fontWeight={600}>{option.stok_adi}</Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                Kod: ...{option.stok_kodu?.slice(-6)} | Stok: {option.mevcut} | ₺{parseFloat(option.satis_fiyati || 0).toLocaleString('tr-TR')}
+                              </Typography>
+                            </Box>
+                          </li>
+                        )}
+                        loading={stokSearchLoading}
+                        value={selectedStok}
+                        onChange={(e, newValue) => {
+                          setSelectedStok(newValue);
+                          if (newValue && typeof newValue !== 'string') {
+                            setNewParca({
+                              ...newParca,
+                              urun_adi: newValue.stok_adi,
+                              satis_fiyati: parseFloat(newValue.satis_fiyati) || 0,
+                              maliyet: parseFloat(newValue.alis_fiyati) || 0,
+                            });
+                          } else if (typeof newValue === 'string') {
+                            setNewParca({ ...newParca, urun_adi: newValue });
+                          }
+                        }}
+                        onInputChange={(e, newInputValue, reason) => {
+                          if (reason === 'input') {
+                            setNewParca({ ...newParca, urun_adi: newInputValue });
+                            searchStok(newInputValue);
+                          }
+                        }}
+                        inputValue={newParca.urun_adi}
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            fullWidth
+                            size="small"
+                            label="Ürün / Aksesuar Adı"
+                            placeholder="Stok kodu (son 6 hane) veya ürün adı yazın..."
+                            sx={{ mb: 1 }}
+                            InputProps={{
+                              ...params.InputProps,
+                              endAdornment: (
+                                <>
+                                  {stokSearchLoading ? <CircularProgress color="inherit" size={18} /> : null}
+                                  {params.InputProps.endAdornment}
+                                </>
+                              ),
+                            }}
+                          />
+                        )}
                       />
                       <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
                         <TextField
