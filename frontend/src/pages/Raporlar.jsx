@@ -379,9 +379,14 @@ function Raporlar() {
   const filteredIsEmirleri = gunlukRapor?.detayli_is_emirleri?.filter(isEmri => {
     // Oluşturan kişi filtresi
     if (selectedKullanici) {
-      const kullaniciMatch = isEmri.olusturan_kullanici_adi === selectedKullanici || 
-             isEmri.olusturan_ad_soyad === selectedKullanici;
-      if (!kullaniciMatch) return false;
+      if (selectedKullanici === 'Ortak') {
+        if (isEmri.olusturan_kisi !== 'Ortak') return false;
+      } else {
+        const kullaniciMatch = isEmri.olusturan_kisi === selectedKullanici ||
+               isEmri.olusturan_kullanici_adi === selectedKullanici || 
+               isEmri.olusturan_ad_soyad === selectedKullanici;
+        if (!kullaniciMatch) return false;
+      }
     }
     // Ödeme detayı filtresi
     if (selectedOdemeDetay) {
@@ -503,6 +508,7 @@ function Raporlar() {
                   onChange={(e) => setSelectedKullanici(e.target.value)}
                 >
                   <MenuItem value="">Tümü</MenuItem>
+                  <MenuItem value="Ortak">Ortak</MenuItem>
                   {kullanicilar.map((kullanici) => (
                     <MenuItem key={kullanici.id} value={kullanici.kullanici_adi}>
                       {kullanici.ad_soyad}
@@ -836,12 +842,12 @@ function Raporlar() {
                                                 </TableCell>
                                                 <TableCell>
                                                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                    <Avatar sx={{ width: 20, height: 20, fontSize: '0.65rem', bgcolor: 'primary.main' }}>
+                                                    <Avatar sx={{ width: 20, height: 20, fontSize: '0.65rem', bgcolor: isEmri.olusturan_kisi === 'Ortak' ? 'warning.main' : 'primary.main' }}>
                                                       <PersonIcon sx={{ fontSize: 14 }} />
                                                     </Avatar>
                                                     <Box>
-                                                      <Typography fontSize="0.75rem" fontWeight={600}>{isEmri.olusturan_ad_soyad || '-'}</Typography>
-                                                      <Typography variant="caption" color="text.secondary">@{isEmri.olusturan_kullanici_adi || '-'}</Typography>
+                                                      <Typography fontSize="0.75rem" fontWeight={600}>{isEmri.olusturan_kisi || isEmri.olusturan_ad_soyad || '-'}</Typography>
+                                                      {isEmri.olusturan_kisi !== 'Ortak' && <Typography variant="caption" color="text.secondary">@{isEmri.olusturan_kullanici_adi || '-'}</Typography>}
                                                     </Box>
                                                   </Box>
                                                 </TableCell>
@@ -1148,16 +1154,18 @@ function Raporlar() {
                           </TableCell>
                           <TableCell>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <Avatar sx={{ width: 24, height: 24, fontSize: '0.75rem', bgcolor: 'primary.main' }}>
+                              <Avatar sx={{ width: 24, height: 24, fontSize: '0.75rem', bgcolor: isEmri.olusturan_kisi === 'Ortak' ? 'warning.main' : 'primary.main' }}>
                                 <PersonIcon fontSize="small" />
                               </Avatar>
                               <Box>
                                 <Typography variant="body2" fontWeight={600}>
-                                  {isEmri.olusturan_ad_soyad || '-'}
+                                  {isEmri.olusturan_kisi || isEmri.olusturan_ad_soyad || '-'}
                                 </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  @{isEmri.olusturan_kullanici_adi || '-'}
-                                </Typography>
+                                {isEmri.olusturan_kisi !== 'Ortak' && (
+                                  <Typography variant="caption" color="text.secondary">
+                                    @{isEmri.olusturan_kullanici_adi || '-'}
+                                  </Typography>
+                                )}
                               </Box>
                             </Box>
                           </TableCell>
@@ -2732,11 +2740,13 @@ function Raporlar() {
                         İş Emrini Oluşturan
                       </Typography>
                       <Typography variant="h6" fontWeight={700}>
-                        {selectedWorkOrder.olusturan_ad_soyad || '-'}
+                        {selectedWorkOrder.olusturan_kisi || selectedWorkOrder.olusturan_ad_soyad || '-'}
                       </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        @{selectedWorkOrder.olusturan_kullanici_adi || '-'}
-                      </Typography>
+                      {selectedWorkOrder.olusturan_kisi !== 'Ortak' && (
+                        <Typography variant="body2" color="text.secondary">
+                          @{selectedWorkOrder.olusturan_kullanici_adi || '-'}
+                        </Typography>
+                      )}
                     </Box>
                     <Box sx={{ ml: 'auto', textAlign: 'right' }}>
                       <Typography variant="caption" color="text.secondary">

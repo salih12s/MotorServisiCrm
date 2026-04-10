@@ -126,6 +126,7 @@ router.post('/', async (req, res) => {
       tahmini_teslim_tarihi: rawTahminiTeslimTarihi,
       tahmini_toplam_ucret: rawTahminiToplamUcret,
       odeme_detaylari,
+      olusturan_kisi,
       parcalar
     } = req.body;
     
@@ -166,10 +167,10 @@ router.post('/', async (req, res) => {
     
     const isEmriResult = await client.query(
       `INSERT INTO is_emirleri 
-        (fis_no, musteri_id, musteri_ad_soyad, adres, telefon, km, model_tip, marka, aciklama, ariza_sikayetler, tahmini_teslim_tarihi, tahmini_toplam_ucret, durum, olusturan_kullanici_id, odeme_detaylari) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) 
+        (fis_no, musteri_id, musteri_ad_soyad, adres, telefon, km, model_tip, marka, aciklama, ariza_sikayetler, tahmini_teslim_tarihi, tahmini_toplam_ucret, durum, olusturan_kullanici_id, odeme_detaylari, olusturan_kisi) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) 
        RETURNING *`,
-      [fis_no, musteri_id, musteri_ad_soyad, adres, telefon, km, model_tip, marka, aciklama, ariza_sikayetler, tahmini_teslim_tarihi, tahmini_toplam_ucret, 'beklemede', olusturan_kullanici_id, odeme_detaylari || null]
+      [fis_no, musteri_id, musteri_ad_soyad, adres, telefon, km, model_tip, marka, aciklama, ariza_sikayetler, tahmini_teslim_tarihi, tahmini_toplam_ucret, 'beklemede', olusturan_kullanici_id, odeme_detaylari || null, olusturan_kisi || null]
     );
     
     const isEmri = isEmriResult.rows[0];
@@ -269,6 +270,7 @@ router.put('/:id', async (req, res) => {
       teslim_eden_teknisyen,
       teslim_tarihi: rawTeslimTarihi,
       odeme_detaylari,
+      olusturan_kisi,
       parcalar
     } = req.body;
     
@@ -288,14 +290,14 @@ router.put('/:id', async (req, res) => {
         aciklama = $7, ariza_sikayetler = $8, tahmini_teslim_tarihi = $9, 
         tahmini_toplam_ucret = $10, durum = $11, musteri_imza = $12,
         teslim_alan_ad_soyad = $13, teslim_eden_teknisyen = $14, teslim_tarihi = $15,
-        odeme_detaylari = $16, 
-        tamamlama_tarihi = CASE WHEN $17::boolean THEN CURRENT_TIMESTAMP ELSE tamamlama_tarihi END,
+        odeme_detaylari = $16, olusturan_kisi = $17,
+        tamamlama_tarihi = CASE WHEN $18::boolean THEN CURRENT_TIMESTAMP ELSE tamamlama_tarihi END,
         updated_at = CURRENT_TIMESTAMP
-       WHERE id = $18`,
+       WHERE id = $19`,
       [musteri_ad_soyad, adres, telefon, km, model_tip, marka, aciklama, ariza_sikayetler, 
        tahmini_teslim_tarihi, tahmini_toplam_ucret, durum || 'beklemede', musteri_imza || false,
-       teslim_alan_ad_soyad, teslim_eden_teknisyen, teslim_tarihi, odeme_detaylari || null, 
-       shouldSetTamamlamaTarihi, id]
+       teslim_alan_ad_soyad, teslim_eden_teknisyen, teslim_tarihi, odeme_detaylari || null,
+       olusturan_kisi || null, shouldSetTamamlamaTarihi, id]
     );
     
     // Mevcut parçaları sil ve yenilerini ekle

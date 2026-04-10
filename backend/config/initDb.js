@@ -217,6 +217,18 @@ const initDatabase = async () => {
     `);
     console.log('✓ İş emirlerine odeme_detaylari kolonu eklendi');
 
+    // İş emirlerine olusturan_kisi kolonu ekle (eğer yoksa)
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name='is_emirleri' AND column_name='olusturan_kisi') THEN
+          ALTER TABLE is_emirleri ADD COLUMN olusturan_kisi VARCHAR(100);
+        END IF;
+      END $$;
+    `);
+    console.log('✓ İş emirlerine olusturan_kisi kolonu eklendi');
+
     // İş emirlerine tamamlama_tarihi kolonu ekle (eğer yoksa)
     await pool.query(`
       DO $$

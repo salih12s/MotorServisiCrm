@@ -43,6 +43,7 @@ import {
   LocalShipping as ShippingIcon,
 } from '@mui/icons-material';
 import { isEmriService } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
   const theme = useTheme();
@@ -52,6 +53,7 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [fisNo, setFisNo] = useState(null);
+  const { user } = useAuth();
 
   const [formData, setFormData] = useState({
     musteri_ad_soyad: '',
@@ -67,6 +69,7 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
     teslim_alan_ad_soyad: '',
     teslim_eden_teknisyen: '',
     odeme_detaylari: '',
+    olusturan_kisi: '',
   });
 
   const [parcalar, setParcalar] = useState([]);
@@ -89,11 +92,13 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
         } catch (error) {
           console.error('Fiş numarası alınamadı:', error);
         }
+        // Yeni iş emri oluşturulurken varsayılan olarak giriş yapan kişiyi ata
+        setFormData(prev => ({ ...prev, olusturan_kisi: user?.name || user?.ad_soyad || '' }));
       }
     };
 
     fetchNextFisNo();
-  }, [open, isEdit]);
+  }, [open, isEdit, user]);
 
   // Edit modunda veriyi yükle
   useEffect(() => {
@@ -117,6 +122,7 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
             teslim_alan_ad_soyad: data.teslim_alan_ad_soyad || '',
             teslim_eden_teknisyen: data.teslim_eden_teknisyen || '',
             odeme_detaylari: data.odeme_detaylari || '',
+            olusturan_kisi: data.olusturan_kisi || user?.name || user?.ad_soyad || '',
           });
           setParcalar(data.parcalar || []);
           setFisNo(data.fis_no);
@@ -149,6 +155,7 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
         teslim_alan_ad_soyad: '',
         teslim_eden_teknisyen: '',
         odeme_detaylari: '',
+        olusturan_kisi: '',
       });
       setParcalar([]);
       setNewParca({
@@ -228,6 +235,7 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
       const data = {
         ...formData,
         tahmini_toplam_ucret: parseFloat(formData.tahmini_toplam_ucret) || 0,
+        olusturan_kisi: formData.olusturan_kisi,
         parcalar: parcalar.map((p) => ({
           parca_kodu: p.parca_kodu,
           takilan_parca: p.takilan_parca,
@@ -366,7 +374,7 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
                         onChange={handleChange}
                       />
                     </Box>
-                    <Box sx={{ width: 170 }}>
+                    <Box sx={{ width: 180 }}>
                       <TextField
                         fullWidth
                         sx={ {mt : 1.1} }
@@ -382,6 +390,22 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
                           ),
                         }}
                       />
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 2, mt: 1.2 }}>
+                      <FormControl size="small" sx={{ minWidth: 180 , mt: 1.2 }}>
+                        <InputLabel >Oluşturan Kişi</InputLabel>
+                        <Select
+                          name="olusturan_kisi"
+                          value={formData.olusturan_kisi}
+                          label="Oluşturan Kişi"
+                          onChange={handleChange}
+                        >
+                          <MenuItem value={user?.name || user?.ad_soyad || ''}>
+                            {user?.name || user?.ad_soyad || 'Ben'}
+                          </MenuItem>
+                          <MenuItem value="Ortak">Ortak</MenuItem>
+                        </Select>
+                      </FormControl>
                     </Box>
                   </CardContent>
                 </Card>

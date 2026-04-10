@@ -65,6 +65,7 @@ function IsEmriForm() {
     durum: 'acik',
     teslim_alan_ad_soyad: '',
     teslim_eden_teknisyen: '',
+    olusturan_kisi: user?.name || user?.ad_soyad || '',
   });
 
   const [parcalar, setParcalar] = useState([]);
@@ -102,6 +103,7 @@ function IsEmriForm() {
         durum: data.durum || 'acik',
         teslim_alan_ad_soyad: data.teslim_alan_ad_soyad || '',
         teslim_eden_teknisyen: data.teslim_eden_teknisyen || '',
+        olusturan_kisi: data.olusturan_kisi || user?.name || user?.ad_soyad || '',
       });
       
       setParcalar(data.parcalar || []);
@@ -166,6 +168,7 @@ function IsEmriForm() {
       const data = {
         ...formData,
         tahmini_toplam_ucret: parseFloat(formData.tahmini_toplam_ucret) || 0,
+        olusturan_kisi: formData.olusturan_kisi,
         parcalar: parcalar.map((p) => ({
           parca_kodu: p.parca_kodu,
           takilan_parca: p.takilan_parca,
@@ -317,6 +320,22 @@ function IsEmriForm() {
                         ),
                       }}
                     />
+                  </Grid>
+                  <Grid item xs={12} sm={6} mt={5}>
+                    <FormControl fullWidth size="small" mt={2}>
+                      <InputLabel>Oluşturan Kişi</InputLabel>
+                      <Select
+                        name="olusturan_kisi"
+                        value={formData.olusturan_kisi}
+                        label="Oluşturan Kişi"
+                        onChange={handleChange}
+                      >
+                        <MenuItem value={user?.name || user?.ad_soyad || ''}>
+                          {user?.name || user?.ad_soyad || 'Ben'}
+                        </MenuItem>
+                        <MenuItem value="Ortak">Ortak</MenuItem>
+                      </Select>
+                    </FormControl>
                   </Grid>
                 </Grid>
               </CardContent>

@@ -105,6 +105,7 @@ router.get('/aralik', async (req, res) => {
         ie.tahmini_toplam_ucret,
         ie.created_at,
         ie.tamamlama_tarihi,
+        ie.olusturan_kisi,
         k.ad_soyad as olusturan_ad_soyad,
         k.kullanici_adi as olusturan_kullanici_adi
        FROM is_emirleri ie
@@ -340,7 +341,7 @@ router.get('/is-emri/:id', async (req, res) => {
     const { id } = req.params;
     
     const isEmriResult = await pool.query(
-      `SELECT ie.*, k.ad_soyad as olusturan_ad_soyad, k.kullanici_adi as olusturan_kullanici_adi
+      `SELECT ie.*, ie.olusturan_kisi, k.ad_soyad as olusturan_ad_soyad, k.kullanici_adi as olusturan_kullanici_adi
        FROM is_emirleri ie
        LEFT JOIN kullanicilar k ON ie.olusturan_kullanici_id = k.id
        WHERE ie.id = $1`,
