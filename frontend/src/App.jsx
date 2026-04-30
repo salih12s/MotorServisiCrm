@@ -7,6 +7,10 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 
 // Pages
 import Login from './pages/Login';
+import LandingPage from './pages/LandingPage';
+import HakkimizdaPage from './pages/HakkimizdaPage';
+import BasindaPage from './pages/BasindaPage';
+import MotorlarPage from './pages/MotorlarPage';
 import Dashboard from './pages/Dashboard';
 import IsEmirleri from './pages/IsEmirleri';
 import IsEmriForm from './pages/IsEmriForm';
@@ -35,6 +39,21 @@ const ProtectedRoute = ({ children }) => {
   }
 
   return children;
+};
+
+// Root Route - giriş yapmamışsa Landing Page, yapmışsa Layout
+const RootRoute = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return null;
+  }
+
+  if (!user) {
+    return <LandingPage />;
+  }
+
+  return <Layout />;
 };
 
 // Admin Only Route Component
@@ -168,13 +187,14 @@ function AppRoutes() {
         }
       />
 
+      {/* Tanıtım sayfaları - herkese açık */}
+      <Route path="/hakkimizda" element={<HakkimizdaPage />} />
+      <Route path="/basinda" element={<BasindaPage />} />
+      <Route path="/motorlar" element={<MotorlarPage />} />
+
       <Route
         path="/"
-        element={
-          <ProtectedRoute>
-            <Layout />
-          </ProtectedRoute>
-        }
+        element={<RootRoute />}
       >
         <Route index element={<NormalRoute><IsEmirleri /></NormalRoute>} />
         <Route path="is-emirleri" element={<NormalRoute><IsEmirleri /></NormalRoute>} />
