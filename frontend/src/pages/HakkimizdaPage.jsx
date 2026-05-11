@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Container, Typography, Stack, Card, CardContent, Grid } from '@mui/material';
 import { Star as StarIcon, Build as BuildIcon, TwoWheeler as TwoWheelerIcon } from '@mui/icons-material';
 import PublicNav from '../components/PublicNav';
+import SiteFooter from '../components/SiteFooter';
 
 const SECTIONS = [
   {
@@ -168,21 +169,7 @@ function HakkimizdaPage() {
         </Container>
       </Box>
 
-      {/* Footer */}
-      <Box
-        sx={{
-          py: 4,
-          background: '#02080f',
-          borderTop: '1px solid rgba(54,197,211,0.2)',
-          textAlign: 'center',
-        }}
-      >
-        <Container maxWidth="lg">
-          <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>
-            © {new Date().getFullYear()} Demirkan Motorlu Araçlar — Tüm hakları saklıdır.
-          </Typography>
-        </Container>
-      </Box>
+      <SiteFooter />
     </Box>
   );
 }

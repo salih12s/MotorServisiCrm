@@ -49,7 +49,7 @@ const menuItems = [
   },
   { 
     title: 'Servis', 
-    path: '/', 
+    path: '/is-emirleri', 
     icon: <AssignmentIcon />,
     roles: ['admin', 'user', 'personel'],
     hideForAksesuarOnly: true, // Aksesuar yetkisi olanlardan gizle

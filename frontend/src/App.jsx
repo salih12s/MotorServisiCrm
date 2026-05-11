@@ -41,8 +41,8 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-// Root Route - giriş yapmamışsa Landing Page, yapmışsa Layout
-const RootRoute = () => {
+// Authenticated panel layout - / her zaman LandingPage'i gösterir, panel sayfaları bu route altında Layout ile sarılır
+const PanelLayoutRoute = () => {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -50,7 +50,7 @@ const RootRoute = () => {
   }
 
   if (!user) {
-    return <LandingPage />;
+    return <Navigate to="/login" replace />;
   }
 
   return <Layout />;
@@ -69,7 +69,7 @@ const AdminRoute = ({ children }) => {
   }
 
   if (user.role !== 'admin') {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/is-emirleri" replace />;
   }
 
   return children;
@@ -94,7 +94,7 @@ const AksesuarRoute = ({ children }) => {
 
   // Aksesuar yetkisi olmayanlar erişemez
   if (!user.aksesuar_yetkisi) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/is-emirleri" replace />;
   }
 
   return children;
@@ -119,7 +119,7 @@ const MotorSatisRoute = ({ children }) => {
 
   // Motor satış yetkisi olmayanlar erişemez
   if (!user.motor_satis_yetkisi) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/is-emirleri" replace />;
   }
 
   return children;
@@ -169,7 +169,7 @@ const PublicRoute = ({ children }) => {
   }
 
   if (user) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/is-emirleri" replace />;
   }
 
   return children;
@@ -188,15 +188,12 @@ function AppRoutes() {
       />
 
       {/* Tanıtım sayfaları - herkese açık */}
+      <Route path="/" element={<LandingPage />} />
       <Route path="/hakkimizda" element={<HakkimizdaPage />} />
       <Route path="/basinda" element={<BasindaPage />} />
       <Route path="/motorlar" element={<MotorlarPage />} />
 
-      <Route
-        path="/"
-        element={<RootRoute />}
-      >
-        <Route index element={<NormalRoute><IsEmirleri /></NormalRoute>} />
+      <Route element={<PanelLayoutRoute />}>
         <Route path="is-emirleri" element={<NormalRoute><IsEmirleri /></NormalRoute>} />
         <Route path="is-emirleri/yeni" element={<NormalRoute><IsEmriForm /></NormalRoute>} />
         <Route path="is-emirleri/:id" element={<NormalRoute><IsEmriDetay /></NormalRoute>} />

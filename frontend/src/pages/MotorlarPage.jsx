@@ -24,6 +24,7 @@ import {
   CheckCircle as CheckIcon,
 } from '@mui/icons-material';
 import PublicNav from '../components/PublicNav';
+import SiteFooter from '../components/SiteFooter';
 import motors from '../data/motors';
 
 const SlideTransition = React.forwardRef(function Transition(props, ref) {
@@ -695,25 +696,7 @@ function MotorlarPage() {
         onClose={() => setSelected(null)}
       />
 
-      <Box
-        sx={{
-          py: 4,
-          background: '#02080f',
-          borderTop: '1px solid rgba(54,197,211,0.2)',
-          textAlign: 'center',
-        }}
-      >
-        <Container maxWidth="lg">
-          <Typography
-            sx={{
-              color: 'rgba(255,255,255,0.5)',
-              fontSize: '0.85rem',
-            }}
-          >
-            © {new Date().getFullYear()} Demirkan Motorlu Araçlar — Tüm hakları saklıdır.
-          </Typography>
-        </Container>
-      </Box>
+      <SiteFooter />
     </Box>
   );
 }

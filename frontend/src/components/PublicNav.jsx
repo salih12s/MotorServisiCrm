@@ -67,8 +67,8 @@ function PublicNav({ solid = false }) {
             >
               <Box
                 sx={{
-                  width: 48,
-                  height: 48,
+                  width: 56,
+                  height: 56,
                   borderRadius: '50%',
                   overflow: 'hidden',
                   border: '2px solid #36C5D3',

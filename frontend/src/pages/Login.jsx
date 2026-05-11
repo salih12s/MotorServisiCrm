@@ -58,7 +58,7 @@ function Login() {
 
     try {
       await login({ username: kullaniciAdi, password: sifre });
-      navigate('/');
+      navigate('/is-emirleri');
     } catch (err) {
       setError(err.message || 'Giriş yapılamadı');
     } finally {

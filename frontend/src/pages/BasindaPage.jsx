@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Container, Typography, Stack } from '@mui/material';
 import PublicNav from '../components/PublicNav';
+import SiteFooter from '../components/SiteFooter';
 
 function BasindaPage() {
   return (
@@ -81,22 +82,7 @@ function BasindaPage() {
         />
       </Box>
 
-      {/* Footer */}
-      <Box
-        sx={{
-          py: 4,
-          background: '#02080f',
-          borderTop: '1px solid rgba(54,197,211,0.2)',
-          textAlign: 'center',
-          mt: { xs: 6, md: 10 },
-        }}
-      >
-        <Container maxWidth="lg">
-          <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>
-            © {new Date().getFullYear()} Demirkan Motorlu Araçlar — Tüm hakları saklıdır.
-          </Typography>
-        </Container>
-      </Box>
+      <SiteFooter />
     </Box>
   );
 }
