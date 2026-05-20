@@ -40,11 +40,12 @@ if (process.env.DATABASE_URL) {
 
 const pool = new Pool({
   ...poolConfig,
-  max: isProduction ? 3 : 10,
+  max: isProduction ? 10 : 10,
   min: 0,
-  connectionTimeoutMillis: 30000,
+  // Railway edge proxy 15sn'de 502 döner; bağlantı timeout'u ondan kısa olmalı
+  connectionTimeoutMillis: 8000,
   idleTimeoutMillis: 20000,
-  allowExitOnIdle: true,
+  allowExitOnIdle: false,
   keepAlive: true,
   keepAliveInitialDelayMillis: 10000,
 });
