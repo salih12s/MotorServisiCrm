@@ -57,6 +57,7 @@ import {
   Receipt as ReceiptIcon,
 } from '@mui/icons-material';
 import { authService } from '../../services/api';
+import { getIslemTipiLabel, getIslemTipiColor, islemTipleri } from './kullanicilarUtils';
 
 function Kullanicilar() {
   const theme = useTheme();
@@ -236,39 +237,6 @@ function Kullanicilar() {
     };
     return iconMap[islemTipi] || <HistoryIcon sx={{ color: 'grey.500' }} />;
   };
-
-  const getIslemTipiLabel = (islemTipi) => {
-    const labelMap = {
-      'LOGIN': 'Giriş Yaptı',
-      'LOGIN_FAILED': 'Başarısız Giriş',
-      'LOGOUT': 'Çıkış Yaptı',
-      'REGISTER': 'Kayıt Oldu',
-      'IS_EMRI_OLUSTUR': 'İş Emri Oluşturdu',
-      'IS_EMRI_GUNCELLE': 'İş Emri Güncelledi',
-      'IS_EMRI_SIL': 'İş Emri Sildi',
-      'MUSTERI_EKLE': 'Müşteri Ekledi',
-      'MUSTERI_GUNCELLE': 'Müşteri Güncelledi',
-      'MUSTERI_SIL': 'Müşteri Sildi',
-      'GIDER_EKLE': 'Gider Ekledi',
-      'GIDER_GUNCELLE': 'Gider Güncelledi',
-      'GIDER_SIL': 'Gider Sildi',
-    };
-    return labelMap[islemTipi] || islemTipi;
-  };
-
-  const getIslemTipiColor = (islemTipi) => {
-    if (islemTipi?.includes('SIL') || islemTipi === 'LOGIN_FAILED') return 'error';
-    if (islemTipi?.includes('GUNCELLE')) return 'warning';
-    if (islemTipi?.includes('OLUSTUR') || islemTipi?.includes('EKLE') || islemTipi === 'LOGIN' || islemTipi === 'REGISTER') return 'success';
-    return 'default';
-  };
-
-  const islemTipleri = [
-    'LOGIN', 'LOGIN_FAILED', 'LOGOUT', 'REGISTER',
-    'IS_EMRI_OLUSTUR', 'IS_EMRI_GUNCELLE', 'IS_EMRI_SIL',
-    'MUSTERI_EKLE', 'MUSTERI_GUNCELLE', 'MUSTERI_SIL',
-    'GIDER_EKLE', 'GIDER_GUNCELLE', 'GIDER_SIL',
-  ];
 
   const pendingUsers = users.filter(u => u.onay_durumu === 'beklemede');
 
