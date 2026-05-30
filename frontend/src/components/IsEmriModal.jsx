@@ -44,6 +44,7 @@ import {
 } from '@mui/icons-material';
 import { isEmriService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { formatCurrency, calculateTotals } from './isEmriModalUtils';
 
 function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
   const theme = useTheme();
@@ -209,23 +210,6 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
     setParcalar(updatedParcalar);
   };
 
-  const calculateTotals = () => {
-    let toplamFiyat = 0;
-    let toplamMaliyet = 0;
-
-    parcalar.forEach((p) => {
-      const adet = parseInt(p.adet) || 0;
-      const fiyat = parseFloat(p.birim_fiyat) || 0;
-      const maliyet = parseFloat(p.maliyet) || 0;
-
-      toplamFiyat += adet * fiyat;
-      toplamMaliyet += adet * maliyet;
-    });
-
-    const kar = toplamFiyat - toplamMaliyet;
-    return { toplamFiyat, toplamMaliyet, kar };
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -262,14 +246,7 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
     }
   };
 
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat('tr-TR', {
-      style: 'currency',
-      currency: 'TRY',
-    }).format(value || 0);
-  };
-
-  const { toplamFiyat } = calculateTotals();
+  const { toplamFiyat } = calculateTotals(parcalar);
 
   return (
     <Dialog 
@@ -810,7 +787,7 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
                                   Toplam Maliyet
                                 </Typography>
                                 <Typography variant="subtitle1" color="error.main" fontWeight={600}>
-                                  {formatCurrency(calculateTotals().toplamMaliyet)}
+                                  {formatCurrency(calculateTotals(parcalar).toplamMaliyet)}
                                 </Typography>
                               </Grid>
                               <Grid item xs={4}>
@@ -828,9 +805,9 @@ function IsEmriModal({ open, onClose, onSuccess, editId = null }) {
                                 <Typography 
                                   variant="subtitle1" 
                                   fontWeight={700}
-                                  color={calculateTotals().kar >= 0 ? 'success.main' : 'error.main'}
+                                  color={calculateTotals(parcalar).kar >= 0 ? 'success.main' : 'error.main'}
                                 >
-                                  {formatCurrency(calculateTotals().kar)}
+                                  {formatCurrency(calculateTotals(parcalar).kar)}
                                 </Typography>
                               </Grid>
                             </>
