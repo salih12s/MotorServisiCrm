@@ -342,16 +342,40 @@ desenle salt-okunur dialoglar ve saf yardımcılar `pages/kullanicilar/` altına
 
 ---
 
-## 9. Sonraki Refactor Adayları (Sıra)
+## 9. Refactor 6 — `components/IsEmriModal.jsx` Modülerizasyonu — TAMAMLANDI
+
+### 9.1 Hedef
+`IsEmriModal.jsx` (968 satır) tek bileşendi: müşteri/araç/arıza form alanları (sol
+kolon) + parça yönetimi & ödeme bölümü (sağ kolon) + saf hesaplama yardımcıları.
+Pür yardımcılar ve sağ kolon ayrı dosyalara çıkarıldı.
+
+### 9.2 Yapılan Adımlar (her biri ayrı commit, build doğrulamalı)
+
+| # | Çıkarılan | Yeni Dosya | Build |
+|---|-----------|------------|:-----:|
+| 1 | Saf yardımcılar (`formatCurrency`, `calculateTotals`) | `components/isEmriModalUtils.js` | exit 0 ✅ |
+| 2 | Parçalar/işçilik + toplamlar + durum + ödeme (sağ kolon) | `components/IsEmriParcalarSection.jsx` | exit 0 ✅ |
+
+> **Props (`IsEmriParcalarSection`):** `parcalar, newParca, handleParcaChange,
+> addParca, removeParca, updateParca, isEdit, isMobile, formData, handleChange,
+> toplamFiyat`. `calculateTotals` artık argüman olarak `parcalar` alır (kapanış
+> bağımlılığı kaldırıldı). Çıkarımdan sonra kullanılmayan import'lar temizlendi
+> (`Table*`, `Paper`, `AddIcon`, `DeleteIcon`, `ShippingIcon`, `formatCurrency`).
+> Davranış/UI birebir korundu.
+>
+> **Toplam sonuç: 968 → 582 satır.**
+
+---
+
+## 10. Sonraki Refactor Adayları (Sıra)
 
 | Sıra | Dosya | Satır | Yaklaşım |
 |------|-------|------:|----------|
-| Sıradaki | `components/IsEmriModal.jsx` | 968 | Form bölümleri ayrımı |
 | Sıradaki | `components/AksesuarModal.jsx` | 862 | Form + parça listesi ayrımı |
 
 ---
 
-## 10. Genel Kurallar (Tüm Refactor'lar İçin)
+## 11. Genel Kurallar (Tüm Refactor'lar İçin)
 - UI/UX **birebir** korunur; yalnızca yapısal ayrıştırma yapılır.
 - Her çıkarma ayrı commit; mesaj formatı: `refactor(<alan>): <bileşen> <kaynak>'tan ayrildi`.
 - Build doğrulaması: `cd frontend; $env:CI="false"; npm run build` → **exit 0** şart.
