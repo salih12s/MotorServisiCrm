@@ -17,13 +17,13 @@ import {
   ListAlt as ListIcon,
   Visibility as VisibilityIcon
 } from '@mui/icons-material';
-import { motorSatisService } from '../services/api';
-import { useCustomTheme } from '../context/ThemeContext';
-import { useAuth } from '../context/AuthContext';
-import MotorSatisDetayModal from './motorSatislari/MotorSatisDetayModal';
-import ModellerListModal from './motorSatislari/ModellerListModal';
-import ModelFormModal from './motorSatislari/ModelFormModal';
-import SatisFormModal from './motorSatislari/SatisFormModal';
+import { motorSatisService } from '../../services/api';
+import { useCustomTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
+import MotorSatisDetayModal from './MotorSatisDetayModal';
+import ModellerListModal from './ModellerListModal';
+import ModelFormModal from './ModelFormModal';
+import SatisFormModal from './SatisFormModal';
 import {
   getDurumColor,
   getDurumLabel,
@@ -31,7 +31,7 @@ import {
   formatNumber,
   parseFormattedNumber,
   formatDate,
-} from './motorSatislari/motorSatislariUtils';
+} from './motorSatislariUtils';
 
 const MotorSatislari = () => {
   const { setMotorSatisTheme, setDefaultTheme } = useCustomTheme();

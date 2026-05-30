@@ -16,12 +16,12 @@ import IsEmirleri from './pages/IsEmirleri';
 import IsEmriForm from './pages/IsEmriForm';
 import IsEmriDetay from './pages/IsEmriDetay';
 import Musteriler from './pages/Musteriler';
-import Raporlar from './pages/Raporlar';
+import Raporlar from './pages/raporlar/Raporlar';
 import Giderler from './pages/Giderler';
 import Kullanicilar from './pages/Kullanicilar';
 import Aksesuarlar from './pages/Aksesuarlar';
 import AksesuarStok from './pages/AksesuarStok';
-import MotorSatislari from './pages/MotorSatislari';
+import MotorSatislari from './pages/motorSatislari/MotorSatislari';
 
 // Components
 import Layout from './components/Layout';

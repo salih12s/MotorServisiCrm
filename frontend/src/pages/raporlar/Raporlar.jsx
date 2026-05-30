@@ -16,17 +16,17 @@ import {
   ShoppingBag as ShoppingBagIcon,
   TwoWheeler as TwoWheelerIcon,
 } from '@mui/icons-material';
-import { raporService, authService, motorSatisService } from '../services/api';
-import { useCustomTheme } from '../context/ThemeContext';
-import { useAuth } from '../context/AuthContext';
+import { raporService, authService, motorSatisService } from '../../services/api';
+import { useCustomTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 import { format } from 'date-fns';
-import IsEmriDetayModal from './raporlar/IsEmriDetayModal';
-import AksesuarDetayModal from './raporlar/AksesuarDetayModal';
-import MotorSatisDetayModal from './raporlar/MotorSatisDetayModal';
-import AksesuarRaporTab from './raporlar/AksesuarRaporTab';
-import FisKarRaporTab from './raporlar/FisKarRaporTab';
-import MotorSatisRaporTab from './raporlar/MotorSatisRaporTab';
-import GunlukRaporTab from './raporlar/GunlukRaporTab';
+import IsEmriDetayModal from './IsEmriDetayModal';
+import AksesuarDetayModal from './AksesuarDetayModal';
+import MotorSatisDetayModal from './MotorSatisDetayModal';
+import AksesuarRaporTab from './AksesuarRaporTab';
+import FisKarRaporTab from './FisKarRaporTab';
+import MotorSatisRaporTab from './MotorSatisRaporTab';
+import GunlukRaporTab from './GunlukRaporTab';
 
 function Raporlar() {
   const theme = useTheme();
