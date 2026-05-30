@@ -367,15 +367,41 @@ Pür yardımcılar ve sağ kolon ayrı dosyalara çıkarıldı.
 
 ---
 
-## 10. Sonraki Refactor Adayları (Sıra)
+## 10. Refactor 7 — `components/AksesuarModal.jsx` Modülerizasyonu — TAMAMLANDI
 
-| Sıra | Dosya | Satır | Yaklaşım |
-|------|-------|------:|----------|
-| Sıradaki | `components/AksesuarModal.jsx` | 862 | Form + parça listesi ayrımı |
+### 10.1 Hedef
+`AksesuarModal.jsx` (862 satır) tek bileşendi: müşteri bilgileri + ödeme detayları
+(sol kolon) + ürün/aksesuar yönetimi & stok arama (sağ kolon) + saf hesaplama
+yardımcıları. Pür yardımcılar ve sağ kolon ayrı dosyalara çıkarıldı.
+
+### 10.2 Yapılan Adımlar (her biri ayrı commit, build doğrulamalı)
+
+| # | Çıkarılan | Yeni Dosya | Build |
+|---|-----------|------------|:-----:|
+| 1 | Saf yardımcılar (`formatCurrency`, `calculateTotals`) | `components/aksesuarModalUtils.js` | exit 0 ✅ |
+| 2 | Ürünler + stok arama (Autocomplete) + toplamlar + durum (sağ kolon) | `components/AksesuarUrunlerSection.jsx` | exit 0 ✅ |
+
+> **Props (`AksesuarUrunlerSection`):** `parcalar, newParca, setNewParca,
+> handleParcaChange, addParca, removeParca, updateParca, isEdit, isMobile, isAdmin,
+> formData, handleChange, toplamFiyat, themeColors, stokOptions, stokSearchLoading,
+> selectedStok, setSelectedStok, searchStok`. `calculateTotals` argüman olarak
+> `parcalar` alır; bu modülde `satis_fiyati` alanını kullanır (IsEmriModal'daki
+> `birim_fiyat`'tan farklı — ayrı utils dosyası, **birleştirilmez**). Çıkarımdan
+> sonra kullanılmayan import'lar temizlendi (`Table*`, `Paper`, `Chip`,
+> `InputAdornment`, `Autocomplete`, `AddIcon`, `DeleteIcon`, `ShippingIcon`,
+> `formatCurrency`). Davranış/UI birebir korundu.
+>
+> **Toplam sonuç: 862 → 454 satır.**
 
 ---
 
-## 11. Genel Kurallar (Tüm Refactor'lar İçin)
+## 11. Sonraki Refactor Adayları (Sıra)
+
+> Planlanan boyut-sıralı aday listesi tamamlandı. Yeni aday belirlenmedi.
+
+---
+
+## 12. Genel Kurallar (Tüm Refactor'lar İçin)
 - UI/UX **birebir** korunur; yalnızca yapısal ayrıştırma yapılır.
 - Her çıkarma ayrı commit; mesaj formatı: `refactor(<alan>): <bileşen> <kaynak>'tan ayrildi`.
 - Build doğrulaması: `cd frontend; $env:CI="false"; npm run build` → **exit 0** şart.
