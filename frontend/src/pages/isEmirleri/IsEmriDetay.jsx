@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import {
   Box,
   Card,
@@ -32,7 +32,7 @@ import {
   ZoomOut as ZoomOutIcon,
 } from '@mui/icons-material';
 import { useReactToPrint } from 'react-to-print';
-import { isEmriService, authService } from '../services/api';
+import { isEmriService, authService } from '../../services/api';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 

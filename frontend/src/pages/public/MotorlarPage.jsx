@@ -23,9 +23,9 @@ import {
   EmojiEvents as TrophyIcon,
   CheckCircle as CheckIcon,
 } from '@mui/icons-material';
-import PublicNav from '../components/PublicNav';
-import SiteFooter from '../components/SiteFooter';
-import motors from '../data/motors';
+import PublicNav from '../../components/PublicNav';
+import SiteFooter from '../../components/SiteFooter';
+import motors from '../../data/motors';
 
 const SlideTransition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} timeout={400} />;

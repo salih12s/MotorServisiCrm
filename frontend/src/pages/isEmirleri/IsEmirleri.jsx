@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { /* useNavigate, */ useSearchParams } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import {
   Box,
   Card,
@@ -49,10 +49,10 @@ import {
   // Print as PrintIcon, // Geçici olarak kaldırıldı
   CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
-import { isEmriService } from '../services/api';
+import { isEmriService } from '../../services/api';
 import { format, isValid, parseISO } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import IsEmriModal from '../components/IsEmriModal';
+import IsEmriModal from '../../components/IsEmriModal';
 
 // Güvenli tarih formatlama fonksiyonu
 const formatDate = (dateStr, formatStr = 'dd.MM.yyyy') => {

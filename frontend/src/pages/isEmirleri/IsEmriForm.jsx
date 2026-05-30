@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import {
   Box,
   Card,
@@ -39,7 +39,7 @@ import {
   Receipt as ReceiptIcon,
   LocalShipping as ShippingIcon,
 } from '@mui/icons-material';
-import { isEmriService } from '../services/api';
+import { isEmriService } from '../../services/api';
 
 function IsEmriForm() {
   const { id } = useParams();

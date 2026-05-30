@@ -6,21 +6,21 @@ import { CustomThemeProvider, useCustomTheme } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 // Pages
-import Login from './pages/Login';
-import LandingPage from './pages/LandingPage';
-import HakkimizdaPage from './pages/HakkimizdaPage';
-import BasindaPage from './pages/BasindaPage';
-import MotorlarPage from './pages/MotorlarPage';
-import Dashboard from './pages/Dashboard';
-import IsEmirleri from './pages/IsEmirleri';
-import IsEmriForm from './pages/IsEmriForm';
-import IsEmriDetay from './pages/IsEmriDetay';
-import Musteriler from './pages/Musteriler';
+import Login from './pages/public/Login';
+import LandingPage from './pages/public/LandingPage';
+import HakkimizdaPage from './pages/public/HakkimizdaPage';
+import BasindaPage from './pages/public/BasindaPage';
+import MotorlarPage from './pages/public/MotorlarPage';
+import Dashboard from './pages/dashboard/Dashboard';
+import IsEmirleri from './pages/isEmirleri/IsEmirleri';
+import IsEmriForm from './pages/isEmirleri/IsEmriForm';
+import IsEmriDetay from './pages/isEmirleri/IsEmriDetay';
+import Musteriler from './pages/musteriler/Musteriler';
 import Raporlar from './pages/raporlar/Raporlar';
-import Giderler from './pages/Giderler';
-import Kullanicilar from './pages/Kullanicilar';
-import Aksesuarlar from './pages/Aksesuarlar';
-import AksesuarStok from './pages/AksesuarStok';
+import Giderler from './pages/giderler/Giderler';
+import Kullanicilar from './pages/kullanicilar/Kullanicilar';
+import Aksesuarlar from './pages/aksesuarlar/Aksesuarlar';
+import AksesuarStok from './pages/aksesuarlar/AksesuarStok';
 import MotorSatislari from './pages/motorSatislari/MotorSatislari';
 
 // Components

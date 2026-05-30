@@ -1,8 +1,8 @@
 import React from 'react';
 import { Box, Container, Typography, Stack, Card, CardContent, Grid } from '@mui/material';
 import { Star as StarIcon, Build as BuildIcon, TwoWheeler as TwoWheelerIcon } from '@mui/icons-material';
-import PublicNav from '../components/PublicNav';
-import SiteFooter from '../components/SiteFooter';
+import PublicNav from '../../components/PublicNav';
+import SiteFooter from '../../components/SiteFooter';
 
 const SECTIONS = [
   {

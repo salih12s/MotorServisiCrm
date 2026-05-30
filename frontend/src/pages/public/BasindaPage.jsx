@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Container, Typography, Stack } from '@mui/material';
-import PublicNav from '../components/PublicNav';
-import SiteFooter from '../components/SiteFooter';
+import PublicNav from '../../components/PublicNav';
+import SiteFooter from '../../components/SiteFooter';
 
 function BasindaPage() {
   return (

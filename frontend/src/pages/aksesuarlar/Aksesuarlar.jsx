@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCustomTheme } from '../context/ThemeContext';
-import { useAuth } from '../context/AuthContext';
+import { useCustomTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 import {
   Box,
   Card,
@@ -41,10 +41,10 @@ import {
   Person as PersonIcon,
   Receipt as ReceiptIcon,
 } from '@mui/icons-material';
-import { aksesuarService } from '../services/api';
+import { aksesuarService } from '../../services/api';
 import { format, isValid, parseISO, isToday, startOfDay, endOfDay, isAfter, isBefore } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import AksesuarModal from '../components/AksesuarModal';
+import AksesuarModal from '../../components/AksesuarModal';
 
 // Güvenli tarih formatlama fonksiyonu
 const formatDate = (dateStr, formatStr = 'dd.MM.yyyy HH:mm') => {

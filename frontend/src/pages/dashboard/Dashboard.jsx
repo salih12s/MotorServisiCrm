@@ -21,9 +21,9 @@ import {
   LocalAtm as LocalAtmIcon,
   ShowChart as ShowChartIcon,
 } from '@mui/icons-material';
-import { raporService } from '../services/api';
-import { useAuth } from '../context/AuthContext';
-import IsEmriModal from '../components/IsEmriModal';
+import { raporService } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import IsEmriModal from '../../components/IsEmriModal';
 
 // Quick Action Card Component
 const QuickActionCard = ({ title, description, icon, color, onClick }) => (

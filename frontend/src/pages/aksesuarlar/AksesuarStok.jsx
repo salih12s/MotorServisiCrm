@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useCustomTheme } from '../context/ThemeContext';
-import { useAuth } from '../context/AuthContext';
+import { useCustomTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 import {
   Box,
   Card,
@@ -38,7 +38,7 @@ import {
   Inventory as InventoryIcon,
   Save as SaveIcon,
 } from '@mui/icons-material';
-import { aksesuarStokService } from '../services/api';
+import { aksesuarStokService } from '../../services/api';
 
 function AksesuarStok() {
   const [stoklar, setStoklar] = useState([]);

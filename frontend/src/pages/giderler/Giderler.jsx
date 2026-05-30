@@ -42,7 +42,7 @@ import {
   Description as DescriptionIcon,
   AttachMoney as AttachMoneyIcon,
 } from '@mui/icons-material';
-import { giderService } from '../services/api';
+import { giderService } from '../../services/api';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 

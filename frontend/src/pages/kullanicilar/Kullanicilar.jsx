@@ -56,7 +56,7 @@ import {
   DirectionsCar as DirectionsCarIcon,
   Receipt as ReceiptIcon,
 } from '@mui/icons-material';
-import { authService } from '../services/api';
+import { authService } from '../../services/api';
 
 function Kullanicilar() {
   const theme = useTheme();

@@ -30,9 +30,9 @@ import {
   Workspaces as WorkspacesIcon,
   Group as GroupIcon,
 } from '@mui/icons-material';
-import PublicNav from '../components/PublicNav';
-import SiteFooter from '../components/SiteFooter';
-import motors from '../data/motors';
+import PublicNav from '../../components/PublicNav';
+import SiteFooter from '../../components/SiteFooter';
+import motors from '../../data/motors';
 
 const FEATURED = [
   { id: 'glamaro-max-125', badge: 'Çok Satan', tagline: 'Kuryelerin En Çok Tercih Ettiği' },

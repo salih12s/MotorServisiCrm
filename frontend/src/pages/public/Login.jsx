@@ -25,8 +25,8 @@ import {
   PersonAdd as PersonAddIcon,
   Badge as BadgeIcon,
 } from '@mui/icons-material';
-import { useAuth } from '../context/AuthContext';
-import { authService } from '../services/api';
+import { useAuth } from '../../context/AuthContext';
+import { authService } from '../../services/api';
 
 function Login() {
   const [tabValue, setTabValue] = useState(0); // 0: Giriş, 1: Kayıt

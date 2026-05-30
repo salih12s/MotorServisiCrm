@@ -38,8 +38,8 @@ import {
   Clear as ClearIcon,
   Close as CloseIcon,
 } from '@mui/icons-material';
-import { musteriService } from '../services/api';
-import { useAuth } from '../context/AuthContext';
+import { musteriService } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
