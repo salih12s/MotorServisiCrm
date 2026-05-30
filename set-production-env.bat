@@ -14,14 +14,14 @@ echo # DB_USER=postgres
 echo # DB_PASSWORD=12345
 echo.
 echo # Database Configuration - Production ^(Railway^)
-echo DB_HOST=mainline.proxy.rlwy.net
-echo DB_PORT=19436
-echo DB_NAME=railway
-echo DB_USER=postgres
-echo DB_PASSWORD=AujMSGZWwRuSBMkdnbDzYUtYEXuDqfHK
+echo DB_HOST=<RAILWAY_DB_HOST>
+echo DB_PORT=<RAILWAY_DB_PORT>
+echo DB_NAME=<RAILWAY_DB_NAME>
+echo DB_USER=<RAILWAY_DB_USER>
+echo DB_PASSWORD=<RAILWAY_DB_PASSWORD>
 echo.
 echo # JWT Configuration
-echo JWT_SECRET=demirkan_motorlu_arac_secret_key_2025
+echo JWT_SECRET=<JWT_SECRET>
 echo.
 echo # Server Configuration
 echo PORT=5000
