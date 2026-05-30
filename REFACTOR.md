@@ -198,7 +198,7 @@ raporlar/
 
 ---
 
-## 5. Refactor 2 — `MotorSatislari.jsx` Modülerizasyonu � DEVAM EDİYOR
+## 5. Refactor 2 — `MotorSatislari.jsx` Modülerizasyonu — DEVAM EDİYOR
 
 ### 5.1 Hedef
 `MotorSatislari.jsx` artık en büyük dosya (**2074 satır**). Refactor 1 ile aynı desen
@@ -220,19 +220,27 @@ sabitler (`KDV_ORANI=20`, `DAMGA_VERGISI=791`).
 | # | Commit | Çıkarılan | Yeni Dosya | Satır | Build |
 |---|--------|-----------|------------|------:|:-----:|
 | 1 | `(motorSatislari)` | Detay Modal (salt-okunur) | `motorSatislari/MotorSatisDetayModal.jsx` | ~340 | exit 0 ✅ |
+| 2 | `(motorSatislari)` | Modeller Liste Modal | `motorSatislari/ModellerListModal.jsx` | ~225 | exit 0 ✅ |
+| 3 | `(motorSatislari)` | Model Ekle/Düzenle Modal | `motorSatislari/ModelFormModal.jsx` | ~140 | exit 0 ✅ |
+| 4 | `(motorSatislari)` | Satış Ekle/Düzenle Modal | `motorSatislari/SatisFormModal.jsx` | ~537 | exit 0 ✅ |
 
-> **Not:** `MotorSatisDetayModal` props ile beslenir: `open`, `onClose`, `isMobile`,
-> `selectedSatisDetay`, `modeller`, `formatCurrency`, `formatDate`. Sabitler
-> (`KDV_ORANI`, `DAMGA_VERGISI`) bileşen içinde modül sabiti olarak tanımlandı —
-> davranış birebir korundu. Sonuç: **2074 → 1728 satır**.
+> **Not:** Tüm modaller props ile beslenir (state yukarıda `MotorSatislari`'da kalır).
+> - `MotorSatisDetayModal`: `open, onClose, isMobile, selectedSatisDetay, modeller, formatCurrency, formatDate`.
+> - `ModellerListModal`: `open, onClose, isMobile, modeller, onEditModel, onDeleteModel, onAddModel`.
+> - `ModelFormModal`: `open, onClose, isMobile, editingModel, modelForm, setModelForm, onSave`.
+> - `SatisFormModal`: `open, onClose, isMobile, editingSatis, satisForm, setSatisForm, modeller, getInputValue, handlePriceChange, handlePriceFocus, handlePriceBlur, isAdmin, formatCurrency, onSave`.
+>
+> Sabitler (`KDV_ORANI=20`, `DAMGA_VERGISI=791`) `MotorSatisDetayModal` ve `SatisFormModal`
+> içinde modül sabiti olarak tanımlandı; davranış birebir korundu. Çıkarımdan sonra ana
+> dosyada kullanılmayan import'lar (`Dialog*`, `Grid`, `FormControl`, `Select`, `MenuItem`,
+> `MoneyIcon`, `ReceiptIcon`, `CategoryIcon`, `InfoIcon`) temizlendi.
+>
+> **Toplam sonuç: 2074 → 988 satır** (4 modal çıkarıldı).
 
 ### 5.4 Kalan Planlanan Adımlar
-2. **Modeller Liste Modal** → `ModellerListModal.jsx` (props: open, onClose, modeller, isAdmin, handlers).
-3. **Model Ekle/Düzenle Modal** → `ModelFormModal.jsx`.
-4. **Satış Ekle/Düzenle Modal** → `SatisFormModal.jsx` (en büyük; fiyat/vergi mantığı dikkatli taşınacak).
 5. **Liste görünümü** (masaüstü tablo + mobil kart) → ayrı bileşen(ler).
-6. **Yardımcılar** → `motorSatislariUtils.js` (ortak `formatCurrency` vb.).
-7. **Temizlik:** kullanılmayan import'ların kaldırılması, son build + commit.
+6. **Yardımcılar** → `motorSatislariUtils.js` (ortak `formatCurrency`, `formatNumber`, `formatDate` vb.).
+7. **Temizlik:** son build + commit.
 
 ### 5.5 Beklenen Sonuç
 - `MotorSatislari.jsx` büyük oranda küçülecek (orkestrasyon katmanına inecek).
