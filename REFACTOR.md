@@ -286,18 +286,43 @@ pages/
 
 ---
 
-## 7. Sonraki Refactor Adayları (Sıra)
+## 7. Refactor 4 — `IsEmirleri.jsx` Modülerizasyonu — TAMAMLANDI
+
+### 7.1 Hedef
+`IsEmirleri.jsx` (1323 satır) tek bileşendi: stats chip'leri + filtreler + mobil
+kart / masaüstü tablo listesi + 2 büyük dialog + yardımcılar. Aynı desenle mantıksal
+parçalar `pages/isEmirleri/` altına çıkarıldı.
+
+### 7.2 Yapılan Adımlar (her biri ayrı commit, build doğrulamalı)
+
+| # | Çıkarılan | Yeni Dosya | Build |
+|---|-----------|------------|:-----:|
+| 1 | Saf yardımcılar (`formatDate`, `formatCurrency`) | `isEmirleri/isEmirleriUtils.js` | exit 0 ✅ |
+| 2 | İş emri detay modalı (salt-okunur) | `isEmirleri/IsEmriDetayModal.jsx` | exit 0 ✅ |
+| 3 | Tamamlama onay modalı | `isEmirleri/IsEmriTamamlaModal.jsx` | exit 0 ✅ |
+
+> **Props:**
+> - `IsEmriDetayModal`: `open, onClose, isEmri, isMobile, isAdmin, onEdit`.
+> - `IsEmriTamamlaModal`: `open, onClose, workOrder, onConfirm`.
+>
+> Çıkarımdan sonra kullanılmayan import'lar temizlendi (`Dialog*`, `Paper`,
+> `CloseIcon`, `AttachMoneyIcon`). Davranış/UI birebir korundu.
+>
+> **Toplam sonuç: 1323 → 913 satır.**
+
+---
+
+## 8. Sonraki Refactor Adayları (Sıra)
 
 | Sıra | Dosya | Satır | Yaklaşım |
 |------|-------|------:|----------|
-| Sıradaki | `pages/isEmirleri/IsEmirleri.jsx` | 1323 | Liste/filtre/satır bileşenleri ayrımı |
 | Sıradaki | `pages/kullanicilar/Kullanicilar.jsx` | 1276 | Kullanıcı kartı + yetki + aktivite log ayrımı |
 | Sıradaki | `components/IsEmriModal.jsx` | 968 | Form bölümleri ayrımı |
 | Sıradaki | `components/AksesuarModal.jsx` | 862 | Form + parça listesi ayrımı |
 
 ---
 
-## 7. Genel Kurallar (Tüm Refactor'lar İçin)
+## 9. Genel Kurallar (Tüm Refactor'lar İçin)
 - UI/UX **birebir** korunur; yalnızca yapısal ayrıştırma yapılır.
 - Her çıkarma ayrı commit; mesaj formatı: `refactor(<alan>): <bileşen> <kaynak>'tan ayrildi`.
 - Build doğrulaması: `cd frontend; $env:CI="false"; npm run build` → **exit 0** şart.
