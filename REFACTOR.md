@@ -395,13 +395,42 @@ yardımcıları. Pür yardımcılar ve sağ kolon ayrı dosyalara çıkarıldı.
 
 ---
 
-## 11. Sonraki Refactor Adayları (Sıra)
+## 11. Refactor 8 — `pages/public/LandingPage.jsx` Modülerizasyonu — TAMAMLANDI
+
+### 11.1 Hedef
+`LandingPage.jsx` (1114 satır) tek bir tanıtım sayfasıydı: 5 ardışık görsel bölüm
+(HERO, Favori Motorlar, Rakamlarla Demirkan, Hakkımızda Önizleme, Vizyon & Misyon)
++ `PublicNav` + `SiteFooter`. Her görsel bölüm `pages/public/landing/` altında
+ayrı bir bileşene çıkarıldı; sayfa ince bir kabuk hâline geldi.
+
+### 11.2 Yapılan Adımlar (her biri ayrı commit, build doğrulamalı)
+
+| # | Çıkarılan Bölüm | Yeni Dosya | Build |
+|---|-----------------|------------|:-----:|
+| 1 | HERO (avatar, başlıklar, CTA butonları, scroll-down) | `pages/public/landing/HeroSection.jsx` | exit 0 ✅ |
+| 2 | Favori Motorlar (öne çıkan 3 motor kartı) | `pages/public/landing/FavoriMotorlarSection.jsx` | exit 0 ✅ |
+| 3 | Rakamlarla Demirkan (4 istatistik kartı) | `pages/public/landing/RakamlarlaSection.jsx` | exit 0 ✅ |
+| 4 | Hakkımızda Önizleme (tanıtım kartı + alt istatistikler) | `pages/public/landing/HakkimizdaPreviewSection.jsx` | exit 0 ✅ |
+| 5 | Vizyon & Misyon (2 kart + Temel İlkelerimiz) | `pages/public/landing/VizyonMisyonSection.jsx` | exit 0 ✅ |
+
+> **Notlar:** Bölümler props almaz; her biri kendi yerel sabitini barındırır
+> (`HEADER_HEIGHT` → Hero, `FEATURED` → FavoriMotorlar, `STATS` → Rakamlarla,
+> `PRINCIPLES` → VizyonMisyon) ve gerekli `useNavigate`'i kendi içinde kullanır.
+> Her çıkarımdan sonra parent'ta kullanılmayan MUI/ikon import'ları ve sabitler
+> temizlendi. Son durumda `LandingPage.jsx` yalnızca `Box` sarmalayıcı + `PublicNav`
+> + 5 bölüm + `SiteFooter` import'undan oluşur. Davranış/UI birebir korundu.
+>
+> **Toplam sonuç: 1114 → 83 satır.**
+
+---
+
+## 12. Sonraki Refactor Adayları (Sıra)
 
 > Planlanan boyut-sıralı aday listesi tamamlandı. Yeni aday belirlenmedi.
 
 ---
 
-## 12. Genel Kurallar (Tüm Refactor'lar İçin)
+## 13. Genel Kurallar (Tüm Refactor'lar İçin)
 - UI/UX **birebir** korunur; yalnızca yapısal ayrıştırma yapılır.
 - Her çıkarma ayrı commit; mesaj formatı: `refactor(<alan>): <bileşen> <kaynak>'tan ayrildi`.
 - Build doğrulaması: `cd frontend; $env:CI="false"; npm run build` → **exit 0** şart.
