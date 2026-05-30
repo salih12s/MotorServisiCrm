@@ -424,13 +424,45 @@ ayrı bir bileşene çıkarıldı; sayfa ince bir kabuk hâline geldi.
 
 ---
 
-## 12. Sonraki Refactor Adayları (Sıra)
+## 12. Refactor 9 — `pages/raporlar/GunlukRaporTab.jsx` Modülerizasyonu — TAMAMLANDI
 
-> Planlanan boyut-sıralı aday listesi tamamlandı. Yeni aday belirlenmedi.
+### 12.1 Hedef
+`GunlukRaporTab.jsx` (875 satır) saf bir sunum bileşeniydi (hook yok, tüm veri
+props ile gelir): filtreler + özet kartları + günlük özet tablosu (mobil akordeon
++ masaüstü tablo) + tarih aralığı iş emirleri listesi + giderler tablosu. Her
+mantıksal bölüm `pages/raporlar/gunlukRapor/` altına ayrı bir sunum bileşenine
+çıkarıldı; tab ince bir kompozisyon kabuğu hâline geldi.
+
+### 12.2 Yapılan Adımlar (tek commit, build doğrulamalı)
+
+| # | Çıkarılan Bölüm | Yeni Dosya |
+|---|-----------------|------------|
+| 1 | Tarih aralığı + kullanıcı/ödeme filtreleri | `gunlukRapor/GunlukRaporFiltreler.jsx` |
+| 2 | 4 istatistik kartı (iş sayısı, gelir, maliyet, net kâr) | `gunlukRapor/GunlukOzetKartlari.jsx` |
+| 3 | Günlük özet (mobil akordeon + masaüstü tablo + iç iş emirleri) | `gunlukRapor/GunlukOzetTablosu.jsx` |
+| 4 | Tarih aralığı iş emirleri (mobil kart + sıralanabilir masaüstü tablo) | `gunlukRapor/IsEmirleriListesi.jsx` |
+| 5 | Giderler tablosu | `gunlukRapor/GiderlerTablosu.jsx` |
+
+> **Notlar:** Alt bileşenler `StatCard` ve `formatCurrency`'yi `../` yolundan
+> doğrudan import eder. Parent yalnızca ilgili prop alt kümesini iletir; davranış
+> ve UI birebir korundu. Build `Compiled with warnings.` → **exit 0**.
+>
+> **Toplam sonuç: 875 → 89 satır.**
 
 ---
 
-## 13. Genel Kurallar (Tüm Refactor'lar İçin)
+## 13. Sonraki Refactor Adayları (Sıra)
+
+> Kalan >700 satır adaylar: `aksesuarlar/Aksesuarlar.jsx` (825),
+> `isEmirleri/IsEmriDetay.jsx` (809), `isEmirleri/IsEmriForm.jsx` (777),
+> `public/MotorlarPage.jsx` (704). Ayrıca `pages/MotorSatislari.jsx` (923) ölü
+> kopya — App.jsx aktif olanı `pages/motorSatislari/` altından kullanır,
+> silinmesi kullanıcı onayını bekler. `data/motors.js` (1174) saf veri,
+> refactor adayı değildir.
+
+---
+
+## 14. Genel Kurallar (Tüm Refactor'lar İçin)
 - UI/UX **birebir** korunur; yalnızca yapısal ayrıştırma yapılır.
 - Her çıkarma ayrı commit; mesaj formatı: `refactor(<alan>): <bileşen> <kaynak>'tan ayrildi`.
 - Build doğrulaması: `cd frontend; $env:CI="false"; npm run build` → **exit 0** şart.
