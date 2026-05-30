@@ -2,69 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCustomTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
-import {
-  Box,
-  Card,
-  CardContent,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Typography,
-  Button,
-  IconButton,
-  Chip,
-  TextField,
-  InputAdornment,
-  CircularProgress,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Divider,
-  useMediaQuery,
-  useTheme,
-  Paper,
-  Avatar,
-} from '@mui/material';
-import {
-  Add as AddIcon,
-  Search as SearchIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Clear as ClearIcon,
-  Close as CloseIcon,
-  ShoppingBag as ShoppingBagIcon,
-  Visibility as VisibilityIcon,
-  Person as PersonIcon,
-  Receipt as ReceiptIcon,
-} from '@mui/icons-material';
+import { Box, useMediaQuery, useTheme } from '@mui/material';
 import { aksesuarService } from '../../services/api';
-import { format, isValid, parseISO, isToday, startOfDay, endOfDay, isAfter, isBefore } from 'date-fns';
-import { tr } from 'date-fns/locale';
+import { parseISO, isToday, startOfDay, endOfDay, isAfter, isBefore } from 'date-fns';
 import AksesuarModal from '../../components/AksesuarModal';
-
-// Güvenli tarih formatlama fonksiyonu
-const formatDate = (dateStr, formatStr = 'dd.MM.yyyy HH:mm') => {
-  if (!dateStr) return '-';
-  try {
-    const date = typeof dateStr === 'string' ? parseISO(dateStr) : new Date(dateStr);
-    if (!isValid(date)) return '-';
-    return format(date, formatStr, { locale: tr });
-  } catch {
-    return '-';
-  }
-};
-
-// Durum renkleri ve etiketleri
-const durumConfig = {
-  beklemede: { label: 'Beklemede', color: '#ff9800', bgColor: '#fff3e0' },
-  islemde: { label: 'İşlemde', color: '#2196f3', bgColor: '#e3f2fd' },
-  tamamlandi: { label: 'Tamamlandı', color: '#4caf50', bgColor: '#e8f5e9' },
-  iptal_edildi: { label: 'İptal', color: '#f44336', bgColor: '#ffebee' },
-};
+import AksesuarHeader from './AksesuarHeader';
+import AksesuarFiltreler from './AksesuarFiltreler';
+import AksesuarTablo from './AksesuarTablo';
+import AksesuarDetayDialog from './AksesuarDetayDialog';
 
 function Aksesuarlar() {
   const [aksesuarlar, setAksesuarlar] = useState([]);
@@ -78,7 +23,7 @@ function Aksesuarlar() {
   const [editingId, setEditingId] = useState(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedAksesuar, setSelectedAksesuar] = useState(null);
-  
+
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { themeColors } = useCustomTheme();
@@ -145,15 +90,6 @@ function Aksesuarlar() {
     setDetailDialogOpen(true);
   };
 
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat('tr-TR', {
-      style: 'currency',
-      currency: 'TRY',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value || 0);
-  };
-
   // Filtreleme
   let filteredAksesuarlar = aksesuarlar.filter((a) =>
     a.ad_soyad?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -181,7 +117,7 @@ function Aksesuarlar() {
     filteredAksesuarlar = filteredAksesuarlar.filter(a => {
       try {
         const tarih = parseISO(a.satis_tarihi || a.created_at);
-        return isAfter(tarih, startOfDay(new Date(baslangicTarihi))) || 
+        return isAfter(tarih, startOfDay(new Date(baslangicTarihi))) ||
                tarih.toDateString() === new Date(baslangicTarihi).toDateString();
       } catch {
         return false;
@@ -193,7 +129,7 @@ function Aksesuarlar() {
     filteredAksesuarlar = filteredAksesuarlar.filter(a => {
       try {
         const tarih = parseISO(a.satis_tarihi || a.created_at);
-        return isBefore(tarih, endOfDay(new Date(bitisTarihi))) || 
+        return isBefore(tarih, endOfDay(new Date(bitisTarihi))) ||
                tarih.toDateString() === new Date(bitisTarihi).toDateString();
       } catch {
         return false;
@@ -254,331 +190,45 @@ function Aksesuarlar() {
 
   return (
     <Box>
-      {/* Header with Stats */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-          {/* İstatistik Chip'leri - Renkli ve Tıklanabilir */}
-          <Chip
-            label={`Toplam: ${toplamSatis}`}
-            size="small"
-            onClick={() => handleFilterClick('toplam')}
-            sx={{
-              bgcolor: !filterBugun && !filterDurum ? '#1a237e' : '#e3f2fd',
-              color: !filterBugun && !filterDurum ? 'white' : '#1a237e',
-              fontWeight: 600,
-              cursor: 'pointer',
-              '&:hover': { bgcolor: '#1a237e', color: 'white' },
-            }}
-          />
-          <Chip
-            label={`Bugün: ${bugunkuSatis}`}
-            size="small"
-            onClick={() => handleFilterClick('bugun')}
-            sx={{
-              bgcolor: filterBugun ? '#1565c0' : '#bbdefb',
-              color: filterBugun ? 'white' : '#1565c0',
-              fontWeight: 600,
-              cursor: 'pointer',
-              '&:hover': { bgcolor: '#1565c0', color: 'white' },
-            }}
-          />
-          <Chip
-            label={`Beklemede: ${beklemedeSatis}`}
-            size="small"
-            onClick={() => handleFilterClick('beklemede')}
-            sx={{
-              bgcolor: filterDurum === 'beklemede' ? '#e65100' : '#fff3e0',
-              color: filterDurum === 'beklemede' ? 'white' : '#e65100',
-              fontWeight: 600,
-              cursor: 'pointer',
-              '&:hover': { bgcolor: '#e65100', color: 'white' },
-            }}
-          />
-          <Chip
-            label={`İşlemde: ${islemdeSatis}`}
-            size="small"
-            onClick={() => handleFilterClick('islemde')}
-            sx={{
-              bgcolor: filterDurum === 'islemde' ? '#0277bd' : '#e3f2fd',
-              color: filterDurum === 'islemde' ? 'white' : '#0277bd',
-              fontWeight: 600,
-              cursor: 'pointer',
-              '&:hover': { bgcolor: '#0277bd', color: 'white' },
-            }}
-          />
-          <Chip
-            label={`Tamamlandı: ${tamamlananSatis}`}
-            size="small"
-            onClick={() => handleFilterClick('tamamlandi')}
-            sx={{
-              bgcolor: filterDurum === 'tamamlandi' ? '#2e7d32' : '#e8f5e9',
-              color: filterDurum === 'tamamlandi' ? 'white' : '#2e7d32',
-              fontWeight: 600,
-              cursor: 'pointer',
-              '&:hover': { bgcolor: '#2e7d32', color: 'white' },
-            }}
-          />
-          <Chip
-            label={`İptal: ${iptalSatis}`}
-            size="small"
-            onClick={() => handleFilterClick('iptal_edildi')}
-            sx={{
-              bgcolor: filterDurum === 'iptal_edildi' ? '#c62828' : '#ffebee',
-              color: filterDurum === 'iptal_edildi' ? 'white' : '#c62828',
-              fontWeight: 600,
-              cursor: 'pointer',
-              '&:hover': { bgcolor: '#c62828', color: 'white' },
-            }}
-          />
-          <Chip
-            label={formatCurrency(toplamTutar)}
-            size="small"
-            sx={{
-              bgcolor: '#e3f2fd',
-              color: '#1565c0',
-              fontWeight: 600,
-            }}
-          />
-          {isAdmin && (
-            <Chip
-              label={`Kar: ${formatCurrency(toplamKar)}`}
-              size="small"
-              sx={{
-                bgcolor: toplamKar >= 0 ? '#e8f5e9' : '#ffebee',
-                color: toplamKar >= 0 ? '#2e7d32' : '#c62828',
-                fontWeight: 600,
-              }}
-            />
-          )}
-        </Box>
+      <AksesuarHeader
+        toplamSatis={toplamSatis}
+        bugunkuSatis={bugunkuSatis}
+        beklemedeSatis={beklemedeSatis}
+        islemdeSatis={islemdeSatis}
+        tamamlananSatis={tamamlananSatis}
+        iptalSatis={iptalSatis}
+        toplamTutar={toplamTutar}
+        toplamKar={toplamKar}
+        filterBugun={filterBugun}
+        filterDurum={filterDurum}
+        handleFilterClick={handleFilterClick}
+        isAdmin={isAdmin}
+        themeColors={themeColors}
+        handleOpenModal={handleOpenModal}
+      />
 
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpenModal()}
-          sx={{
-            bgcolor: themeColors.primary,
-            '&:hover': { bgcolor: themeColors.primaryDark },
-          }}
-        >
-          Yeni Satış
-        </Button>
-      </Box>
+      <AksesuarFiltreler
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        baslangicTarihi={baslangicTarihi}
+        setBaslangicTarihi={setBaslangicTarihi}
+        bitisTarihi={bitisTarihi}
+        setBitisTarihi={setBitisTarihi}
+        setFilterBugun={setFilterBugun}
+        hasActiveFilters={hasActiveFilters}
+        clearFilters={clearFilters}
+      />
 
-      {/* Search and Filter Row */}
-      <Card sx={{ mb: 2 }}>
-        <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-            <TextField
-              size="small"
-              placeholder="Ad veya telefon ara..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              sx={{ minWidth: 200, flex: { xs: 1, sm: 'none' } }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon color="action" />
-                  </InputAdornment>
-                ),
-                endAdornment: searchQuery && (
-                  <InputAdornment position="end">
-                    <IconButton size="small" onClick={() => setSearchQuery('')}>
-                      <ClearIcon fontSize="small" />
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
-
-            {/* Tarih Filtreleri */}
-            <TextField
-              size="small"
-              type="date"
-              label="Başlangıç Tarihi"
-              value={baslangicTarihi}
-              onChange={(e) => { setBaslangicTarihi(e.target.value); setFilterBugun(false); }}
-              InputLabelProps={{ shrink: true }}
-              sx={{ width: 160 }}
-            />
-            <TextField
-              size="small"
-              type="date"
-              label="Bitiş Tarihi"
-              value={bitisTarihi}
-              onChange={(e) => { setBitisTarihi(e.target.value); setFilterBugun(false); }}
-              InputLabelProps={{ shrink: true }}
-              sx={{ width: 160 }}
-            />
-            
-            {hasActiveFilters && (
-              <Button
-                size="small"
-                startIcon={<ClearIcon />}
-                onClick={clearFilters}
-                color="inherit"
-              >
-                Filtreleri Temizle
-              </Button>
-            )}
-          </Box>
-        </CardContent>
-      </Card>
-
-      {/* Tablo */}
-      <Card>
-        <CardContent sx={{ p: 0 }}>
-          {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-              <CircularProgress sx={{ color: themeColors.primary }} />
-            </Box>
-          ) : filteredAksesuarlar.length === 0 ? (
-            <Box sx={{ textAlign: 'center', py: 4 }}>
-              <Typography color="text.secondary">Kayıt bulunamadı</Typography>
-            </Box>
-          ) : isMobile ? (
-            // Mobile Card View
-            <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {filteredAksesuarlar.map((aksesuar) => (
-                <Paper key={aksesuar.id} variant="outlined" sx={{ p: 2 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                    <Typography variant="subtitle1" fontWeight={600}>{aksesuar.ad_soyad}</Typography>
-                    <Box>
-                      <IconButton size="small" onClick={() => handleViewDetails(aksesuar)} sx={{ color: themeColors.primary }}>
-                        <VisibilityIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton size="small" onClick={() => handleOpenModal(aksesuar)}>
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      {isAdmin && (
-                        <IconButton size="small" color="error" onClick={() => handleDelete(aksesuar.id)}>
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      )}
-                    </Box>
-                  </Box>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                    {aksesuar.telefon || '-'}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mb: 0.5 }}>
-                    {aksesuar.parcalar?.length || 0} ürün
-                  </Typography>
-                  {aksesuar.odeme_sekli && (
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                      Ödeme: {aksesuar.odeme_sekli}
-                    </Typography>
-                  )}
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
-                    <Chip 
-                      label={durumConfig[aksesuar.durum]?.label || 'Beklemede'} 
-                      size="small" 
-                      sx={{ 
-                        bgcolor: durumConfig[aksesuar.durum]?.bgColor || '#fff3e0',
-                        color: durumConfig[aksesuar.durum]?.color || '#ff9800',
-                        fontWeight: 600,
-                      }}
-                    />
-                    <Typography variant="subtitle1" fontWeight={700} sx={{ color: themeColors.primary }}>
-                      {formatCurrency(aksesuar.toplam_satis || aksesuar.odeme_tutari)}
-                    </Typography>
-                  </Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                    Satış: {formatDate(aksesuar.satis_tarihi || aksesuar.created_at, 'dd.MM.yyyy')}
-                  </Typography>
-                </Paper>
-              ))}
-            </Box>
-          ) : (
-            // Desktop Table View
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow sx={{ bgcolor: `${themeColors.primary}15` }}>
-                    <TableCell sx={{ fontWeight: 700 }}>Ad Soyad</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Telefon</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Ürün Sayısı</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Ödeme Şekli</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Durum</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700 }}>Tutar</TableCell>
-                    {isAdmin && <TableCell align="right" sx={{ fontWeight: 700 }}>Maliyet</TableCell>}
-                    {isAdmin && <TableCell align="right" sx={{ fontWeight: 700 }}>Net Kar</TableCell>}
-                    <TableCell sx={{ fontWeight: 700 }}>Satış Tarihi</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 700 }}>İşlemler</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredAksesuarlar.map((aksesuar) => (
-                    <TableRow 
-                      key={aksesuar.id} 
-                      hover
-                      onDoubleClick={() => isAdmin && handleViewDetails(aksesuar)}
-                      sx={{ cursor: isAdmin ? 'pointer' : 'default' }}
-                    >
-                      <TableCell>{aksesuar.ad_soyad}</TableCell>
-                      <TableCell>{aksesuar.telefon || '-'}</TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={`${aksesuar.parcalar?.length || 0} ürün`} 
-                          size="small" 
-                          variant="outlined"
-                        />
-                      </TableCell>
-                      <TableCell>{aksesuar.odeme_sekli || '-'}</TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={durumConfig[aksesuar.durum]?.label || 'Beklemede'} 
-                          size="small"
-                          sx={{ 
-                            bgcolor: durumConfig[aksesuar.durum]?.bgColor || '#fff3e0',
-                            color: durumConfig[aksesuar.durum]?.color || '#ff9800',
-                            fontWeight: 600,
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography fontWeight={600} sx={{ color: themeColors.primary }}>
-                          {formatCurrency(aksesuar.toplam_satis || aksesuar.odeme_tutari)}
-                        </Typography>
-                      </TableCell>
-                      {isAdmin && (
-                        <TableCell align="right">
-                          <Typography sx={{ color: '#c62828' }}>
-                            {formatCurrency(aksesuar.toplam_maliyet || 0)}
-                          </Typography>
-                        </TableCell>
-                      )}
-                      {isAdmin && (
-                        <TableCell align="right">
-                          <Typography 
-                            fontWeight={700} 
-                            sx={{ color: parseFloat(aksesuar.kar || 0) >= 0 ? '#2e7d32' : '#c62828' }}
-                          >
-                            {formatCurrency(aksesuar.kar || 0)}
-                          </Typography>
-                        </TableCell>
-                      )}
-                      <TableCell>{formatDate(aksesuar.satis_tarihi || aksesuar.created_at, 'dd.MM.yyyy')}</TableCell>
-                      <TableCell align="center">
-                        <IconButton size="small" onClick={() => handleViewDetails(aksesuar)} sx={{ color: themeColors.primary }}>
-                          <VisibilityIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton size="small" onClick={() => handleOpenModal(aksesuar)}>
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                        {isAdmin && (
-                          <IconButton size="small" color="error" onClick={() => handleDelete(aksesuar.id)}>
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </CardContent>
-      </Card>
+      <AksesuarTablo
+        loading={loading}
+        filteredAksesuarlar={filteredAksesuarlar}
+        isMobile={isMobile}
+        isAdmin={isAdmin}
+        themeColors={themeColors}
+        handleViewDetails={handleViewDetails}
+        handleOpenModal={handleOpenModal}
+        handleDelete={handleDelete}
+      />
 
       {/* Yeni/Düzenle Modal */}
       <AksesuarModal
@@ -589,235 +239,15 @@ function Aksesuarlar() {
       />
 
       {/* Detay Dialog */}
-      <Dialog 
-        open={detailDialogOpen} 
-        onClose={() => setDetailDialogOpen(false)} 
-        maxWidth="md" 
-        fullWidth
-      >
-        <DialogTitle sx={{ 
-          bgcolor: themeColors.primary, 
-          color: 'white',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <ShoppingBagIcon />
-            <Typography variant="h6">Aksesuar Detayları</Typography>
-          </Box>
-          <IconButton onClick={() => setDetailDialogOpen(false)} sx={{ color: 'white' }}>
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent sx={{ pt: 3 }}>
-          {selectedAksesuar && (
-            <>
-              {/* Müşteri Bilgileri */}
-              <Box sx={{ mb: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                  <Avatar sx={{ bgcolor: `${themeColors.primary}20`, color: themeColors.primary, width: 32, height: 32 }}>
-                    <PersonIcon fontSize="small" />
-                  </Avatar>
-                  <Typography variant="subtitle1" fontWeight={600}>Müşteri Bilgileri</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">Ad Soyad</Typography>
-                    <Typography variant="body1" fontWeight={500}>{selectedAksesuar.ad_soyad || '-'}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">Telefon</Typography>
-                    <Typography variant="body1">{selectedAksesuar.telefon || '-'}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">Satış Tarihi</Typography>
-                    <Typography variant="body1">{formatDate(selectedAksesuar.satis_tarihi || selectedAksesuar.created_at, 'dd.MM.yyyy')}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">Durum</Typography>
-                    <Chip 
-                      label={durumConfig[selectedAksesuar.durum]?.label || 'Beklemede'} 
-                      size="small"
-                      sx={{ 
-                        mt: 0.5,
-                        bgcolor: durumConfig[selectedAksesuar.durum]?.bgColor,
-                        color: durumConfig[selectedAksesuar.durum]?.color,
-                        fontWeight: 600,
-                      }}
-                    />
-                  </Box>
-                </Box>
-              </Box>
-
-              <Divider sx={{ my: 2 }} />
-
-              {/* Ürünler */}
-              <Box sx={{ mb: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                  <Avatar sx={{ bgcolor: `${themeColors.primary}20`, color: themeColors.primary, width: 32, height: 32 }}>
-                    <ShoppingBagIcon fontSize="small" />
-                  </Avatar>
-                  <Typography variant="subtitle1" fontWeight={600}>Ürünler</Typography>
-                  <Chip label={`${selectedAksesuar.parcalar?.length || 0} ürün`} size="small" sx={{ ml: 1 }} />
-                </Box>
-                
-                {selectedAksesuar.parcalar && selectedAksesuar.parcalar.length > 0 ? (
-                  isMobile ? (
-                    /* Mobil Card View */
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                      {selectedAksesuar.parcalar.map((parca, index) => (
-                        <Paper key={parca.id || index} variant="outlined" sx={{ p: 1.5 }}>
-                          <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
-                            {parca.urun_adi}
-                          </Typography>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
-                            <Box>
-                              <Typography variant="caption" color="text.secondary">Adet</Typography>
-                              <Typography variant="body2" fontWeight={500}>{parca.adet}</Typography>
-                            </Box>
-                            {isAdmin && (
-                              <Box>
-                                <Typography variant="caption" color="text.secondary">Maliyet</Typography>
-                                <Typography variant="body2" color="error.main">{formatCurrency(parca.maliyet)}</Typography>
-                              </Box>
-                            )}
-                            <Box>
-                              <Typography variant="caption" color="text.secondary">Satış</Typography>
-                              <Typography variant="body2">{formatCurrency(parca.satis_fiyati)}</Typography>
-                            </Box>
-                            <Box>
-                              <Typography variant="caption" color="text.secondary">Toplam</Typography>
-                              <Typography variant="body2" fontWeight={700} sx={{ color: themeColors.primary }}>
-                                {formatCurrency((parseInt(parca.adet) || 1) * (parseFloat(parca.satis_fiyati) || 0))}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </Paper>
-                      ))}
-                    </Box>
-                  ) : (
-                    /* Desktop Tablo View */
-                    <TableContainer component={Paper} variant="outlined">
-                      <Table size="small">
-                        <TableHead>
-                          <TableRow sx={{ bgcolor: 'grey.50' }}>
-                            <TableCell sx={{ fontWeight: 600 }}>Ürün Adı</TableCell>
-                            <TableCell align="center" sx={{ fontWeight: 600 }}>Adet</TableCell>
-                            {isAdmin && <TableCell align="right" sx={{ fontWeight: 600 }}>Maliyet</TableCell>}
-                            <TableCell align="right" sx={{ fontWeight: 600 }}>Satış Fiyatı</TableCell>
-                            <TableCell align="right" sx={{ fontWeight: 600 }}>Toplam</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {selectedAksesuar.parcalar.map((parca, index) => (
-                            <TableRow key={parca.id || index}>
-                              <TableCell>{parca.urun_adi}</TableCell>
-                              <TableCell align="center">{parca.adet}</TableCell>
-                              {isAdmin && <TableCell align="right">{formatCurrency(parca.maliyet)}</TableCell>}
-                              <TableCell align="right">{formatCurrency(parca.satis_fiyati)}</TableCell>
-                              <TableCell align="right" sx={{ fontWeight: 600 }}>
-                                {formatCurrency((parseInt(parca.adet) || 1) * (parseFloat(parca.satis_fiyati) || 0))}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  )
-                ) : (
-                  <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
-                    <Typography color="text.secondary">Ürün eklenmemiş</Typography>
-                  </Paper>
-                )}
-              </Box>
-
-              <Divider sx={{ my: 2 }} />
-
-              {/* Özet */}
-              <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap', mb: 2 }}>
-                {isAdmin && (
-                  <Paper sx={{ p: 2, flex: 1, minWidth: 150, bgcolor: 'error.lighter' }}>
-                    <Typography variant="caption" color="text.secondary">Toplam Maliyet</Typography>
-                    <Typography variant="h6" color="error.main" fontWeight={700}>
-                      {formatCurrency(selectedAksesuar.toplam_maliyet)}
-                    </Typography>
-                  </Paper>
-                )}
-                <Paper sx={{ p: 2, flex: 1, minWidth: 150, bgcolor: 'grey.100' }}>
-                  <Typography variant="caption" color="text.secondary">Toplam Satış</Typography>
-                  <Typography variant="h6" fontWeight={700}>
-                    {formatCurrency(selectedAksesuar.toplam_satis || selectedAksesuar.odeme_tutari)}
-                  </Typography>
-                </Paper>
-                {isAdmin && (
-                  <Paper sx={{ p: 2, flex: 1, minWidth: 150, bgcolor: 'success.lighter' }}>
-                    <Typography variant="caption" color="text.secondary">Net Kar</Typography>
-                    <Typography variant="h6" color="success.main" fontWeight={700}>
-                      {formatCurrency(selectedAksesuar.kar)}
-                    </Typography>
-                  </Paper>
-                )}
-              </Box>
-
-              {/* Ödeme Detayları */}
-              {(selectedAksesuar.odeme_sekli || selectedAksesuar.odeme_detaylari) && (
-                <>
-                  <Divider sx={{ my: 2 }} />
-                  <Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                      <Avatar sx={{ bgcolor: 'success.lighter', color: 'success.main', width: 32, height: 32 }}>
-                        <ReceiptIcon fontSize="small" />
-                      </Avatar>
-                      <Typography variant="subtitle1" fontWeight={600}>Ödeme Bilgileri</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                      {selectedAksesuar.odeme_sekli && (
-                        <Box>
-                          <Typography variant="caption" color="text.secondary">Ödeme Şekli</Typography>
-                          <Typography variant="body1">{selectedAksesuar.odeme_sekli}</Typography>
-                        </Box>
-                      )}
-                      {selectedAksesuar.odeme_detaylari && (
-                        <Box sx={{ flex: 1 }}>
-                          <Typography variant="caption" color="text.secondary">Ödeme Detayları</Typography>
-                          <Typography variant="body1">{selectedAksesuar.odeme_detaylari}</Typography>
-                        </Box>
-                      )}
-                    </Box>
-                  </Box>
-                </>
-              )}
-
-              {/* Açıklama */}
-              {selectedAksesuar.aciklama && (
-                <>
-                  <Divider sx={{ my: 2 }} />
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">Açıklama / Not</Typography>
-                    <Typography variant="body1">{selectedAksesuar.aciklama}</Typography>
-                  </Box>
-                </>
-              )}
-            </>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setDetailDialogOpen(false)} color="inherit">
-            Kapat
-          </Button>
-          <Button 
-            variant="contained"
-            onClick={() => {
-              setDetailDialogOpen(false);
-              handleOpenModal(selectedAksesuar);
-            }}
-            sx={{ bgcolor: themeColors.primary, '&:hover': { bgcolor: themeColors.primaryDark } }}
-          >
-            Düzenle
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <AksesuarDetayDialog
+        open={detailDialogOpen}
+        onClose={() => setDetailDialogOpen(false)}
+        selectedAksesuar={selectedAksesuar}
+        isMobile={isMobile}
+        isAdmin={isAdmin}
+        themeColors={themeColors}
+        handleOpenModal={handleOpenModal}
+      />
     </Box>
   );
 }
