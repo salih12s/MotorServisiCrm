@@ -312,17 +312,46 @@ parçalar `pages/isEmirleri/` altına çıkarıldı.
 
 ---
 
-## 8. Sonraki Refactor Adayları (Sıra)
+## 8. Refactor 5 — `Kullanicilar.jsx` Modülerizasyonu — TAMAMLANDI
+
+### 8.1 Hedef
+`Kullanicilar.jsx` (1276 satır) sekmeli admin sayfasıydı: 3 sekme (Tüm Kullanıcılar /
+Onay Bekleyenler / Detaylı Aktivite Logları) + 4 büyük dialog + yardımcılar. Aynı
+desenle salt-okunur dialoglar ve saf yardımcılar `pages/kullanicilar/` altına çıkarıldı.
+
+### 8.2 Yapılan Adımlar (her biri ayrı commit, build doğrulamalı)
+
+| # | Çıkarılan | Yeni Dosya | Build |
+|---|-----------|------------|:-----:|
+| 1 | Saf yardımcılar (`getIslemTipiLabel`, `getIslemTipiColor`, `islemTipleri`) | `kullanicilar/kullanicilarUtils.js` | exit 0 ✅ |
+| 2 | İş emri detay dialogu (salt-okunur) | `kullanicilar/KullaniciIsEmriDetayDialog.jsx` | exit 0 ✅ |
+| 3 | Kullanıcı aktivite geçmişi dialogu | `kullanicilar/KullaniciAktiviteDialog.jsx` | exit 0 ✅ |
+| 4 | Kullanıcı iş emirleri liste dialogu | `kullanicilar/KullaniciIsEmirleriDialog.jsx` | exit 0 ✅ |
+
+> **Props:**
+> - `KullaniciIsEmriDetayDialog`: `open, onClose, isMobile, workOrder`.
+> - `KullaniciAktiviteDialog`: `open, onClose, isMobile, user, userActivities, getIslemTipiIcon`.
+> - `KullaniciIsEmirleriDialog`: `open, onClose, isMobile, user, userWorkOrders, onViewDetail`.
+>
+> `getIslemTipiIcon` ikon JSX döndürdüğü (ikon import'larına bağlı) için aktivite
+> dialoguna **prop olarak** geçirildi; `getIslemTipiLabel/Color` ise utils'ten
+> import edilir. Çıkarımdan sonra kullanılmayan import'lar temizlendi
+> (`DirectionsCarIcon`, `ReceiptIcon`). Davranış/UI birebir korundu.
+>
+> **Toplam sonuç: 1276 → 892 satır.**
+
+---
+
+## 9. Sonraki Refactor Adayları (Sıra)
 
 | Sıra | Dosya | Satır | Yaklaşım |
 |------|-------|------:|----------|
-| Sıradaki | `pages/kullanicilar/Kullanicilar.jsx` | 1276 | Kullanıcı kartı + yetki + aktivite log ayrımı |
 | Sıradaki | `components/IsEmriModal.jsx` | 968 | Form bölümleri ayrımı |
 | Sıradaki | `components/AksesuarModal.jsx` | 862 | Form + parça listesi ayrımı |
 
 ---
 
-## 9. Genel Kurallar (Tüm Refactor'lar İçin)
+## 10. Genel Kurallar (Tüm Refactor'lar İçin)
 - UI/UX **birebir** korunur; yalnızca yapısal ayrıştırma yapılır.
 - Her çıkarma ayrı commit; mesaj formatı: `refactor(<alan>): <bileşen> <kaynak>'tan ayrildi`.
 - Build doğrulaması: `cd frontend; $env:CI="false"; npm run build` → **exit 0** şart.
