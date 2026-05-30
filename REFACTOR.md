@@ -451,18 +451,44 @@ mantıksal bölüm `pages/raporlar/gunlukRapor/` altına ayrı bir sunum bileşe
 
 ---
 
-## 13. Sonraki Refactor Adayları (Sıra)
+## 13. Refactor 10 — `pages/aksesuarlar/Aksesuarlar.jsx` Modülerizasyonu — TAMAMLANDI
 
-> Kalan >700 satır adaylar: `aksesuarlar/Aksesuarlar.jsx` (825),
-> `isEmirleri/IsEmriDetay.jsx` (809), `isEmirleri/IsEmriForm.jsx` (777),
-> `public/MotorlarPage.jsx` (704). Ayrıca `pages/MotorSatislari.jsx` (923) ölü
-> kopya — App.jsx aktif olanı `pages/motorSatislari/` altından kullanır,
-> silinmesi kullanıcı onayını bekler. `data/motors.js` (1174) saf veri,
-> refactor adayı değildir.
+### 13.1 Hedef
+`Aksesuarlar.jsx` (825 satır) aksesuar satış listesi sayfasıydı: istatistik/filtre
+başlığı + arama/tarih filtreleri + tablo (mobil kart + masaüstü tablo) + detay
+dialog'u. Tüm state/hook/handler/hesaplama (filtre zinciri, istatistikler) parent'ta
+kaldı; her sunum bölümü `pages/aksesuarlar/` altına ayrı bileşene çıkarıldı ve sayfa
+ince bir kompozisyon kabuğu hâline geldi.
+
+### 13.2 Yapılan Adımlar (tek commit, build doğrulamalı)
+
+| # | Çıkarılan Bölüm | Yeni Dosya |
+|---|-----------------|------------|
+| 1 | Paylaşılan yardımcılar (`formatDate`, `durumConfig`, `formatCurrency`) | `aksesuarlar/aksesuarlarUtils.js` |
+| 2 | İstatistik chip'leri + "Yeni Satış" butonu | `aksesuarlar/AksesuarHeader.jsx` |
+| 3 | Arama + tarih aralığı filtre kartı | `aksesuarlar/AksesuarFiltreler.jsx` |
+| 4 | Liste tablosu (mobil kart + masaüstü tablo, yükleme/boş durum) | `aksesuarlar/AksesuarTablo.jsx` |
+| 5 | Detay dialog'u (müşteri, ürünler, özet, ödeme, açıklama) | `aksesuarlar/AksesuarDetayDialog.jsx` |
+
+> **Notlar:** Alt bileşenler paylaşılan yardımcıları `./aksesuarlarUtils`'ten doğrudan
+> import eder. Parent yalnızca ilgili prop alt kümesini iletir; davranış ve UI birebir
+> korundu. Build `Compiled with warnings.` → **exit 0**.
+>
+> **Toplam sonuç: 825 → 274 satır.**
 
 ---
 
-## 14. Genel Kurallar (Tüm Refactor'lar İçin)
+## 14. Sonraki Refactor Adayları (Sıra)
+
+> Kalan >700 satır adaylar: `isEmirleri/IsEmriDetay.jsx` (809),
+> `isEmirleri/IsEmriForm.jsx` (777), `public/MotorlarPage.jsx` (704). Bunlardan
+> sonra >700 satır bileşen kalmaz (temiz durma noktası). `data/motors.js` (1174)
+> saf veri, refactor adayı değildir. Ölü kopya `pages/MotorSatislari.jsx`
+> silindi (kullanıcı onayıyla).
+
+---
+
+## 15. Genel Kurallar (Tüm Refactor'lar İçin)
 - UI/UX **birebir** korunur; yalnızca yapısal ayrıştırma yapılır.
 - Her çıkarma ayrı commit; mesaj formatı: `refactor(<alan>): <bileşen> <kaynak>'tan ayrildi`.
 - Build doğrulaması: `cd frontend; $env:CI="false"; npm run build` → **exit 0** şart.
