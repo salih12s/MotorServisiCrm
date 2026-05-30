@@ -198,28 +198,46 @@ raporlar/
 
 ---
 
-## 5. Refactor 2 — `MotorSatislari.jsx` Modülerizasyonu 🔜 PLANLANDI
+## 5. Refactor 2 — `MotorSatislari.jsx` Modülerizasyonu � DEVAM EDİYOR
 
 ### 5.1 Hedef
 `MotorSatislari.jsx` artık en büyük dosya (**2074 satır**). Refactor 1 ile aynı desen
-uygulanacak: mantıksal parçaları `pages/motorSatislari/` alt klasörüne çıkarmak.
+uygulanıyor: mantıksal parçaları `pages/motorSatislari/` alt klasörüne çıkarmak.
 
-### 5.2 Planlanan Adımlar (her biri ayrı commit, build doğrulamalı)
-1. **Keşif:** Dosyadaki render fonksiyonları, modallar, yardımcı fonksiyonlar ve
-   tekrar eden tablo/kart blokları tespit edilecek.
-2. **Yardımcılar:** `formatCurrency` benzeri ortak yardımcılar `motorSatislariUtils.js`'e.
-   (Mümkünse `raporlarUtils` ile ortak bir `utils` paylaşımı değerlendirilecek.)
-3. **Modal(lar):** Satış ekleme/düzenleme ve detay modalleri ayrı dosyalara.
-4. **Liste/Tablo bileşenleri:** Masaüstü tablo + mobil kart görünümleri ayrı bileşenlere.
-5. **Model yönetimi:** Motor modeli (cc/ÖTV) yönetim bölümü ayrı bileşene.
-6. **Temizlik:** Kullanılmayan import'ların kaldırılması, son build + commit.
+### 5.2 Dosya Anatomisi (keşif sonucu)
+Dosya tek `MotorSatislari` bileşeninden oluşuyor; içinde 4 adet `Dialog` var:
+1. **Satış Modal** (~478 satır) — satış ekleme/düzenleme formu (en karmaşık, fiyat/vergi hesaplı).
+2. **Model Modal** (~104 satır) — motor modeli ekle/düzenle.
+3. **Modeller Liste Modal** (~190 satır) — model listesi yönetimi.
+4. **Detay Modal** (~356 satır) — salt-okunur satış detayı. ✅ **Çıkarıldı**
 
-### 5.3 Beklenen Sonuç
+Ayrıca: masaüstü tablo + mobil kart liste görünümü, istatistik chip filtreleri,
+yardımcılar (`formatCurrency`, `formatNumber`, `parseFormattedNumber`, `formatDate`),
+sabitler (`KDV_ORANI=20`, `DAMGA_VERGISI=791`).
+
+### 5.3 Yapılan Adımlar (her biri ayrı commit, build doğrulamalı)
+
+| # | Commit | Çıkarılan | Yeni Dosya | Satır | Build |
+|---|--------|-----------|------------|------:|:-----:|
+| 1 | `(motorSatislari)` | Detay Modal (salt-okunur) | `motorSatislari/MotorSatisDetayModal.jsx` | ~340 | exit 0 ✅ |
+
+> **Not:** `MotorSatisDetayModal` props ile beslenir: `open`, `onClose`, `isMobile`,
+> `selectedSatisDetay`, `modeller`, `formatCurrency`, `formatDate`. Sabitler
+> (`KDV_ORANI`, `DAMGA_VERGISI`) bileşen içinde modül sabiti olarak tanımlandı —
+> davranış birebir korundu. Sonuç: **2074 → 1728 satır**.
+
+### 5.4 Kalan Planlanan Adımlar
+2. **Modeller Liste Modal** → `ModellerListModal.jsx` (props: open, onClose, modeller, isAdmin, handlers).
+3. **Model Ekle/Düzenle Modal** → `ModelFormModal.jsx`.
+4. **Satış Ekle/Düzenle Modal** → `SatisFormModal.jsx` (en büyük; fiyat/vergi mantığı dikkatli taşınacak).
+5. **Liste görünümü** (masaüstü tablo + mobil kart) → ayrı bileşen(ler).
+6. **Yardımcılar** → `motorSatislariUtils.js` (ortak `formatCurrency` vb.).
+7. **Temizlik:** kullanılmayan import'ların kaldırılması, son build + commit.
+
+### 5.5 Beklenen Sonuç
 - `MotorSatislari.jsx` büyük oranda küçülecek (orkestrasyon katmanına inecek).
 - Davranış ve UI birebir korunacak; her adım `npm run build` (exit 0) ile doğrulanacak.
 
-> **Durum:** Bu bölüm uygulandıkça "✅ TAMAMLANDI" olarak güncellenecek ve
-> commit tablosu (hash + çıkarılan parça + satır) buraya işlenecektir.
 
 ---
 
