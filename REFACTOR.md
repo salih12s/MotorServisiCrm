@@ -478,17 +478,76 @@ ince bir kompozisyon kabuğu hâline geldi.
 
 ---
 
-## 14. Sonraki Refactor Adayları (Sıra)
+## 14. Refactor 11 — `pages/isEmirleri/IsEmriDetay.jsx` Modülerizasyonu — TAMAMLANDI
 
-> Kalan >700 satır adaylar: `isEmirleri/IsEmriDetay.jsx` (809),
-> `isEmirleri/IsEmriForm.jsx` (777), `public/MotorlarPage.jsx` (704). Bunlardan
-> sonra >700 satır bileşen kalmaz (temiz durma noktası). `data/motors.js` (1174)
-> saf veri, refactor adayı değildir. Ölü kopya `pages/MotorSatislari.jsx`
+### 14.1 Hedef
+`IsEmriDetay.jsx` (809 satır) iş emri fişi detay/yazdırma sayfasıydı: sürükle-bırak
+konumlandırmalı yazdırma alanı + kâr analizi kartları + alan düzenleme paneli. Tüm
+state/hook/sürükleme mantığı (`handleDragStart`, `handleMouseMove`, `saveSettings`,
+`getPositionStyle` vb.) parent'ta kaldı; sunum bölümleri `isEmriDetay/` altına çıkarıldı.
+
+### 14.2 Yapılan Adımlar (tek commit, build doğrulamalı)
+
+| # | Çıkarılan Bölüm | Yeni Dosya |
+|---|-----------------|------------|
+| 1 | Varsayılan ayarlar, alan etiketleri, `formatCurrency` | `isEmriDetay/printSettings.js` |
+| 2 | Kâr analizi kartları (satış/maliyet/net kâr) | `isEmriDetay/KarAnaliziKartlari.jsx` |
+| 3 | Alan düzenleme paneli (seçici + boyut slider) | `isEmriDetay/DuzenlemePaneli.jsx` |
+| 4 | Fiş yazdırma alanı (sürüklenebilir tüm alanlar) | `isEmriDetay/FisYazdirmaAlani.jsx` |
+
+> **Toplam sonuç: 809 → 387 satır.**
+
+---
+
+## 15. Refactor 12 — `pages/isEmirleri/IsEmriForm.jsx` Modülerizasyonu — TAMAMLANDI
+
+### 15.1 Hedef
+`IsEmriForm.jsx` (777 satır) iş emri oluştur/düzenle formuydu: sol kolon (müşteri +
+araç + arıza) ve sağ kolon (parça ekleme tablosu + durum). Tüm form state/handler'lar
+(`handleChange`, `addParca`, `calculateTotals`, `handleSubmit` vb.) parent'ta kaldı;
+iki sunum kolonu `isEmriForm/` altına çıkarıldı.
+
+### 15.2 Yapılan Adımlar (tek commit, build doğrulamalı)
+
+| # | Çıkarılan Bölüm | Yeni Dosya |
+|---|-----------------|------------|
+| 1 | `formatCurrency` yardımcısı | `isEmriForm/isEmriFormUtils.js` |
+| 2 | Müşteri + araç + arıza/açıklama kartları | `isEmriForm/IsEmriMusteriArac.jsx` |
+| 3 | Parça ekleme/listeleme tablosu + toplamlar + durum | `isEmriForm/IsEmriParcalar.jsx` |
+
+> **Toplam sonuç: 777 → 274 satır.**
+
+---
+
+## 16. Refactor 13 — `pages/public/MotorlarPage.jsx` Modülerizasyonu — TAMAMLANDI
+
+### 16.1 Hedef
+`MotorlarPage.jsx` (704 satır) halka açık motor vitrini sayfasıydı; dosya içinde
+tanımlı `MotorCard` ve `MotorDetailDialog` bileşenleri + marka renkleri sabitleri
+vardı. Filtre state'i (`filter`, `brandFilter`, `useMemo`) parent'ta kaldı; iç
+bileşenler `motorlar/` altına çıkarıldı.
+
+### 16.2 Yapılan Adımlar (tek commit, build doğrulamalı)
+
+| # | Çıkarılan Bölüm | Yeni Dosya |
+|---|-----------------|------------|
+| 1 | `BRAND_COLORS`, `FALLBACK_IMAGE`, `getMotorImage` | `motorlar/motorlarConstants.js` |
+| 2 | Motor kartı | `motorlar/MotorCard.jsx` |
+| 3 | Motor detay dialog'u (görsel + teknik özellikler) | `motorlar/MotorDetailDialog.jsx` |
+
+> **Toplam sonuç: 704 → 232 satır.**
+
+---
+
+## 17. Sonraki Refactor Adayları (Sıra)
+
+> >700 satır bileşen kalmadı — temiz durma noktasına ulaşıldı. `data/motors.js`
+> (1174) saf veri, refactor adayı değildir. Ölü kopya `pages/MotorSatislari.jsx`
 > silindi (kullanıcı onayıyla).
 
 ---
 
-## 15. Genel Kurallar (Tüm Refactor'lar İçin)
+## 18. Genel Kurallar (Tüm Refactor'lar İçin)
 - UI/UX **birebir** korunur; yalnızca yapısal ayrıştırma yapılır.
 - Her çıkarma ayrı commit; mesaj formatı: `refactor(<alan>): <bileşen> <kaynak>'tan ayrildi`.
 - Build doğrulaması: `cd frontend; $env:CI="false"; npm run build` → **exit 0** şart.

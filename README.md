@@ -94,25 +94,37 @@ project-root/
 │   │   ├── context/
 │   │   │   ├── AuthContext.jsx   ← JWT auth state management
 │   │   │   └── ThemeContext.jsx  ← Dinamik tema değiştirme (3 tema)
-│   │   ├── components/
+│   │   ├── components/       ← Paylaşılan bileşenler (Layout, modal, nav, footer)
 │   │   │   ├── Layout.jsx    ← Sidebar + AppBar + tema değişimi
 │   │   │   ├── AksesuarModal.jsx
-│   │   │   └── IsEmriModal.jsx
-│   │   └── pages/
-│   │       ├── Login.jsx
-│   │       ├── Dashboard.jsx
-│   │       ├── IsEmirleri.jsx    ← İş emirleri listesi
-│   │       ├── IsEmriForm.jsx    ← İş emri oluştur/düzenle
-│   │       ├── IsEmriDetay.jsx   ← İş emri detay + yazdırma
-│   │       ├── Musteriler.jsx
-│   │       ├── Giderler.jsx
-│   │       ├── Aksesuarlar.jsx
-│   │       ├── AksesuarStok.jsx
-│   │       ├── MotorSatislari.jsx
-│   │       ├── Raporlar.jsx      ← 4 rapor tipi (günlük/aralık/genel/fiş-kâr)
-│   │       └── Kullanicilar.jsx  ← Kullanıcı yönetimi (admin)
+│   │   │   ├── IsEmriModal.jsx
+│   │   │   ├── PublicNav.jsx
+│   │   │   └── SiteFooter.jsx
+│   │   └── pages/            ← Her modül kendi alt klasöründe (alan-bazlı)
+│   │       ├── dashboard/        → Dashboard.jsx
+│   │       ├── isEmirleri/       → IsEmirleri (liste), IsEmriForm, IsEmriDetay
+│   │       │   ├── isEmriForm/       → IsEmriMusteriArac, IsEmriParcalar, utils
+│   │       │   └── isEmriDetay/      → KarAnaliziKartlari, DuzenlemePaneli,
+│   │       │                           FisYazdirmaAlani, printSettings
+│   │       ├── aksesuarlar/      → Aksesuarlar (kabuk) + AksesuarHeader,
+│   │       │                       AksesuarFiltreler, AksesuarTablo,
+│   │       │                       AksesuarDetayDialog, aksesuarlarUtils
+│   │       ├── motorSatislari/   → MotorSatislari + alt bileşenler
+│   │       ├── musteriler/       → Musteriler.jsx
+│   │       ├── giderler/         → Giderler.jsx
+│   │       ├── kullanicilar/     → Kullanicilar (kabuk) + alt bileşenler
+│   │       ├── raporlar/         → Raporlar (kabuk) + 4 rapor sekmesi +
+│   │       │                       gunlukRapor/ alt bileşenleri + StatCard
+│   │       └── public/           → LandingPage, MotorlarPage, HakkimizdaPage,
+│   │           │                   BasindaPage, Login
+│   │           └── motorlar/         → MotorCard, MotorDetailDialog, sabitler
 │   └── build/                ← Production build output
 ```
+
+> **Not (Mimari):** `pages/` klasörü **alan-bazlı (feature-based)** organize
+> edilmiştir. Büyük sayfa bileşenleri ince bir **kompozisyon kabuğu** (state +
+> handler'lar) + aynı klasör altında sunum alt bileşenleri olarak ayrıştırılmıştır.
+> Detaylar için bkz. [REFACTOR.md](REFACTOR.md).
 
 ---
 
@@ -1042,6 +1054,35 @@ pool.query('SELECT * FROM users WHERE id = $1', [userId]);
 - [x] Responsive tasarım (Mobile Drawer)
 - [x] DB retry mekanizması (bağlantı kopmasına karşı)
 - [x] Sunucu DB'den bağımsız ayağa kalkar
+
+---
+
+## 🧩 MİMARİ & KOD ORGANİZASYONU
+
+Frontend **alan-bazlı (feature-based)** yapıdadır: her modül kendi alt klasöründe,
+büyük sayfalar **kompozisyon kabuğu** (state + handler) + sunum alt bileşenleri
+olarak ayrıştırılmıştır. Bu sayede tek dosyada toplanan "god component"ler ortadan
+kaldırılmış, bileşenler tek sorumluluk ilkesine yaklaştırılmıştır.
+
+Yapılan modülerizasyonların tamamı **UI/UX birebir korunarak** (saf yapısal
+refactor), her adım ayrı commit + production build doğrulamasıyla yapılmıştır.
+Öne çıkan dönüşümler:
+
+| Bileşen | Önce | Sonra |
+|---------|-----:|------:|
+| `pages/raporlar/Raporlar.jsx` | 1939 | sekme bazlı modüller |
+| `pages/public/LandingPage.jsx` | 1114 | 83 |
+| `pages/kullanicilar/Kullanicilar.jsx` | 1276 | 892 |
+| `components/IsEmriModal.jsx` | 968 | 582 |
+| `components/AksesuarModal.jsx` | 862 | 454 |
+| `pages/raporlar/GunlukRaporTab.jsx` | 875 | 89 |
+| `pages/aksesuarlar/Aksesuarlar.jsx` | 825 | 274 |
+| `pages/isEmirleri/IsEmriDetay.jsx` | 809 | 387 |
+| `pages/isEmirleri/IsEmriForm.jsx` | 777 | 274 |
+| `pages/public/MotorlarPage.jsx` | 704 | 232 |
+
+> Tüm refactor geçmişi, hedefleri ve çıkarılan dosya tabloları için bkz.
+> [REFACTOR.md](REFACTOR.md). Refactor sonrası >700 satır bileşen kalmamıştır.
 
 ---
 
