@@ -249,15 +249,51 @@ sabitler (`KDV_ORANI=20`, `DAMGA_VERGISI=791`).
 
 ---
 
-## 6. Sonraki Refactor Adayları (Sıra)
+## 6. Refactor 3 — Klasör Yapısı Modernizasyonu — TAMAMLANDI
+
+### 6.1 Hedef
+Tüm sayfalar düz (`flat`) biçimde doğrudan `pages/` altında duruyordu. Modern
+özellik-bazlı (feature-folder) yapıya geçirilerek her sayfa kendi alanının klasörüne
+taşındı; alt bileşenler (modal/tab/util) zaten ilgili klasörde toplandığından kök
+dizin tamamen sadeleşti.
+
+### 6.2 Yeni Yapı
+```
+pages/
+  public/        → LandingPage, HakkimizdaPage, BasindaPage, MotorlarPage, Login
+  dashboard/     → Dashboard
+  isEmirleri/    → IsEmirleri, IsEmriForm, IsEmriDetay
+  musteriler/    → Musteriler
+  raporlar/      → Raporlar + StatCard, *DetayModal, *RaporTab, raporlarUtils
+  giderler/      → Giderler
+  kullanicilar/  → Kullanicilar
+  aksesuarlar/   → Aksesuarlar, AksesuarStok
+  motorSatislari/→ MotorSatislari + 4 modal + motorSatislariUtils
+```
+
+### 6.3 Yapılan İşlem
+- Taşımalar `git mv` ile yapıldı (geçmiş korundu).
+- Taşınan dosyalarda göreli import derinliği güncellendi (`../` → `../../`,
+  `./altBilesen` → `./altBilesen`).
+- `App.jsx` içindeki tüm sayfa import yolları yeni klasörlere göre güncellendi.
+- Build doğrulandı (**exit 0**); davranış/UI birebir korundu.
+
+### 6.4 Commit'ler
+| Commit | Kapsam |
+|--------|--------|
+| `refactor(pages): Raporlar ve MotorSatislari kendi ozellik klasorlerine tasindi` | İlk 2 klasör |
+| `refactor(pages): tum sayfalar ozellik klasorlerine tasindi (...)` | Kalan 7 grup |
+
+---
+
+## 7. Sonraki Refactor Adayları (Sıra)
 
 | Sıra | Dosya | Satır | Yaklaşım |
 |------|-------|------:|----------|
-| Refactor 2 | `MotorSatislari.jsx` | 2074 | Modal + liste + model yönetimi ayrımı |
-| Refactor 3 | `IsEmirleri.jsx` | 1323 | Liste/filtre/satır bileşenleri ayrımı |
-| Refactor 4 | `Kullanicilar.jsx` | 1276 | Kullanıcı kartı + yetki + aktivite log ayrımı |
-| Refactor 5 | `IsEmriModal.jsx` | 968 | Form bölümleri ayrımı |
-| Refactor 6 | `AksesuarModal.jsx` | 862 | Form + parça listesi ayrımı |
+| Sıradaki | `pages/isEmirleri/IsEmirleri.jsx` | 1323 | Liste/filtre/satır bileşenleri ayrımı |
+| Sıradaki | `pages/kullanicilar/Kullanicilar.jsx` | 1276 | Kullanıcı kartı + yetki + aktivite log ayrımı |
+| Sıradaki | `components/IsEmriModal.jsx` | 968 | Form bölümleri ayrımı |
+| Sıradaki | `components/AksesuarModal.jsx` | 862 | Form + parça listesi ayrımı |
 
 ---
 
