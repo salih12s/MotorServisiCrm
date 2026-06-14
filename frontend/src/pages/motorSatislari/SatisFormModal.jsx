@@ -29,6 +29,7 @@ const SatisFormModal = ({
   handlePriceFocus,
   handlePriceBlur,
   isAdmin,
+  user,
   formatCurrency,
   onSave,
 }) => {
@@ -264,6 +265,19 @@ const SatisFormModal = ({
                     placeholder="12345678901"
                     inputProps={{ maxLength: 11 }}
                   />
+                  <FormControl size="small" sx={{ flex: 1 }}>
+                    <InputLabel>Oluşturan Kişi</InputLabel>
+                    <Select
+                      value={satisForm.olusturan_kisi}
+                      onChange={(e) => setSatisForm({ ...satisForm, olusturan_kisi: e.target.value })}
+                      label="Oluşturan Kişi"
+                    >
+                      <MenuItem value={user?.name || user?.ad_soyad || ''}>
+                        {user?.name || user?.ad_soyad || 'Ben'}
+                      </MenuItem>
+                      <MenuItem value="Ortak">Ortak</MenuItem>
+                    </Select>
+                  </FormControl>
                 </Box>
               </CardContent>
             </Card>

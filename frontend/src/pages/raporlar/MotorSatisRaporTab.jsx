@@ -19,6 +19,10 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import {
   TwoWheeler as TwoWheelerIcon,
@@ -33,6 +37,19 @@ import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { formatCurrency } from './raporlarUtils';
 
+const renderCreator = (kayit) => (
+  <Box>
+    <Typography variant="body2" fontWeight={600}>
+      {kayit.olusturan_kisi || kayit.olusturan_ad_soyad || '-'}
+    </Typography>
+    {kayit.olusturan_kisi !== 'Ortak' && kayit.olusturan_kullanici_adi && (
+      <Typography variant="caption" color="text.secondary">
+        @{kayit.olusturan_kullanici_adi}
+      </Typography>
+    )}
+  </Box>
+);
+
 const MotorSatisRaporTab = ({
   isMobile,
   loading,
@@ -44,6 +61,9 @@ const MotorSatisRaporTab = ({
   motorSatislar,
   expandedMotorSatis,
   setExpandedMotorSatis,
+  selectedKullanici,
+  setSelectedKullanici,
+  kullanicilar,
   navigate,
 }) => (
   <Box sx={{
@@ -103,6 +123,29 @@ const MotorSatisRaporTab = ({
                 '& .MuiInputLabel-root.Mui-focused': { color: '#e65100' },
               }}
             />
+          </Grid>
+          <Grid item xs={12} sm={5} md={3} width={180}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Oluşturan Kişi</InputLabel>
+              <Select
+                value={selectedKullanici}
+                label="Oluşturan Kişi"
+                onChange={(e) => setSelectedKullanici(e.target.value)}
+                sx={{
+                  bgcolor: 'white',
+                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#e65100' },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#e65100' },
+                }}
+              >
+                <MenuItem value="">Tümü</MenuItem>
+                <MenuItem value="Ortak">Ortak</MenuItem>
+                {kullanicilar.map((kullanici) => (
+                  <MenuItem key={kullanici.id} value={kullanici.kullanici_adi}>
+                    {kullanici.ad_soyad}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Grid>
           <Grid item xs={12} sm="auto">
             <Button
@@ -259,6 +302,7 @@ const MotorSatisRaporTab = ({
                       <TableCell sx={{ fontWeight: 700 }}>Tarih</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Motor Model</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Müşteri</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Oluşturan</TableCell>
                       <TableCell align="right" sx={{ fontWeight: 700 }}>Satış Fiyatı</TableCell>
                       <TableCell align="right" sx={{ fontWeight: 700 }}>Alış Fiyatı</TableCell>
                       <TableCell align="right" sx={{ fontWeight: 700, color: '#2e7d32' }}>Kar</TableCell>
@@ -267,7 +311,7 @@ const MotorSatisRaporTab = ({
                   <TableBody>
                     {motorSatislar.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
+                        <TableCell colSpan={8} align="center" sx={{ py: 6 }}>
                           <TwoWheelerIcon sx={{ fontSize: 48, color: '#ffcc80', mb: 1 }} />
                           <Typography color="text.secondary">
                             Bu tarih aralığında motor satışı bulunmuyor
@@ -312,6 +356,7 @@ const MotorSatisRaporTab = ({
                                 <Typography variant="caption" color="text.secondary">{motor.musteri_telefon}</Typography>
                               )}
                             </TableCell>
+                            <TableCell>{renderCreator(motor)}</TableCell>
                             <TableCell align="right">
                               <Typography fontWeight={600} sx={{ color: '#2e7d32' }}>
                                 {formatCurrency(motor.satis_fiyati)}
@@ -335,7 +380,7 @@ const MotorSatisRaporTab = ({
                           </TableRow>
                           {/* Detay Satırı - Tarih Aralığındaki İş Emirleri tablosu gibi detaylı */}
                           <TableRow>
-                            <TableCell colSpan={7} sx={{ p: 0, borderBottom: expandedMotorSatis === motor.id ? '2px solid #e65100' : 'none' }}>
+                            <TableCell colSpan={8} sx={{ p: 0, borderBottom: expandedMotorSatis === motor.id ? '2px solid #e65100' : 'none' }}>
                               <Collapse in={expandedMotorSatis === motor.id} timeout="auto" unmountOnExit>
                                 <Box sx={{ bgcolor: '#fff8f0', borderLeft: '4px solid #e65100' }}>
                                   {/* Detay Başlığı */}
@@ -487,6 +532,12 @@ const MotorSatisRaporTab = ({
                           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                             {motor.musteri_adi || '-'}
                           </Typography>
+                          <Box sx={{ mb: 1 }}>
+                            <Typography variant="caption" color="text.secondary">
+                              Oluşturan
+                            </Typography>
+                            {renderCreator(motor)}
+                          </Box>
                           <Typography variant="caption" color="text.secondary">
                             {motor.tarih ? format(new Date(motor.tarih + 'T12:00:00'), 'dd.MM.yyyy', { locale: tr }) : '-'}
                           </Typography>

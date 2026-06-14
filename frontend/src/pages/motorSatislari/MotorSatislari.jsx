@@ -81,7 +81,8 @@ const MotorSatislari = () => {
     tc_kimlik_no: '',
     adres: '',
     aciklama: '',
-    durum: 'beklemede'
+    durum: 'beklemede',
+    olusturan_kisi: user?.name || user?.ad_soyad || ''
   });
   
   // Form states - Model
@@ -153,7 +154,8 @@ const MotorSatislari = () => {
         tc_kimlik_no: satis.tc_kimlik_no || '',
         adres: satis.adres || '',
         aciklama: satis.aciklama || '',
-        durum: satis.durum || 'beklemede'
+        durum: satis.durum || 'beklemede',
+        olusturan_kisi: satis.olusturan_kisi || user?.name || user?.ad_soyad || ''
       });
     } else {
       setEditingSatis(null);
@@ -174,7 +176,8 @@ const MotorSatislari = () => {
         tc_kimlik_no: '',
         adres: '',
         aciklama: '',
-        durum: 'beklemede'
+        durum: 'beklemede',
+        olusturan_kisi: user?.name || user?.ad_soyad || ''
       });
     }
     setSatisModalOpen(true);
@@ -880,6 +883,7 @@ const MotorSatislari = () => {
         handlePriceFocus={handlePriceFocus}
         handlePriceBlur={handlePriceBlur}
         isAdmin={isAdmin}
+        user={user}
         formatCurrency={formatCurrency}
         onSave={handleSaveSatis}
       />

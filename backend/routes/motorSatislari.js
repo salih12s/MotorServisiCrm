@@ -93,9 +93,11 @@ router.get('/', async (req, res) => {
     const result = await pool.query(
       `SELECT ms.*, 
        TO_CHAR(ms.tarih, 'YYYY-MM-DD') as tarih,
-       mm.model_adi, mm.cc, mm.otv_orani
+       mm.model_adi, mm.cc, mm.otv_orani,
+       k.ad_soyad as olusturan_ad_soyad, k.kullanici_adi as olusturan_kullanici_adi
        FROM motor_satislari ms
        LEFT JOIN motor_modelleri mm ON ms.motor_modeli_id = mm.id
+       LEFT JOIN kullanicilar k ON ms.olusturan_kullanici_id = k.id
        ORDER BY ms.created_at DESC`
     );
     res.json(result.rows);
@@ -111,9 +113,11 @@ router.get('/:id', async (req, res) => {
     const { id } = req.params;
     
     const result = await pool.query(
-      `SELECT ms.*, mm.model_adi, mm.cc, mm.otv_orani
+      `SELECT ms.*, mm.model_adi, mm.cc, mm.otv_orani,
+       k.ad_soyad as olusturan_ad_soyad, k.kullanici_adi as olusturan_kullanici_adi
        FROM motor_satislari ms
        LEFT JOIN motor_modelleri mm ON ms.motor_modeli_id = mm.id
+       LEFT JOIN kullanicilar k ON ms.olusturan_kullanici_id = k.id
        WHERE ms.id = $1`,
       [id]
     );
@@ -150,6 +154,7 @@ router.post('/', async (req, res) => {
       adres,
       aciklama,
       durum,
+      olusturan_kisi,
       // Hesaplanan değerler
       iskonto_tutari,
       iskontolu_alis_fiyati,
@@ -161,6 +166,7 @@ router.post('/', async (req, res) => {
       vergiler_toplami,
       kar
     } = req.body;
+    const olusturan_kullanici_id = req.user?.id || null;
     
     if (!sase_no || !motor_modeli_id) {
       return res.status(400).json({ message: 'Şase no ve motor modeli gerekli' });
@@ -171,8 +177,8 @@ router.post('/', async (req, res) => {
         (tarih, sase_no, motor_modeli_id, iskonto, alis_fiyati, satis_fiyati, fatura_fiyati,
          odeme_sekli, nakit_tutar, kart_tutar, havale_tutar, musteri_adi, musteri_telefon, tc_kimlik_no, adres, aciklama, durum,
          iskonto_tutari, iskontolu_alis_fiyati, matrah_satis, kdv_tutari, kdvsiz_tutar,
-         otv_tutari, damga_vergisi, vergiler_toplami, kar) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26) 
+         otv_tutari, damga_vergisi, vergiler_toplami, kar, olusturan_kullanici_id, olusturan_kisi)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28)
        RETURNING *`,
       [
         tarih || new Date().toISOString().split('T')[0], 
@@ -200,7 +206,9 @@ router.post('/', async (req, res) => {
         otv_tutari || 0,
         damga_vergisi || 791,
         vergiler_toplami || 0,
-        kar || 0
+        kar || 0,
+        olusturan_kullanici_id,
+        olusturan_kisi || null
       ]
     );
     
@@ -253,15 +261,16 @@ router.put('/:id', async (req, res) => {
            musteri_adi = $12, musteri_telefon = $13, tc_kimlik_no = $14, adres = $15, aciklama = $16, durum = $17,
            iskonto_tutari = $18, iskontolu_alis_fiyati = $19, matrah_satis = $20,
            kdv_tutari = $21, kdvsiz_tutar = $22, otv_tutari = $23, damga_vergisi = $24,
-           vergiler_toplami = $25, kar = $26,
+           vergiler_toplami = $25, kar = $26, olusturan_kisi = COALESCE($27, olusturan_kisi),
+           olusturan_kullanici_id = COALESCE(olusturan_kullanici_id, $28),
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $27 RETURNING *`,
+       WHERE id = $29 RETURNING *`,
       [tarih, sase_no, motor_modeli_id, iskonto, alis_fiyati, satis_fiyati, fatura_fiyati, odeme_sekli, 
        nakit_tutar || 0, kart_tutar || 0, havale_tutar || 0,
        musteri_adi, musteri_telefon, tc_kimlik_no, adres, aciklama, durum || 'beklemede',
        iskonto_tutari || 0, iskontolu_alis_fiyati || 0, matrah_satis || 0,
        kdv_tutari || 0, kdvsiz_tutar || 0, otv_tutari || 0, damga_vergisi || 791,
-       vergiler_toplami || 0, kar || 0, id]
+       vergiler_toplami || 0, kar || 0, req.body.olusturan_kisi || null, req.user?.id || null, id]
     );
     
     if (result.rows.length === 0) {

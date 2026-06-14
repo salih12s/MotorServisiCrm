@@ -16,6 +16,10 @@ import {
   Chip,
   IconButton,
   Tooltip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import {
   TrendingUp as TrendingUpIcon,
@@ -31,6 +35,19 @@ import { tr } from 'date-fns/locale';
 import StatCard from './StatCard';
 import { formatCurrency } from './raporlarUtils';
 
+const renderCreator = (kayit) => (
+  <Box>
+    <Typography variant="body2" fontWeight={600}>
+      {kayit.olusturan_kisi || kayit.olusturan_ad_soyad || '-'}
+    </Typography>
+    {kayit.olusturan_kisi !== 'Ortak' && kayit.olusturan_kullanici_adi && (
+      <Typography variant="caption" color="text.secondary">
+        @{kayit.olusturan_kullanici_adi}
+      </Typography>
+    )}
+  </Box>
+);
+
 const AksesuarRaporTab = ({
   theme,
   isMobile,
@@ -41,6 +58,9 @@ const AksesuarRaporTab = ({
   setAksesuarEndDate,
   aksesuarRapor,
   sortedAksesuarlar,
+  selectedKullanici,
+  setSelectedKullanici,
+  kullanicilar,
   handleViewAksesuarDetail,
 }) => (
   <Box>
@@ -77,6 +97,24 @@ const AksesuarRaporTab = ({
               size="small"
               fullWidth
             />
+          </Grid>
+          <Grid item xs={12} sm={5} md={3} width={180}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Oluşturan Kişi</InputLabel>
+              <Select
+                value={selectedKullanici}
+                label="Oluşturan Kişi"
+                onChange={(e) => setSelectedKullanici(e.target.value)}
+              >
+                <MenuItem value="">Tümü</MenuItem>
+                <MenuItem value="Ortak">Ortak</MenuItem>
+                {kullanicilar.map((kullanici) => (
+                  <MenuItem key={kullanici.id} value={kullanici.kullanici_adi}>
+                    {kullanici.ad_soyad}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Grid>
           <Grid item xs={12} sm="auto">
             <Chip 
@@ -261,13 +299,13 @@ const AksesuarRaporTab = ({
                 </Typography>
               </Box>
               <Chip 
-                label={`${(aksesuarRapor.detayli_aksesuarlar || []).length} satış`} 
+                label={`${sortedAksesuarlar.length} satış`}
                 size="small" 
                 color="primary"
               />
             </Box>
             
-            {(aksesuarRapor.detayli_aksesuarlar || []).length === 0 ? (
+            {sortedAksesuarlar.length === 0 ? (
               <Box sx={{ textAlign: 'center', py: 6 }}>
                 <ShoppingBagIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
                 <Typography color="text.secondary">Bu tarih aralığında aksesuar satışı bulunmuyor</Typography>
@@ -275,7 +313,7 @@ const AksesuarRaporTab = ({
             ) : isMobile ? (
               /* Mobile Card View */
               <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                {(aksesuarRapor.detayli_aksesuarlar || []).map((aksesuar, index) => (
+                {sortedAksesuarlar.map((aksesuar, index) => (
                   <Card key={aksesuar.id || index} variant="outlined" sx={{ bgcolor: '#faf5fc' }}>
                     <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
@@ -316,6 +354,10 @@ const AksesuarRaporTab = ({
                             {formatCurrency(aksesuar.kar)}
                           </Typography>
                         </Grid>
+                        <Grid item xs={12}>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>Oluşturan</Typography>
+                          {renderCreator(aksesuar)}
+                        </Grid>
                       </Grid>
                     </CardContent>
                   </Card>
@@ -329,6 +371,7 @@ const AksesuarRaporTab = ({
                     <TableRow sx={{ bgcolor: '#f3e5f5' }}>
                       <TableCell sx={{ fontWeight: 700 }}>Müşteri</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Telefon</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Oluşturan</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Ödeme Şekli</TableCell>
                       <TableCell align="right" sx={{ fontWeight: 700 }}>Satış</TableCell>
                       <TableCell align="right" sx={{ fontWeight: 700 }}>Maliyet</TableCell>
@@ -343,6 +386,7 @@ const AksesuarRaporTab = ({
                           <Typography fontWeight={600}>{aksesuar.ad_soyad}</Typography>
                         </TableCell>
                         <TableCell>{aksesuar.telefon}</TableCell>
+                        <TableCell>{renderCreator(aksesuar)}</TableCell>
                         <TableCell>{aksesuar.odeme_sekli || '-'}</TableCell>
                         <TableCell align="right">
                           <Typography fontWeight={600} sx={{ color: '#2e7d32' }}>

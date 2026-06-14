@@ -88,6 +88,17 @@ const AksesuarDetayModal = ({ open, onClose, isMobile, selectedAksesuar }) => (
                   <Typography variant="caption" color="text.secondary">Ödeme Şekli</Typography>
                   <Typography variant="body1">{selectedAksesuar.odeme_sekli || '-'}</Typography>
                 </Grid>
+                <Grid item xs={6} sm={4}>
+                  <Typography variant="caption" color="text.secondary">Oluşturan Kişi</Typography>
+                  <Typography variant="body1" fontWeight={600}>
+                    {selectedAksesuar.olusturan_kisi || selectedAksesuar.olusturan_ad_soyad || '-'}
+                  </Typography>
+                  {selectedAksesuar.olusturan_kisi !== 'Ortak' && selectedAksesuar.olusturan_kullanici_adi && (
+                    <Typography variant="caption" color="text.secondary">
+                      @{selectedAksesuar.olusturan_kullanici_adi}
+                    </Typography>
+                  )}
+                </Grid>
                 {selectedAksesuar.odeme_detaylari && (
                   <Grid item xs={12}>
                     <Typography variant="caption" color="text.secondary">Ödeme Detayları</Typography>

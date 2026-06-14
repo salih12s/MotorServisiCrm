@@ -257,8 +257,12 @@ router.get('/fis-kar', async (req, res) => {
         ie.kar,
         ie.created_at,
         ie.durum,
+        ie.olusturan_kisi,
+        k.ad_soyad as olusturan_ad_soyad,
+        k.kullanici_adi as olusturan_kullanici_adi,
         'is_emri' as kaynak_tip
       FROM is_emirleri ie
+      LEFT JOIN kullanicilar k ON ie.olusturan_kullanici_id = k.id
     `;
     
     // Aksesuar Satışları
@@ -274,8 +278,12 @@ router.get('/fis-kar', async (req, res) => {
         a.kar,
         a.satis_tarihi as created_at,
         'tamamlandi' as durum,
+        a.olusturan_kisi,
+        k.ad_soyad as olusturan_ad_soyad,
+        k.kullanici_adi as olusturan_kullanici_adi,
         'aksesuar' as kaynak_tip
       FROM aksesuarlar a
+      LEFT JOIN kullanicilar k ON a.olusturan_kullanici_id = k.id
     `;
     
     const params = [];
@@ -406,8 +414,12 @@ router.get('/aksesuar/aralik', async (req, res) => {
         a.durum,
         a.created_at,
         a.tamamlama_tarihi,
+        a.olusturan_kisi,
+        k.ad_soyad as olusturan_ad_soyad,
+        k.kullanici_adi as olusturan_kullanici_adi,
         TO_CHAR(a.satis_tarihi, 'YYYY-MM-DD') as satis_tarihi
        FROM aksesuarlar a
+       LEFT JOIN kullanicilar k ON a.olusturan_kullanici_id = k.id
        WHERE a.durum = 'tamamlandi' AND DATE(COALESCE(a.tamamlama_tarihi, a.created_at)) BETWEEN $1 AND $2
        ORDER BY a.tamamlama_tarihi DESC`,
       [baslangic, bitis]
@@ -461,10 +473,13 @@ router.get('/aksesuar/:id', async (req, res) => {
     const { id } = req.params;
     
     const aksesuarResult = await pool.query(
-      `SELECT id, ad_soyad, telefon, odeme_sekli, aciklama, durum, odeme_detaylari,
-       TO_CHAR(satis_tarihi, 'YYYY-MM-DD') as satis_tarihi,
-       toplam_maliyet, toplam_satis, kar, odeme_tutari, created_at, tamamlama_tarihi
-       FROM aksesuarlar WHERE id = $1`,
+      `SELECT a.id, a.ad_soyad, a.telefon, a.odeme_sekli, a.aciklama, a.durum, a.odeme_detaylari,
+       TO_CHAR(a.satis_tarihi, 'YYYY-MM-DD') as satis_tarihi,
+       a.toplam_maliyet, a.toplam_satis, a.kar, a.odeme_tutari, a.created_at, a.tamamlama_tarihi,
+       a.olusturan_kisi, k.ad_soyad as olusturan_ad_soyad, k.kullanici_adi as olusturan_kullanici_adi
+       FROM aksesuarlar a
+       LEFT JOIN kullanicilar k ON a.olusturan_kullanici_id = k.id
+       WHERE a.id = $1`,
       [id]
     );
     

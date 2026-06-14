@@ -123,6 +123,8 @@ async function checkAndAddAllColumns() {
           odeme_sekli VARCHAR(50),
           aciklama TEXT,
           durum VARCHAR(50) DEFAULT 'beklemede',
+          olusturan_kullanici_id INTEGER REFERENCES kullanicilar(id),
+          olusturan_kisi VARCHAR(100),
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -190,6 +192,20 @@ async function checkAndAddAllColumns() {
         console.log('  ✅ tamamlama_tarihi kolonu eklendi');
       } else {
         console.log('  ✓ tamamlama_tarihi zaten var');
+      }
+
+      if (!aksesuarlarColNames.includes('olusturan_kullanici_id')) {
+        await pool.query(`ALTER TABLE aksesuarlar ADD COLUMN olusturan_kullanici_id INTEGER REFERENCES kullanicilar(id)`);
+        console.log('  ✅ olusturan_kullanici_id kolonu eklendi');
+      } else {
+        console.log('  ✓ olusturan_kullanici_id zaten var');
+      }
+
+      if (!aksesuarlarColNames.includes('olusturan_kisi')) {
+        await pool.query(`ALTER TABLE aksesuarlar ADD COLUMN olusturan_kisi VARCHAR(100)`);
+        console.log('  ✅ olusturan_kisi kolonu eklendi');
+      } else {
+        console.log('  ✓ olusturan_kisi zaten var');
       }
     }
     

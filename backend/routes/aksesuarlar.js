@@ -8,10 +8,13 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT id, ad_soyad, telefon, odeme_sekli, aciklama, durum, odeme_detaylari,
-       TO_CHAR(satis_tarihi, 'YYYY-MM-DD') as satis_tarihi,
-       toplam_maliyet, toplam_satis, kar, odeme_tutari, created_at
-       FROM aksesuarlar ORDER BY created_at DESC`
+      `SELECT a.id, a.ad_soyad, a.telefon, a.odeme_sekli, a.aciklama, a.durum, a.odeme_detaylari,
+       TO_CHAR(a.satis_tarihi, 'YYYY-MM-DD') as satis_tarihi,
+       a.toplam_maliyet, a.toplam_satis, a.kar, a.odeme_tutari, a.created_at,
+       a.olusturan_kisi, k.ad_soyad as olusturan_ad_soyad, k.kullanici_adi as olusturan_kullanici_adi
+       FROM aksesuarlar a
+       LEFT JOIN kullanicilar k ON a.olusturan_kullanici_id = k.id
+       ORDER BY a.created_at DESC`
     );
     
     // Her aksesuar için parçaları getir
@@ -38,10 +41,13 @@ router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query(
-      `SELECT id, ad_soyad, telefon, odeme_sekli, aciklama, durum, odeme_detaylari,
-       TO_CHAR(satis_tarihi, 'YYYY-MM-DD') as satis_tarihi,
-       toplam_maliyet, toplam_satis, kar, odeme_tutari, created_at
-       FROM aksesuarlar WHERE id = $1`,
+      `SELECT a.id, a.ad_soyad, a.telefon, a.odeme_sekli, a.aciklama, a.durum, a.odeme_detaylari,
+       TO_CHAR(a.satis_tarihi, 'YYYY-MM-DD') as satis_tarihi,
+       a.toplam_maliyet, a.toplam_satis, a.kar, a.odeme_tutari, a.created_at,
+       a.olusturan_kisi, k.ad_soyad as olusturan_ad_soyad, k.kullanici_adi as olusturan_kullanici_adi
+       FROM aksesuarlar a
+       LEFT JOIN kullanicilar k ON a.olusturan_kullanici_id = k.id
+       WHERE a.id = $1`,
       [id]
     );
     
@@ -71,7 +77,8 @@ router.post('/', async (req, res) => {
   try {
     await client.query('BEGIN');
     
-    const { ad_soyad, telefon, odeme_sekli, aciklama, durum, odeme_detaylari, satis_tarihi, parcalar = [] } = req.body;
+    const { ad_soyad, telefon, odeme_sekli, aciklama, durum, odeme_detaylari, satis_tarihi, olusturan_kisi, parcalar = [] } = req.body;
+    const olusturan_kullanici_id = req.user?.id || null;
     
     // Toplamları hesapla
     let toplam_maliyet = 0;
@@ -87,10 +94,10 @@ router.post('/', async (req, res) => {
     
     // Ana aksesuar kaydını oluştur
     const result = await client.query(
-      `INSERT INTO aksesuarlar (ad_soyad, telefon, odeme_sekli, aciklama, durum, odeme_detaylari, satis_tarihi, toplam_maliyet, toplam_satis, kar, odeme_tutari)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      `INSERT INTO aksesuarlar (ad_soyad, telefon, odeme_sekli, aciklama, durum, odeme_detaylari, satis_tarihi, toplam_maliyet, toplam_satis, kar, odeme_tutari, olusturan_kullanici_id, olusturan_kisi)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
        RETURNING *`,
-      [ad_soyad, telefon, odeme_sekli, aciklama, durum || 'beklemede', odeme_detaylari, satis_tarihi || new Date(), toplam_maliyet, toplam_satis, kar, toplam_satis]
+      [ad_soyad, telefon, odeme_sekli, aciklama, durum || 'beklemede', odeme_detaylari, satis_tarihi || new Date(), toplam_maliyet, toplam_satis, kar, toplam_satis, olusturan_kullanici_id, olusturan_kisi || null]
     );
     
     const aksesuarId = result.rows[0].id;
@@ -165,7 +172,7 @@ router.put('/:id', async (req, res) => {
     await client.query('BEGIN');
     
     const { id } = req.params;
-    const { ad_soyad, telefon, odeme_sekli, aciklama, durum, odeme_detaylari, satis_tarihi, parcalar = [] } = req.body;
+    const { ad_soyad, telefon, odeme_sekli, aciklama, durum, odeme_detaylari, satis_tarihi, olusturan_kisi, parcalar = [] } = req.body;
     
     // Mevcut durumu al
     const mevcutDurum = await client.query('SELECT durum FROM aksesuarlar WHERE id = $1', [id]);
@@ -198,10 +205,12 @@ router.put('/:id', async (req, res) => {
       `UPDATE aksesuarlar 
        SET ad_soyad = $1, telefon = $2, odeme_sekli = $3, aciklama = $4, 
            durum = $5, odeme_detaylari = $6, satis_tarihi = $7, toplam_maliyet = $8, toplam_satis = $9, 
-           kar = $10, odeme_tutari = $11, updated_at = CURRENT_TIMESTAMP${tamamlamaTarihiQuery}
-       WHERE id = $12
+           kar = $10, odeme_tutari = $11, olusturan_kisi = COALESCE($12, olusturan_kisi),
+           olusturan_kullanici_id = COALESCE(olusturan_kullanici_id, $13),
+           updated_at = CURRENT_TIMESTAMP${tamamlamaTarihiQuery}
+       WHERE id = $14
        RETURNING *`,
-      [ad_soyad, telefon, odeme_sekli, aciklama, durum || 'beklemede', odeme_detaylari, satis_tarihi, toplam_maliyet, toplam_satis, kar, toplam_satis, id]
+      [ad_soyad, telefon, odeme_sekli, aciklama, durum || 'beklemede', odeme_detaylari, satis_tarihi, toplam_maliyet, toplam_satis, kar, toplam_satis, olusturan_kisi || null, req.user?.id || null, id]
     );
     
     if (result.rows.length === 0) {

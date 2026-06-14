@@ -81,6 +81,8 @@ function Raporlar() {
   const [motorSatislar, setMotorSatislar] = useState([]);
   const [motorModeller, setMotorModeller] = useState([]);
   const [expandedMotorSatis, setExpandedMotorSatis] = useState(null);
+  const [selectedMotorSatisKullanici, setSelectedMotorSatisKullanici] = useState('');
+  const [selectedAksesuarKullanici, setSelectedAksesuarKullanici] = useState('');
   
   // Motor Satış Detay Modal State (Fiş Kar Analizi için)
   const [selectedMotorSatis, setSelectedMotorSatis] = useState(null);
@@ -292,20 +294,24 @@ function Raporlar() {
   };
 
   // Oluşturan kişiye ve ödeme detayına göre filtrelenmiş iş emirleri
+  const matchesCreatorFilter = (kayit, selectedCreator) => {
+    if (!selectedCreator) return true;
+    if (selectedCreator === 'Ortak') {
+      return kayit.olusturan_kisi === 'Ortak';
+    }
+    if (kayit.olusturan_kisi === 'Ortak') return false;
+    const selectedUser = kullanicilar.find(
+      (kullanici) => kullanici.kullanici_adi === selectedCreator
+    );
+    return kayit.olusturan_kisi === selectedCreator ||
+      kayit.olusturan_kisi === selectedUser?.ad_soyad ||
+      kayit.olusturan_kullanici_adi === selectedCreator ||
+      kayit.olusturan_ad_soyad === selectedCreator;
+  };
+
   const filteredIsEmirleri = gunlukRapor?.detayli_is_emirleri?.filter(isEmri => {
     // Oluşturan kişi filtresi
-    if (selectedKullanici) {
-      if (selectedKullanici === 'Ortak') {
-        if (isEmri.olusturan_kisi !== 'Ortak') return false;
-      } else {
-        // Ortak olarak kaydedilmişleri hariç tut
-        if (isEmri.olusturan_kisi === 'Ortak') return false;
-        const kullaniciMatch = isEmri.olusturan_kisi === selectedKullanici ||
-               isEmri.olusturan_kullanici_adi === selectedKullanici || 
-               isEmri.olusturan_ad_soyad === selectedKullanici;
-        if (!kullaniciMatch) return false;
-      }
-    }
+    if (!matchesCreatorFilter(isEmri, selectedKullanici)) return false;
     // Ödeme detayı filtresi
     if (selectedOdemeDetay) {
       const odemeMatch = isEmri.odeme_detaylari && isEmri.odeme_detaylari.toLowerCase().includes(selectedOdemeDetay.toLowerCase());
@@ -363,9 +369,42 @@ function Raporlar() {
   };
 
   // Sıralanmış aksesuar verileri
-  const sortedAksesuarlar = aksesuarRapor?.detayli_aksesuarlar 
-    ? sortData(aksesuarRapor.detayli_aksesuarlar, aksesuarSortField, aksesuarSortDirection) 
-    : [];
+  const filteredAksesuarlar = (aksesuarRapor?.detayli_aksesuarlar || [])
+    .filter((aksesuar) => matchesCreatorFilter(aksesuar, selectedAksesuarKullanici));
+  const sortedAksesuarlar = sortData(filteredAksesuarlar, aksesuarSortField, aksesuarSortDirection);
+  const filteredMotorSatislar = motorSatislar
+    .filter((motorSatis) => matchesCreatorFilter(motorSatis, selectedMotorSatisKullanici));
+
+  const filteredAksesuarRapor = selectedAksesuarKullanici && aksesuarRapor
+    ? {
+        ...aksesuarRapor,
+        detayli_aksesuarlar: filteredAksesuarlar,
+        gunluk_veriler: Object.values(filteredAksesuarlar.reduce((gunler, aksesuar) => {
+          const tarihDegeri = aksesuar.tamamlama_tarihi || aksesuar.created_at || aksesuar.satis_tarihi;
+          const tarih = tarihDegeri ? format(new Date(tarihDegeri), 'yyyy-MM-dd') : 'Tarihsiz';
+          if (!gunler[tarih]) {
+            gunler[tarih] = {
+              tarih,
+              satis_sayisi: 0,
+              toplam_satis: 0,
+              toplam_maliyet: 0,
+              toplam_kar: 0,
+            };
+          }
+          gunler[tarih].satis_sayisi += 1;
+          gunler[tarih].toplam_satis += parseFloat(aksesuar.toplam_satis || 0);
+          gunler[tarih].toplam_maliyet += parseFloat(aksesuar.toplam_maliyet || 0);
+          gunler[tarih].toplam_kar += parseFloat(aksesuar.kar || 0);
+          return gunler;
+        }, {})).sort((a, b) => b.tarih.localeCompare(a.tarih)),
+        genel_ozet: {
+          toplam_satis_sayisi: filteredAksesuarlar.length,
+          toplam_satis: filteredAksesuarlar.reduce((sum, aksesuar) => sum + parseFloat(aksesuar.toplam_satis || 0), 0),
+          toplam_maliyet: filteredAksesuarlar.reduce((sum, aksesuar) => sum + parseFloat(aksesuar.toplam_maliyet || 0), 0),
+          toplam_kar: filteredAksesuarlar.reduce((sum, aksesuar) => sum + parseFloat(aksesuar.kar || 0), 0),
+        },
+      }
+    : aksesuarRapor;
 
   // Sıralama ikonu
   const SortIcon = ({ field, currentField, direction }) => {
@@ -429,9 +468,12 @@ function Raporlar() {
           motorSatisEndDate={motorSatisEndDate}
           setMotorSatisEndDate={setMotorSatisEndDate}
           loadMotorSatisRapor={loadMotorSatisRapor}
-          motorSatislar={motorSatislar}
+          motorSatislar={filteredMotorSatislar}
           expandedMotorSatis={expandedMotorSatis}
           setExpandedMotorSatis={setExpandedMotorSatis}
+          selectedKullanici={selectedMotorSatisKullanici}
+          setSelectedKullanici={setSelectedMotorSatisKullanici}
+          kullanicilar={kullanicilar}
           navigate={navigate}
         />
       )}
@@ -471,8 +513,11 @@ function Raporlar() {
           setAksesuarSelectedDate={setAksesuarSelectedDate}
           aksesuarEndDate={aksesuarEndDate}
           setAksesuarEndDate={setAksesuarEndDate}
-          aksesuarRapor={aksesuarRapor}
+          aksesuarRapor={filteredAksesuarRapor}
           sortedAksesuarlar={sortedAksesuarlar}
+          selectedKullanici={selectedAksesuarKullanici}
+          setSelectedKullanici={setSelectedAksesuarKullanici}
+          kullanicilar={kullanicilar}
           handleViewAksesuarDetail={handleViewAksesuarDetail}
         />
       )}

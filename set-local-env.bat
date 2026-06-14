@@ -1,40 +1,46 @@
 @echo off
+setlocal
+cd /d "%~dp0"
+
 echo Gelistirme Ortami Ayarlaniyor...
 
-REM Backend .env dosyasini local ayarlara cevir
-(
-echo # Environment
-echo NODE_ENV=development
-echo.
-echo # Database Configuration - Local Development
-echo DB_HOST=localhost
-echo DB_PORT=5432
-echo DB_NAME=Musatti
-echo DB_USER=postgres
-echo DB_PASSWORD=<LOCAL_DB_PASSWORD>
-echo.
-echo # Database Configuration - Production ^(Railway^)
-echo # DB_HOST=<RAILWAY_DB_HOST>
-echo # DB_PORT=<RAILWAY_DB_PORT>
-echo # DB_NAME=<RAILWAY_DB_NAME>
-echo # DB_USER=<RAILWAY_DB_USER>
-echo # DB_PASSWORD=<RAILWAY_DB_PASSWORD>
-echo.
-echo # JWT Configuration
-echo JWT_SECRET=<JWT_SECRET>
-echo.
-echo # Server Configuration
-echo PORT=5000
-) > backend\.env
+set "LOCAL_ENV=.env.local.backup"
 
-REM Frontend .env dosyasini local ayarlara cevir
+REM Local bilgiler Git disinda bu dosyada tutulur.
+if not exist "%LOCAL_ENV%" (
+  echo HATA: %LOCAL_ENV% dosyasi bulunamadi.
+  exit /b 1
+)
+
+findstr /B /C:"NODE_ENV=development" "%LOCAL_ENV%" >nul
+if errorlevel 1 (
+  echo HATA: %LOCAL_ENV% dosyasinda NODE_ENV=development bulunamadi.
+  exit /b 1
+)
+
+REM Kok ve backend ortamlarini local degerlere cevir.
+copy /Y "%LOCAL_ENV%" ".env" >nul
+if errorlevel 1 (
+  echo HATA: Kok .env dosyasi olusturulamadi.
+  exit /b 1
+)
+
+copy /Y "%LOCAL_ENV%" "backend\.env" >nul
+if errorlevel 1 (
+  echo HATA: backend\.env dosyasi olusturulamadi.
+  exit /b 1
+)
+
+REM Frontend local backend API adresini kullanir.
 (
 echo # API URL Configuration - Local Development
 echo REACT_APP_API_URL=http://localhost:5000/api
-echo.
-echo # Production API URL - Railway Backend
-echo # REACT_APP_API_URL=https://motorservisicrm-production.up.railway.app/api
-) > frontend\.env
+) > "frontend\.env"
+
+if errorlevel 1 (
+  echo HATA: frontend\.env dosyasi olusturulamadi.
+  exit /b 1
+)
 
 echo.
 echo ================================================
@@ -45,9 +51,10 @@ echo Backend API: http://localhost:5000
 echo Frontend: http://localhost:3000
 echo Database: localhost:5432/Musatti
 echo.
-echo Calisma Adimlari:
-echo 1. Backend: cd backend ^&^& npm start
-echo 2. Frontend: cd frontend ^&^& npm start
+echo Degisikliklerin uygulanmasi icin acik backend ve
+echo frontend sureclerini yeniden baslatin.
 echo.
 echo ================================================
-pause
+
+endlocal
+exit /b 0

@@ -54,6 +54,7 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
     durum: 'beklemede',
     odeme_detaylari: '',
     satis_tarihi: new Date().toISOString().split('T')[0],
+    olusturan_kisi: user?.name || user?.ad_soyad || '',
   });
 
   const [parcalar, setParcalar] = useState([]);
@@ -117,6 +118,7 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
             durum: data.durum || 'beklemede',
             odeme_detaylari: data.odeme_detaylari || '',
             satis_tarihi: satisTarihi,
+            olusturan_kisi: data.olusturan_kisi || user?.name || user?.ad_soyad || '',
           });
           setParcalar(data.parcalar || []);
         } catch (err) {
@@ -129,7 +131,7 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
     };
 
     loadAksesuar();
-  }, [editId, open]);
+  }, [editId, open, user]);
 
   // Modal kapandığında formu temizle
   useEffect(() => {
@@ -142,6 +144,7 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
         durum: 'beklemede',
         odeme_detaylari: '',
         satis_tarihi: new Date().toISOString().split('T')[0],
+        olusturan_kisi: user?.name || user?.ad_soyad || '',
       });
       setParcalar([]);
       setNewParca({
@@ -152,7 +155,7 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
       });
       setError('');
     }
-  }, [open]);
+  }, [open, user]);
 
   const handleChange = (e) => {
     setFormData({
@@ -327,6 +330,22 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
                         value={formData.telefon}
                         onChange={handleChange}
                       />
+                    </Box>
+                    <Box sx={{ width: 180, mb: 1 }}>
+                      <FormControl fullWidth size="small" sx={{ mt: 1.1 }}>
+                        <InputLabel>Oluşturan Kişi</InputLabel>
+                        <Select
+                          name="olusturan_kisi"
+                          value={formData.olusturan_kisi}
+                          label="Oluşturan Kişi"
+                          onChange={handleChange}
+                        >
+                          <MenuItem value={user?.name || user?.ad_soyad || ''}>
+                            {user?.name || user?.ad_soyad || 'Ben'}
+                          </MenuItem>
+                          <MenuItem value="Ortak">Ortak</MenuItem>
+                        </Select>
+                      </FormControl>
                     </Box>
                     <TextField
                       fullWidth

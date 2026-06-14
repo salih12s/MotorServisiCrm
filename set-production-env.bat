@@ -1,40 +1,55 @@
 @echo off
+setlocal
+cd /d "%~dp0"
+
 echo Production Ortami Ayarlaniyor...
 
-REM Backend .env dosyasini production ayarlara cevir
-(
-echo # Environment
-echo NODE_ENV=production
-echo.
-echo # Database Configuration - Local Development
-echo # DB_HOST=localhost
-echo # DB_PORT=5432
-echo # DB_NAME=Musatti
-echo # DB_USER=postgres
-echo # DB_PASSWORD=12345
-echo.
-echo # Database Configuration - Production ^(Railway^)
-echo DB_HOST=<RAILWAY_DB_HOST>
-echo DB_PORT=<RAILWAY_DB_PORT>
-echo DB_NAME=<RAILWAY_DB_NAME>
-echo DB_USER=<RAILWAY_DB_USER>
-echo DB_PASSWORD=<RAILWAY_DB_PASSWORD>
-echo.
-echo # JWT Configuration
-echo JWT_SECRET=<JWT_SECRET>
-echo.
-echo # Server Configuration
-echo PORT=5000
-) > backend\.env
+set "PRODUCTION_ENV=.env.production.backup"
 
-REM Frontend .env dosyasini production ayarlara cevir
+REM Bu dosya Railway ile ayni production degiskenlerini tutar.
+if not exist "%PRODUCTION_ENV%" (
+  echo HATA: %PRODUCTION_ENV% dosyasi bulunamadi.
+  exit /b 1
+)
+
+findstr /B /C:"NODE_ENV=production" "%PRODUCTION_ENV%" >nul
+if errorlevel 1 (
+  echo HATA: %PRODUCTION_ENV% dosyasinda NODE_ENV=production bulunamadi.
+  exit /b 1
+)
+
+findstr /B /C:"DATABASE_URL=" "%PRODUCTION_ENV%" >nul
+if errorlevel 1 (
+  findstr /B /C:"DB_HOST=" "%PRODUCTION_ENV%" >nul
+  if errorlevel 1 (
+    echo HATA: %PRODUCTION_ENV% dosyasinda DATABASE_URL veya DB_HOST bulunamadi.
+    exit /b 1
+  )
+)
+
+REM Kok ve backend ortamlarini Railway production degerlerine cevir.
+copy /Y "%PRODUCTION_ENV%" ".env" >nul
+if errorlevel 1 (
+  echo HATA: Kok .env dosyasi olusturulamadi.
+  exit /b 1
+)
+
+copy /Y "%PRODUCTION_ENV%" "backend\.env" >nul
+if errorlevel 1 (
+  echo HATA: backend\.env dosyasi olusturulamadi.
+  exit /b 1
+)
+
+REM Frontend production API adresini ayarla.
 (
-echo # API URL Configuration - Local Development
-echo # REACT_APP_API_URL=http://localhost:5000/api
-echo.
-echo # Production API URL - Railway Backend
+echo # API URL Configuration - Production
 echo REACT_APP_API_URL=https://motorservisicrm-production.up.railway.app/api
-) > frontend\.env
+) > "frontend\.env"
+
+if errorlevel 1 (
+  echo HATA: frontend\.env dosyasi olusturulamadi.
+  exit /b 1
+)
 
 echo.
 echo ================================================
@@ -43,12 +58,15 @@ echo ================================================
 echo.
 echo Backend API: https://motorservisicrm-production.up.railway.app
 echo Database: Railway PostgreSQL
-echo Frontend: Buradan build alinip deploy edilecek
+echo Frontend API ayari: frontend\.env
+echo Backend DB ayari: backend\.env
 echo.
-echo Deployment Adimlari:
-echo 1. Railway: Backend otomatik deploy olur
-echo 2. Frontend: npm run build ile build al
-echo 3. Build klasorunu hosting'e yukle
+echo Sonraki adimlar:
+echo 1. Backend servisini yeniden baslatin.
+echo 2. Frontend klasorunde npm run build calistirin.
+echo 3. Build klasorunu deploy edin.
 echo.
 echo ================================================
-pause
+
+endlocal
+exit /b 0

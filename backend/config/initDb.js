@@ -257,6 +257,8 @@ const initDatabase = async () => {
         kar DECIMAL(10, 2) DEFAULT 0,
         odeme_detaylari TEXT,
         satis_tarihi DATE DEFAULT CURRENT_DATE,
+        olusturan_kullanici_id INTEGER REFERENCES kullanicilar(id),
+        olusturan_kisi VARCHAR(100),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -291,9 +293,17 @@ const initDatabase = async () => {
                        WHERE table_name='aksesuarlar' AND column_name='satis_tarihi') THEN
           ALTER TABLE aksesuarlar ADD COLUMN satis_tarihi DATE DEFAULT CURRENT_DATE;
         END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns
                        WHERE table_name='aksesuarlar' AND column_name='tamamlama_tarihi') THEN
           ALTER TABLE aksesuarlar ADD COLUMN tamamlama_tarihi TIMESTAMP;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                       WHERE table_name='aksesuarlar' AND column_name='olusturan_kullanici_id') THEN
+          ALTER TABLE aksesuarlar ADD COLUMN olusturan_kullanici_id INTEGER REFERENCES kullanicilar(id);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                       WHERE table_name='aksesuarlar' AND column_name='olusturan_kisi') THEN
+          ALTER TABLE aksesuarlar ADD COLUMN olusturan_kisi VARCHAR(100);
         END IF;
       END $$;
     `);
@@ -356,6 +366,8 @@ const initDatabase = async () => {
         damga_vergisi DECIMAL(12,2) DEFAULT 791,
         vergiler_toplami DECIMAL(12,2) DEFAULT 0,
         durum VARCHAR(50) DEFAULT 'beklemede',
+        olusturan_kullanici_id INTEGER REFERENCES kullanicilar(id),
+        olusturan_kisi VARCHAR(100),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -410,6 +422,12 @@ const initDatabase = async () => {
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='motor_satislari' AND column_name='durum') THEN
           ALTER TABLE motor_satislari ADD COLUMN durum VARCHAR(50) DEFAULT 'beklemede';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='motor_satislari' AND column_name='olusturan_kullanici_id') THEN
+          ALTER TABLE motor_satislari ADD COLUMN olusturan_kullanici_id INTEGER REFERENCES kullanicilar(id);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='motor_satislari' AND column_name='olusturan_kisi') THEN
+          ALTER TABLE motor_satislari ADD COLUMN olusturan_kisi VARCHAR(100);
         END IF;
       END $$;
     `);

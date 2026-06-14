@@ -71,6 +71,17 @@ const MotorSatisDetayModal = ({ open, onClose, isMobile, selectedMotorSatis }) =
                   <Typography fontWeight={600}>{selectedMotorSatis.musteri_telefon || '-'}</Typography>
                 </Grid>
                 <Grid item xs={6}>
+                  <Typography variant="body2" color="text.secondary">Oluşturan Kişi</Typography>
+                  <Typography fontWeight={600}>
+                    {selectedMotorSatis.olusturan_kisi || selectedMotorSatis.olusturan_ad_soyad || '-'}
+                  </Typography>
+                  {selectedMotorSatis.olusturan_kisi !== 'Ortak' && selectedMotorSatis.olusturan_kullanici_adi && (
+                    <Typography variant="caption" color="text.secondary">
+                      @{selectedMotorSatis.olusturan_kullanici_adi}
+                    </Typography>
+                  )}
+                </Grid>
+                <Grid item xs={6}>
                   <Typography variant="body2" color="text.secondary">Satış Tarihi</Typography>
                   <Typography fontWeight={600}>
                     {selectedMotorSatis.tarih ? format(new Date(selectedMotorSatis.tarih + 'T12:00:00'), 'dd.MM.yyyy', { locale: tr }) : '-'}
