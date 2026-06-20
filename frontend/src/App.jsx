@@ -11,6 +11,8 @@ import LandingPage from './pages/public/LandingPage';
 import HakkimizdaPage from './pages/public/HakkimizdaPage';
 import BasindaPage from './pages/public/BasindaPage';
 import MotorlarPage from './pages/public/MotorlarPage';
+import FiyatListesiPage from './pages/public/FiyatListesiPage';
+import AksesuarSatisPage from './pages/public/AksesuarSatisPage';
 import Dashboard from './pages/dashboard/Dashboard';
 import IsEmirleri from './pages/isEmirleri/IsEmirleri';
 import IsEmriForm from './pages/isEmirleri/IsEmriForm';
@@ -192,6 +194,8 @@ function AppRoutes() {
       <Route path="/hakkimizda" element={<HakkimizdaPage />} />
       <Route path="/basinda" element={<BasindaPage />} />
       <Route path="/motorlar" element={<MotorlarPage />} />
+      <Route path="/fiyat-listesi" element={<FiyatListesiPage />} />
+      <Route path="/aksesuarlar-satis" element={<AksesuarSatisPage />} />
 
       <Route element={<PanelLayoutRoute />}>
         <Route path="is-emirleri" element={<NormalRoute><IsEmirleri /></NormalRoute>} />

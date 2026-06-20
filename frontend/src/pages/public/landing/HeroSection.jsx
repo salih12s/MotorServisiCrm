@@ -257,38 +257,37 @@ function HeroSection() {
           >
             Servis Hizmetleri
           </Button>
+
+          <Button
+            variant="outlined"
+            size="large"
+            onClick={() => navigate('/fiyat-listesi')}
+            sx={{
+              color: '#36C5D3',
+              borderColor: 'rgba(54,197,211,0.55)',
+              fontWeight: 700,
+              px: { xs: 3.5, md: 5 },
+              py: { xs: 1.4, md: 1.7 },
+              borderRadius: 50,
+              textTransform: 'none',
+              fontSize: { xs: '0.95rem', md: '1.05rem' },
+              width: { xs: '100%', sm: 'auto' },
+              maxWidth: { xs: 320, sm: 'none' },
+              backdropFilter: 'blur(10px)',
+              background: 'rgba(54,197,211,0.06)',
+              transition: 'all 0.25s ease',
+              '&:hover': {
+                borderColor: '#36C5D3',
+                background: 'rgba(54,197,211,0.18)',
+              },
+            }}
+          >
+            Fiyat Listesi
+          </Button>
         </Stack>
       </Container>
 
-      <Box
-        sx={{
-          position: 'absolute',
-          bottom: 24,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 2,
-          display: { xs: 'none', sm: 'flex' },
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: 44,
-          height: 44,
-          borderRadius: '50%',
-          border: '2px solid rgba(54,197,211,0.6)',
-          color: '#36C5D3',
-          animation: 'bounce 2s infinite',
-          cursor: 'pointer',
-          '@keyframes bounce': {
-            '0%, 100%': { transform: 'translateX(-50%) translateY(0)' },
-            '50%': { transform: 'translateX(-50%) translateY(-10px)' },
-          },
-        }}
-        onClick={() => {
-          const el = document.getElementById('favoriler');
-          if (el) el.scrollIntoView({ behavior: 'smooth' });
-        }}
-      >
-        <ArrowDownwardIcon fontSize="small" />
-      </Box>
+
     </Box>
   );
 }

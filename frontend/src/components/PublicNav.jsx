@@ -43,6 +43,8 @@ const MENU = [
   { path: '/hakkimizda', label: 'Hakkımızda' },
   { path: '/basinda', label: 'Basında Biz' },
   { path: '/motorlar', label: 'Motorlarımız' },
+  { path: '/fiyat-listesi', label: 'Fiyat Listesi' },
+  { path: '/aksesuarlar-satis', label: 'Aksesuarlar' },
 ];
 
 function PublicNav({ solid = false }) {

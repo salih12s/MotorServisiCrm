@@ -37,6 +37,8 @@ import {
   Close as CloseIcon,
   Inventory as InventoryIcon,
   Save as SaveIcon,
+  PhotoCamera as PhotoCameraIcon,
+  Image as ImageIcon,
 } from '@mui/icons-material';
 import { aksesuarStokService } from '../../services/api';
 
@@ -63,6 +65,7 @@ function AksesuarStok() {
     birimi: 'Adet',
     alis_fiyati: 0,
     satis_fiyati: 0,
+    resim: '',
   });
 
   const loadStoklar = useCallback(async () => {
@@ -92,6 +95,7 @@ function AksesuarStok() {
         birimi: stok.birimi,
         alis_fiyati: stok.alis_fiyati,
         satis_fiyati: stok.satis_fiyati,
+        resim: stok.resim || '',
       });
     } else {
       setEditingStok(null);
@@ -103,6 +107,7 @@ function AksesuarStok() {
         birimi: 'Adet',
         alis_fiyati: 0,
         satis_fiyati: 0,
+        resim: '',
       });
     }
     setError('');
@@ -120,6 +125,60 @@ function AksesuarStok() {
       ...formData,
       [e.target.name]: e.target.value,
     });
+  };
+
+  // Resmi tarayıcıda küçültüp sıkıştırır (DB'de minimum yer kaplaması için)
+  const compressImage = (file, maxSize = 600, quality = 0.72) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > height && width > maxSize) {
+            height = Math.round((height * maxSize) / width);
+            width = maxSize;
+          } else if (height >= width && height > maxSize) {
+            width = Math.round((width * maxSize) / height);
+            height = maxSize;
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          // Şeffaf PNG'ler için beyaz arka plan
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = reject;
+        img.src = ev.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const handleImageChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setError('Lütfen geçerli bir resim dosyası seçin');
+      e.target.value = '';
+      return;
+    }
+    try {
+      const compressed = await compressImage(file);
+      setFormData((prev) => ({ ...prev, resim: compressed }));
+      setError('');
+    } catch (err) {
+      setError('Resim işlenirken bir hata oluştu');
+    }
+    e.target.value = '';
+  };
+
+  const handleRemoveImage = () => {
+    setFormData((prev) => ({ ...prev, resim: '' }));
   };
 
   const handleSave = async () => {
@@ -241,9 +300,18 @@ function AksesuarStok() {
               {filteredStoklar.map((stok) => (
                 <Paper key={stok.id} variant="outlined" sx={{ p: 2 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">{stok.stok_kodu}</Typography>
-                      <Typography variant="subtitle2" fontWeight={600}>{stok.stok_adi}</Typography>
+                    <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                      <Avatar
+                        variant="rounded"
+                        src={stok.resim || undefined}
+                        sx={{ width: 48, height: 48, bgcolor: 'rgba(0,0,0,0.06)' }}
+                      >
+                        <ImageIcon sx={{ color: 'rgba(0,0,0,0.3)' }} />
+                      </Avatar>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">{stok.stok_kodu}</Typography>
+                        <Typography variant="subtitle2" fontWeight={600}>{stok.stok_adi}</Typography>
+                      </Box>
                     </Box>
                     <Box>
                       <IconButton size="small" onClick={() => handleOpenDialog(stok)}>
@@ -292,6 +360,7 @@ function AksesuarStok() {
               <Table size="small">
                 <TableHead>
                   <TableRow sx={{ bgcolor: `${themeColors.primary}15` }}>
+                    <TableCell sx={{ fontWeight: 700 }}>Resim</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>Stok Kodu</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>Stok Adı</TableCell>
                     <TableCell align="center" sx={{ fontWeight: 700 }}>Giren Miktar</TableCell>
@@ -306,6 +375,15 @@ function AksesuarStok() {
                 <TableBody>
                   {filteredStoklar.map((stok) => (
                     <TableRow key={stok.id} hover>
+                      <TableCell>
+                        <Avatar
+                          variant="rounded"
+                          src={stok.resim || undefined}
+                          sx={{ width: 40, height: 40, bgcolor: 'rgba(0,0,0,0.06)' }}
+                        >
+                          <ImageIcon fontSize="small" sx={{ color: 'rgba(0,0,0,0.3)' }} />
+                        </Avatar>
+                      </TableCell>
                       <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{stok.stok_kodu}</TableCell>
                       <TableCell>{stok.stok_adi}</TableCell>
                       <TableCell align="center">{stok.giren_miktar}</TableCell>
@@ -340,7 +418,7 @@ function AksesuarStok() {
                   ))}
                   {/* Toplam Satırı */}
                   <TableRow sx={{ bgcolor: '#f5f5f5' }}>
-                    <TableCell colSpan={7} align="right" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
+                    <TableCell colSpan={8} align="right" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
                       Toplam Envanter Tutarı:
                     </TableCell>
                     <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.95rem', color: themeColors.primary }}>
@@ -375,26 +453,84 @@ function AksesuarStok() {
         <DialogContent sx={{ pt: 3 }}>
           {error && <Alert severity="error" sx={{ mb: 2, mt: 1 }}>{error}</Alert>}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                fullWidth
-                size="small"
-                label="Stok Kodu"
-                name="stok_kodu"
-                value={formData.stok_kodu}
-                onChange={handleChange}
-                required
-                placeholder="869000000XXXX"
-              />
-              <TextField
-                fullWidth
-                size="small"
-                label="Birimi"
-                name="birimi"
-                value={formData.birimi}
-                onChange={handleChange}
-                sx={{ maxWidth: 120 }}
-              />
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+              {/* Ürün Resmi */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                <Box
+                  component="label"
+                  htmlFor="aksesuar-resim-input"
+                  sx={{
+                    width: 90,
+                    height: 90,
+                    borderRadius: 2,
+                    border: '2px dashed',
+                    borderColor: formData.resim ? themeColors.primary : 'rgba(0,0,0,0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    overflow: 'hidden',
+                    position: 'relative',
+                    bgcolor: 'rgba(0,0,0,0.02)',
+                    flexShrink: 0,
+                    '&:hover': { borderColor: themeColors.primary },
+                  }}
+                >
+                  {formData.resim ? (
+                    <Box
+                      component="img"
+                      src={formData.resim}
+                      alt="Ürün"
+                      sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <Box sx={{ textAlign: 'center', color: 'text.secondary' }}>
+                      <PhotoCameraIcon fontSize="small" />
+                      <Typography variant="caption" display="block" sx={{ fontSize: '0.6rem', lineHeight: 1.1, mt: 0.3 }}>
+                        Resim Ekle
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+                <input
+                  id="aksesuar-resim-input"
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={handleImageChange}
+                />
+                {formData.resim && (
+                  <Button
+                    size="small"
+                    color="error"
+                    onClick={handleRemoveImage}
+                    sx={{ fontSize: '0.65rem', minWidth: 0, p: 0.3 }}
+                  >
+                    Kaldır
+                  </Button>
+                )}
+              </Box>
+              {/* Stok Kodu + Birimi */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Stok Kodu"
+                  name="stok_kodu"
+                  value={formData.stok_kodu}
+                  onChange={handleChange}
+                  required
+                  placeholder="869000000XXXX"
+                />
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Birimi"
+                  name="birimi"
+                  value={formData.birimi}
+                  onChange={handleChange}
+                />
+              </Box>
             </Box>
             <TextField
               fullWidth

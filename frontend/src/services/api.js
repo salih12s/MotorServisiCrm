@@ -123,6 +123,8 @@ export const aksesuarStokService = {
   update: (id, data) => api.put(`/aksesuar-stok/${id}`, data),
   delete: (id) => api.delete(`/aksesuar-stok/${id}`),
   topluEkle: (stoklar) => api.post('/aksesuar-stok/toplu', { stoklar }),
+  // Public (giriş gerektirmeyen) aksesuar satış kataloğu
+  getPublic: () => api.get('/public/aksesuarlar'),
 };
 
 // Motor Satışları

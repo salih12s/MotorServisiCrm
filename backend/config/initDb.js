@@ -457,11 +457,24 @@ const initDatabase = async () => {
         alis_fiyati DECIMAL(10, 2) DEFAULT 0,
         satis_fiyati DECIMAL(10, 2) DEFAULT 0,
         envanter_degeri DECIMAL(12, 2) DEFAULT 0,
+        resim TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
     console.log('✓ Aksesuar Stok tablosu oluşturuldu');
+
+    // Mevcut aksesuar_stok tablosuna resim sütununu ekle (yoksa)
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='aksesuar_stok' AND column_name='resim') THEN
+          ALTER TABLE aksesuar_stok ADD COLUMN resim TEXT;
+        END IF;
+      END $$;
+    `);
+    console.log('✓ Aksesuar Stok tablosuna resim sütunu eklendi');
+
 
     // Varsayılan admin kullanıcısı oluştur
     const adminExists = await pool.query(

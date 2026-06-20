@@ -4,6 +4,7 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const initDatabase = require('./config/initDb');
+const pool = require('./config/db');
 
 // Routes
 const authRoutes = require('./routes/auth');
@@ -37,7 +38,7 @@ const corsOptions = {
 
 // Middleware
 app.use(cors(corsOptions));
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 
 // JWT Middleware (korumalı rotalar için)
 const jwt = require('jsonwebtoken');
@@ -61,6 +62,22 @@ const authenticateToken = (req, res, next) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
+
+// Açık (public) aksesuar satış kataloğu - giriş gerektirmez
+app.get('/api/public/aksesuarlar', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, stok_kodu, stok_adi, satis_fiyati, mevcut, birimi, resim
+       FROM aksesuar_stok
+       ORDER BY stok_adi ASC`
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Public aksesuar listesi hatası:', error);
+    res.status(500).json({ message: 'Sunucu hatası' });
+  }
+});
+
 app.use('/api/musteriler', authenticateToken, musteriRoutes);
 app.use('/api/is-emirleri', authenticateToken, isEmriRoutes);
 app.use('/api/raporlar', authenticateToken, raporRoutes);
