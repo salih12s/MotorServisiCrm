@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -20,9 +21,11 @@ const FILTERS = [
   { key: 'scooter', label: 'Scooter' },
   { key: 'atv', label: 'ATV / UTV' },
   { key: 'elektrikli', label: 'Elektrikli' },
+  { key: 'fiyat-listesi', label: 'Fiyat Listesi' },
 ];
 
 function MotorlarPage() {
+  const navigate = useNavigate();
   const [selected, setSelected] = useState(null);
   const [filter, setFilter] = useState('hepsi');
   const [brandFilter, setBrandFilter] = useState('hepsi');
@@ -83,7 +86,7 @@ function MotorlarPage() {
                 WebkitTextFillColor: 'transparent',
               }}
             >
-              Motorlarımız
+              Koleksiyonu Keşfet
             </Typography>
 
             <Typography
@@ -95,8 +98,8 @@ function MotorlarPage() {
                 lineHeight: 1.6,
               }}
             >
-              Musatti & Smarda 2026 model motosikletleri, scooterları, ATV ve elektrikli araçları.
-              Detaylı teknik özellikler için kartlara tıklayın.
+              Musatti & Smarda motor modellerini keşfedin, güncel fiyat listesine kolayca ulaşın.
+              Ayrıntıları görmek için kartlara tıklayın.
             </Typography>
           </Stack>
         </Container>
@@ -112,7 +115,13 @@ function MotorlarPage() {
           <ToggleButtonGroup
             value={filter}
             exclusive
-            onChange={(_, value) => value && setFilter(value)}
+            onChange={(_, value) => {
+              if (value === 'fiyat-listesi') {
+                navigate('/fiyat-listesi');
+              } else if (value) {
+                setFilter(value);
+              }
+            }}
             sx={{
               flexWrap: 'wrap',
               justifyContent: 'center',
@@ -120,7 +129,7 @@ function MotorlarPage() {
                 color: 'rgba(255,255,255,0.7)',
                 borderColor: 'rgba(54,197,211,0.3)',
                 fontWeight: 700,
-                px: 2.5,
+                px: { xs: 1.4, sm: 2.5 },
                 py: 0.8,
                 textTransform: 'none',
                 '&.Mui-selected': {

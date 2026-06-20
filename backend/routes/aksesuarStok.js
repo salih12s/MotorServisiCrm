@@ -39,7 +39,7 @@ router.get('/ara', async (req, res) => {
 // Yeni stok kaydı oluştur
 router.post('/', async (req, res) => {
   try {
-    const { stok_kodu, stok_adi, giren_miktar, cikan_miktar, birimi, alis_fiyati, satis_fiyati, resim } = req.body;
+    const { stok_kodu, stok_adi, giren_miktar, cikan_miktar, birimi, alis_fiyati, satis_fiyati, resim, resimler, aciklama } = req.body;
 
     if (!stok_kodu || !stok_adi) {
       return res.status(400).json({ message: 'Stok kodu ve stok adı zorunludur' });
@@ -47,12 +47,13 @@ router.post('/', async (req, res) => {
 
     const mevcut = (parseInt(giren_miktar) || 0) - (parseInt(cikan_miktar) || 0);
     const envanter_degeri = mevcut * (parseFloat(satis_fiyati) || 0);
+    const resimlerStr = Array.isArray(resimler) ? JSON.stringify(resimler) : (resimler || null);
 
     const result = await pool.query(
-      `INSERT INTO aksesuar_stok (stok_kodu, stok_adi, giren_miktar, cikan_miktar, mevcut, birimi, alis_fiyati, satis_fiyati, envanter_degeri, resim)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `INSERT INTO aksesuar_stok (stok_kodu, stok_adi, giren_miktar, cikan_miktar, mevcut, birimi, alis_fiyati, satis_fiyati, envanter_degeri, resim, resimler, aciklama)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
-      [stok_kodu, stok_adi, parseInt(giren_miktar) || 0, parseInt(cikan_miktar) || 0, mevcut, birimi || 'Adet', parseFloat(alis_fiyati) || 0, parseFloat(satis_fiyati) || 0, envanter_degeri, resim || null]
+      [stok_kodu, stok_adi, parseInt(giren_miktar) || 0, parseInt(cikan_miktar) || 0, mevcut, birimi || 'Adet', parseFloat(alis_fiyati) || 0, parseFloat(satis_fiyati) || 0, envanter_degeri, resim || null, resimlerStr, aciklama || null]
     );
 
     res.status(201).json(result.rows[0]);
@@ -69,19 +70,20 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { stok_kodu, stok_adi, giren_miktar, cikan_miktar, birimi, alis_fiyati, satis_fiyati, resim } = req.body;
+    const { stok_kodu, stok_adi, giren_miktar, cikan_miktar, birimi, alis_fiyati, satis_fiyati, resim, resimler, aciklama } = req.body;
 
     const mevcut = (parseInt(giren_miktar) || 0) - (parseInt(cikan_miktar) || 0);
     const envanter_degeri = mevcut * (parseFloat(satis_fiyati) || 0);
+    const resimlerStr = Array.isArray(resimler) ? JSON.stringify(resimler) : (resimler || null);
 
     const result = await pool.query(
       `UPDATE aksesuar_stok 
        SET stok_kodu = $1, stok_adi = $2, giren_miktar = $3, cikan_miktar = $4, 
            mevcut = $5, birimi = $6, alis_fiyati = $7, satis_fiyati = $8, 
-           envanter_degeri = $9, resim = $10, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $11
+           envanter_degeri = $9, resim = $10, resimler = $11, aciklama = $12, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $13
        RETURNING *`,
-      [stok_kodu, stok_adi, parseInt(giren_miktar) || 0, parseInt(cikan_miktar) || 0, mevcut, birimi || 'Adet', parseFloat(alis_fiyati) || 0, parseFloat(satis_fiyati) || 0, envanter_degeri, resim || null, id]
+      [stok_kodu, stok_adi, parseInt(giren_miktar) || 0, parseInt(cikan_miktar) || 0, mevcut, birimi || 'Adet', parseFloat(alis_fiyati) || 0, parseFloat(satis_fiyati) || 0, envanter_degeri, resim || null, resimlerStr, aciklama || null, id]
     );
 
     if (result.rows.length === 0) {

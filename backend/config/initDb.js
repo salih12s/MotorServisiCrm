@@ -458,6 +458,8 @@ const initDatabase = async () => {
         satis_fiyati DECIMAL(10, 2) DEFAULT 0,
         envanter_degeri DECIMAL(12, 2) DEFAULT 0,
         resim TEXT,
+        resimler TEXT,
+        aciklama TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -471,9 +473,15 @@ const initDatabase = async () => {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='aksesuar_stok' AND column_name='resim') THEN
           ALTER TABLE aksesuar_stok ADD COLUMN resim TEXT;
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='aksesuar_stok' AND column_name='resimler') THEN
+          ALTER TABLE aksesuar_stok ADD COLUMN resimler TEXT;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='aksesuar_stok' AND column_name='aciklama') THEN
+          ALTER TABLE aksesuar_stok ADD COLUMN aciklama TEXT;
+        END IF;
       END $$;
     `);
-    console.log('✓ Aksesuar Stok tablosuna resim sütunu eklendi');
+    console.log('✓ Aksesuar Stok tablosuna resim/resimler/aciklama sütunları eklendi');
 
 
     // Varsayılan admin kullanıcısı oluştur

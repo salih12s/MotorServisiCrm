@@ -38,7 +38,8 @@ const corsOptions = {
 
 // Middleware
 app.use(cors(corsOptions));
-app.use(express.json({ limit: '5mb' }));
+// Çoklu ürün fotoğrafları sıkıştırılmış base64 olarak gönderildiği için makul bir üst sınır tanı.
+app.use(express.json({ limit: '20mb' }));
 
 // JWT Middleware (korumalı rotalar için)
 const jwt = require('jsonwebtoken');
@@ -67,7 +68,7 @@ app.use('/api/auth', authRoutes);
 app.get('/api/public/aksesuarlar', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT id, stok_kodu, stok_adi, satis_fiyati, mevcut, birimi, resim
+      `SELECT id, stok_kodu, stok_adi, satis_fiyati, mevcut, birimi, resim, resimler, aciklama
        FROM aksesuar_stok
        ORDER BY stok_adi ASC`
     );

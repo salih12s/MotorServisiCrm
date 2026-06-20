@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useCustomTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -24,6 +24,7 @@ import {
   Paper,
   Avatar,
   Chip,
+  Tooltip,
   useMediaQuery,
   useTheme,
   Alert,
@@ -39,8 +40,328 @@ import {
   Save as SaveIcon,
   PhotoCamera as PhotoCameraIcon,
   Image as ImageIcon,
+  Star as StarIcon,
+  StarBorder as StarBorderIcon,
+  InfoOutlined as InfoOutlinedIcon,
 } from '@mui/icons-material';
 import { aksesuarStokService } from '../../services/api';
+
+const compressImage = (file, maxSize = 600, quality = 0.72) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > height && width > maxSize) {
+          height = Math.round((height * maxSize) / width);
+          width = maxSize;
+        } else if (height >= width && height > maxSize) {
+          width = Math.round((width * maxSize) / height);
+          height = maxSize;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = ev.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+const ProductPhotoPicker = React.memo(function ProductPhotoPicker({
+  images,
+  mainImage,
+  processing,
+  primaryColor,
+  onImageChange,
+  onRemove,
+  onSetMain,
+}) {
+  return (
+    <Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+        <Typography variant="subtitle2" fontWeight={700}>Ürün Fotoğrafları</Typography>
+        <Tooltip
+          title="Birden fazla fotoğraf ekleyebilirsiniz. Yıldıza basarak bir fotoğrafı vitrin (ana) fotoğrafı olarak seçin; ürün kartında sadece o fotoğraf görünür."
+          arrow
+        >
+          <InfoOutlinedIcon sx={{ fontSize: 16, color: 'text.secondary', cursor: 'help' }} />
+        </Tooltip>
+      </Box>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+        {images.map((img, index) => {
+          const isMain = img === mainImage;
+          return (
+            <Box
+              key={`${index}-${img.slice(-24)}`}
+              sx={{
+                width: 90,
+                height: 90,
+                borderRadius: 2,
+                border: '2px solid',
+                borderColor: isMain ? primaryColor : 'rgba(0,0,0,0.12)',
+                overflow: 'hidden',
+                position: 'relative',
+                flexShrink: 0,
+              }}
+            >
+              <Box
+                component="img"
+                src={img}
+                alt={`Ürün ${index + 1}`}
+                sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+              {isMain && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    bgcolor: primaryColor,
+                    color: '#fff',
+                    fontSize: '0.55rem',
+                    fontWeight: 700,
+                    textAlign: 'center',
+                    py: 0.2,
+                    letterSpacing: 0.3,
+                  }}
+                >
+                  VİTRİN
+                </Box>
+              )}
+              <Tooltip title={isMain ? 'Vitrin fotoğrafı' : 'Vitrin fotoğrafı yap'} arrow>
+                <IconButton
+                  size="small"
+                  aria-label={isMain ? 'Vitrin fotoğrafı' : 'Vitrin fotoğrafı yap'}
+                  onClick={() => onSetMain(index)}
+                  sx={{
+                    position: 'absolute',
+                    top: 1,
+                    left: 1,
+                    p: 0.2,
+                    bgcolor: 'rgba(0,0,0,0.45)',
+                    '&:hover': { bgcolor: 'rgba(0,0,0,0.65)' },
+                  }}
+                >
+                  {isMain
+                    ? <StarIcon sx={{ fontSize: 16, color: '#ffd54f' }} />
+                    : <StarBorderIcon sx={{ fontSize: 16, color: '#fff' }} />}
+                </IconButton>
+              </Tooltip>
+              <IconButton
+                size="small"
+                aria-label="Fotoğrafı kaldır"
+                onClick={() => onRemove(index)}
+                sx={{
+                  position: 'absolute',
+                  top: 1,
+                  right: 1,
+                  p: 0.2,
+                  bgcolor: 'rgba(0,0,0,0.45)',
+                  '&:hover': { bgcolor: 'rgba(211,47,47,0.85)' },
+                }}
+              >
+                <CloseIcon sx={{ fontSize: 14, color: '#fff' }} />
+              </IconButton>
+            </Box>
+          );
+        })}
+        <Tooltip title="Fotoğraf ekle (birden fazla seçebilirsiniz)" arrow>
+          <Box
+            component="label"
+            htmlFor="aksesuar-resim-input"
+            sx={{
+              width: 90,
+              height: 90,
+              borderRadius: 2,
+              border: '2px dashed',
+              borderColor: 'rgba(0,0,0,0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: processing ? 'wait' : 'pointer',
+              bgcolor: 'rgba(0,0,0,0.02)',
+              flexShrink: 0,
+              '&:hover': { borderColor: primaryColor },
+            }}
+          >
+            <Box sx={{ textAlign: 'center', color: 'text.secondary' }}>
+              {processing ? <CircularProgress size={20} /> : <PhotoCameraIcon fontSize="small" />}
+              <Typography variant="caption" display="block" sx={{ fontSize: '0.6rem', lineHeight: 1.1, mt: 0.3 }}>
+                {processing ? 'Hazırlanıyor' : 'Fotoğraf Ekle'}
+              </Typography>
+            </Box>
+          </Box>
+        </Tooltip>
+        <input
+          id="aksesuar-resim-input"
+          type="file"
+          accept="image/*"
+          multiple
+          disabled={processing}
+          hidden
+          onChange={onImageChange}
+        />
+      </Box>
+    </Box>
+  );
+});
+
+const formatCurrency = (value) => new Intl.NumberFormat('tr-TR', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+}).format(value || 0);
+
+const StockResults = React.memo(function StockResults({
+  loading,
+  stocks,
+  isMobile,
+  isAdmin,
+  primaryColor,
+  totalInventory,
+  onEdit,
+  onDelete,
+}) {
+  if (loading) {
+    return (
+      <Card><CardContent><Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+        <CircularProgress sx={{ color: primaryColor }} />
+      </Box></CardContent></Card>
+    );
+  }
+
+  if (stocks.length === 0) {
+    return (
+      <Card><CardContent><Box sx={{ textAlign: 'center', py: 4 }}>
+        <Typography color="text.secondary">Stok kaydı bulunamadı</Typography>
+      </Box></CardContent></Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardContent sx={{ p: 0 }}>
+        {isMobile ? (
+          <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            {stocks.map((stok) => (
+              <Paper key={stok.id} variant="outlined" sx={{ p: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                  <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                    <Avatar
+                      variant="rounded"
+                      src={stok.resim || undefined}
+                      sx={{ width: 48, height: 48, bgcolor: 'rgba(0,0,0,0.06)' }}
+                    >
+                      <ImageIcon sx={{ color: 'rgba(0,0,0,0.3)' }} />
+                    </Avatar>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">{stok.stok_kodu}</Typography>
+                      <Typography variant="subtitle2" fontWeight={600}>{stok.stok_adi}</Typography>
+                    </Box>
+                  </Box>
+                  <Box>
+                    <IconButton size="small" onClick={() => onEdit(stok)} aria-label="Stok düzenle">
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                    {isAdmin && (
+                      <IconButton size="small" color="error" onClick={() => onDelete(stok.id)} aria-label="Stok sil">
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    )}
+                  </Box>
+                </Box>
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                  <Box><Typography variant="caption" color="text.secondary">Giren</Typography><Typography variant="body2">{stok.giren_miktar}</Typography></Box>
+                  <Box><Typography variant="caption" color="text.secondary">Çıkan</Typography><Typography variant="body2">{stok.cikan_miktar}</Typography></Box>
+                  <Box><Typography variant="caption" color="text.secondary">Mevcut</Typography><Typography variant="body2" fontWeight={600}>{stok.mevcut} {stok.birimi}</Typography></Box>
+                  <Box><Typography variant="caption" color="text.secondary">Alış</Typography><Typography variant="body2">₺{formatCurrency(stok.alis_fiyati)}</Typography></Box>
+                  <Box><Typography variant="caption" color="text.secondary">Satış</Typography><Typography variant="body2">₺{formatCurrency(stok.satis_fiyati)}</Typography></Box>
+                </Box>
+                <Box sx={{ mt: 1, textAlign: 'right' }}>
+                  <Typography variant="body2" fontWeight={700} sx={{ color: primaryColor }}>
+                    Envanter: ₺{formatCurrency(stok.envanter_degeri)}
+                  </Typography>
+                </Box>
+              </Paper>
+            ))}
+          </Box>
+        ) : (
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow sx={{ bgcolor: `${primaryColor}15` }}>
+                  <TableCell sx={{ fontWeight: 700 }}>Resim</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Stok Kodu</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Stok Adı</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700 }}>Giren Miktar</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700 }}>Çıkan Miktar</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700 }}>Mevcut</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700 }}>Alış Fiyatı</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700 }}>Fiyat A</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700 }}>Envanter Değeri</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700 }}>İşlemler</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {stocks.map((stok) => (
+                  <TableRow key={stok.id} hover>
+                    <TableCell>
+                      <Avatar variant="rounded" src={stok.resim || undefined} sx={{ width: 40, height: 40, bgcolor: 'rgba(0,0,0,0.06)' }}>
+                        <ImageIcon fontSize="small" sx={{ color: 'rgba(0,0,0,0.3)' }} />
+                      </Avatar>
+                    </TableCell>
+                    <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{stok.stok_kodu}</TableCell>
+                    <TableCell>{stok.stok_adi}</TableCell>
+                    <TableCell align="center">{stok.giren_miktar}</TableCell>
+                    <TableCell align="center">{stok.cikan_miktar}</TableCell>
+                    <TableCell align="center">
+                      <Chip
+                        label={`${stok.mevcut} ${stok.birimi}`}
+                        size="small"
+                        sx={{
+                          fontWeight: 700,
+                          bgcolor: stok.mevcut > 0 ? '#e8f5e9' : '#ffebee',
+                          color: stok.mevcut > 0 ? '#2e7d32' : '#c62828',
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell align="right">₺{formatCurrency(stok.alis_fiyati)}</TableCell>
+                    <TableCell align="right">₺{formatCurrency(stok.satis_fiyati)}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600 }}>₺{formatCurrency(stok.envanter_degeri)}</TableCell>
+                    <TableCell align="center">
+                      <IconButton size="small" onClick={() => onEdit(stok)} sx={{ color: primaryColor }} aria-label="Stok düzenle">
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                      {isAdmin && (
+                        <IconButton size="small" color="error" onClick={() => onDelete(stok.id)} aria-label="Stok sil">
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                <TableRow sx={{ bgcolor: '#f5f5f5' }}>
+                  <TableCell colSpan={8} align="right" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>Toplam Envanter Tutarı:</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.95rem', color: primaryColor }}>₺{formatCurrency(totalInventory)}</TableCell>
+                  <TableCell />
+                </TableRow>
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </CardContent>
+    </Card>
+  );
+});
 
 function AksesuarStok() {
   const [stoklar, setStoklar] = useState([]);
@@ -49,6 +370,7 @@ function AksesuarStok() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingStok, setEditingStok] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [processingImages, setProcessingImages] = useState(false);
   const [error, setError] = useState('');
 
   const theme = useTheme();
@@ -66,6 +388,8 @@ function AksesuarStok() {
     alis_fiyati: 0,
     satis_fiyati: 0,
     resim: '',
+    resimler: [],
+    aciklama: '',
   });
 
   const loadStoklar = useCallback(async () => {
@@ -84,8 +408,27 @@ function AksesuarStok() {
     loadStoklar();
   }, [loadStoklar]);
 
-  const handleOpenDialog = (stok = null) => {
+  const handleOpenDialog = useCallback((stok = null) => {
     if (stok) {
+      // resimler kolonu JSON dizi olarak saklanır; eski kayıtlarda sadece resim olabilir
+      let resimlerArr = [];
+      if (stok.resimler) {
+        if (Array.isArray(stok.resimler)) {
+          resimlerArr = stok.resimler.filter(Boolean);
+        } else {
+          try {
+            const parsed = JSON.parse(stok.resimler);
+            if (Array.isArray(parsed)) resimlerArr = parsed.filter(Boolean);
+          } catch {
+            resimlerArr = [];
+          }
+        }
+      }
+      resimlerArr = [...new Set(resimlerArr)];
+      if (stok.resim) {
+        resimlerArr = [stok.resim, ...resimlerArr.filter((img) => img !== stok.resim)];
+      }
+      const anaResim = stok.resim || resimlerArr[0] || '';
       setEditingStok(stok);
       setFormData({
         stok_kodu: stok.stok_kodu,
@@ -95,7 +438,9 @@ function AksesuarStok() {
         birimi: stok.birimi,
         alis_fiyati: stok.alis_fiyati,
         satis_fiyati: stok.satis_fiyati,
-        resim: stok.resim || '',
+        resim: anaResim,
+        resimler: resimlerArr,
+        aciklama: stok.aciklama || '',
       });
     } else {
       setEditingStok(null);
@@ -108,78 +453,71 @@ function AksesuarStok() {
         alis_fiyati: 0,
         satis_fiyati: 0,
         resim: '',
+        resimler: [],
+        aciklama: '',
       });
     }
     setError('');
     setDialogOpen(true);
-  };
+  }, []);
 
-  const handleCloseDialog = () => {
+  const handleCloseDialog = useCallback(() => {
     setDialogOpen(false);
     setEditingStok(null);
     setError('');
-  };
+  }, []);
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
+  const handleChange = useCallback((e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  }, []);
 
-  // Resmi tarayıcıda küçültüp sıkıştırır (DB'de minimum yer kaplaması için)
-  const compressImage = (file, maxSize = 600, quality = 0.72) =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const img = new Image();
-        img.onload = () => {
-          let { width, height } = img;
-          if (width > height && width > maxSize) {
-            height = Math.round((height * maxSize) / width);
-            width = maxSize;
-          } else if (height >= width && height > maxSize) {
-            width = Math.round((width * maxSize) / height);
-            height = maxSize;
-          }
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          // Şeffaf PNG'ler için beyaz arka plan
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(0, 0, width, height);
-          ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL('image/jpeg', quality));
-        };
-        img.onerror = reject;
-        img.src = ev.target.result;
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-
-  const handleImageChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
+  const handleImageChange = useCallback(async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    const imageFiles = files.filter((f) => f.type.startsWith('image/'));
+    if (imageFiles.length === 0) {
       setError('Lütfen geçerli bir resim dosyası seçin');
       e.target.value = '';
       return;
     }
+    setProcessingImages(true);
     try {
-      const compressed = await compressImage(file);
-      setFormData((prev) => ({ ...prev, resim: compressed }));
+      const compressedList = await Promise.all(imageFiles.map((f) => compressImage(f)));
+      setFormData((prev) => {
+        const yeniResimler = [...(prev.resimler || []), ...compressedList];
+        return {
+          ...prev,
+          resimler: yeniResimler,
+          // Ana fotoğraf henüz seçilmemişse ilk eklenen ana olur
+          resim: prev.resim || yeniResimler[0] || '',
+        };
+      });
       setError('');
     } catch (err) {
       setError('Resim işlenirken bir hata oluştu');
+    } finally {
+      setProcessingImages(false);
     }
     e.target.value = '';
-  };
+  }, []);
 
-  const handleRemoveImage = () => {
-    setFormData((prev) => ({ ...prev, resim: '' }));
-  };
+  const handleRemoveImage = useCallback((index) => {
+    setFormData((prev) => {
+      const silinen = prev.resimler[index];
+      const yeniResimler = prev.resimler.filter((_, i) => i !== index);
+      let yeniAna = prev.resim;
+      // Ana fotoğraf silindiyse ilk kalan fotoğraf ana olur
+      if (silinen === prev.resim) {
+        yeniAna = yeniResimler[0] || '';
+      }
+      return { ...prev, resimler: yeniResimler, resim: yeniAna };
+    });
+  }, []);
+
+  const handleSetMainImage = useCallback((index) => {
+    setFormData((prev) => ({ ...prev, resim: prev.resimler[index] }));
+  }, []);
 
   const handleSave = async () => {
     if (!formData.stok_kodu || !formData.stok_adi) {
@@ -189,10 +527,14 @@ function AksesuarStok() {
     setSaving(true);
     setError('');
     try {
+      const payload = {
+        ...formData,
+        resim: formData.resim || formData.resimler?.[0] || '',
+      };
       if (editingStok) {
-        await aksesuarStokService.update(editingStok.id, formData);
+        await aksesuarStokService.update(editingStok.id, payload);
       } else {
-        await aksesuarStokService.create(formData);
+        await aksesuarStokService.create(payload);
       }
       handleCloseDialog();
       loadStoklar();
@@ -203,7 +545,7 @@ function AksesuarStok() {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = useCallback(async (id) => {
     if (window.confirm('Bu stok kaydını silmek istediğinizden emin misiniz?')) {
       try {
         await aksesuarStokService.delete(id);
@@ -212,23 +554,19 @@ function AksesuarStok() {
         console.error('Silme hatası:', error);
       }
     }
-  };
-
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat('tr-TR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value || 0);
-  };
+  }, [loadStoklar]);
 
   // Filtreleme
-  const filteredStoklar = stoklar.filter((s) =>
+  const filteredStoklar = useMemo(() => stoklar.filter((s) =>
     s.stok_kodu?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     s.stok_adi?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ), [stoklar, searchQuery]);
 
   // Toplam envanter değeri
-  const toplamEnvanter = stoklar.reduce((sum, s) => sum + parseFloat(s.envanter_degeri || 0), 0);
+  const toplamEnvanter = useMemo(
+    () => stoklar.reduce((sum, s) => sum + parseFloat(s.envanter_degeri || 0), 0),
+    [stoklar]
+  );
 
   return (
     <Box>
@@ -283,155 +621,16 @@ function AksesuarStok() {
         </CardContent>
       </Card>
 
-      {/* Tablo */}
-      <Card>
-        <CardContent sx={{ p: 0 }}>
-          {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-              <CircularProgress sx={{ color: themeColors.primary }} />
-            </Box>
-          ) : filteredStoklar.length === 0 ? (
-            <Box sx={{ textAlign: 'center', py: 4 }}>
-              <Typography color="text.secondary">Stok kaydı bulunamadı</Typography>
-            </Box>
-          ) : isMobile ? (
-            // Mobile Card View
-            <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              {filteredStoklar.map((stok) => (
-                <Paper key={stok.id} variant="outlined" sx={{ p: 2 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                    <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-                      <Avatar
-                        variant="rounded"
-                        src={stok.resim || undefined}
-                        sx={{ width: 48, height: 48, bgcolor: 'rgba(0,0,0,0.06)' }}
-                      >
-                        <ImageIcon sx={{ color: 'rgba(0,0,0,0.3)' }} />
-                      </Avatar>
-                      <Box>
-                        <Typography variant="caption" color="text.secondary">{stok.stok_kodu}</Typography>
-                        <Typography variant="subtitle2" fontWeight={600}>{stok.stok_adi}</Typography>
-                      </Box>
-                    </Box>
-                    <Box>
-                      <IconButton size="small" onClick={() => handleOpenDialog(stok)}>
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      {isAdmin && (
-                        <IconButton size="small" color="error" onClick={() => handleDelete(stok.id)}>
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      )}
-                    </Box>
-                  </Box>
-                  <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">Giren</Typography>
-                      <Typography variant="body2">{stok.giren_miktar}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">Çıkan</Typography>
-                      <Typography variant="body2">{stok.cikan_miktar}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">Mevcut</Typography>
-                      <Typography variant="body2" fontWeight={600}>{stok.mevcut} {stok.birimi}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">Alış</Typography>
-                      <Typography variant="body2">₺{formatCurrency(stok.alis_fiyati)}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">Satış</Typography>
-                      <Typography variant="body2">₺{formatCurrency(stok.satis_fiyati)}</Typography>
-                    </Box>
-                  </Box>
-                  <Box sx={{ mt: 1, textAlign: 'right' }}>
-                    <Typography variant="body2" fontWeight={700} sx={{ color: themeColors.primary }}>
-                      Envanter: ₺{formatCurrency(stok.envanter_degeri)}
-                    </Typography>
-                  </Box>
-                </Paper>
-              ))}
-            </Box>
-          ) : (
-            // Desktop Table View
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow sx={{ bgcolor: `${themeColors.primary}15` }}>
-                    <TableCell sx={{ fontWeight: 700 }}>Resim</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Stok Kodu</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Stok Adı</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 700 }}>Giren Miktar</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 700 }}>Çıkan Miktar</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 700 }}>Mevcut</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700 }}>Alış Fiyatı</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700 }}>Fiyat A</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700 }}>Envanter Değeri</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 700 }}>İşlemler</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredStoklar.map((stok) => (
-                    <TableRow key={stok.id} hover>
-                      <TableCell>
-                        <Avatar
-                          variant="rounded"
-                          src={stok.resim || undefined}
-                          sx={{ width: 40, height: 40, bgcolor: 'rgba(0,0,0,0.06)' }}
-                        >
-                          <ImageIcon fontSize="small" sx={{ color: 'rgba(0,0,0,0.3)' }} />
-                        </Avatar>
-                      </TableCell>
-                      <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{stok.stok_kodu}</TableCell>
-                      <TableCell>{stok.stok_adi}</TableCell>
-                      <TableCell align="center">{stok.giren_miktar}</TableCell>
-                      <TableCell align="center">{stok.cikan_miktar}</TableCell>
-                      <TableCell align="center">
-                        <Chip
-                          label={`${stok.mevcut} ${stok.birimi}`}
-                          size="small"
-                          sx={{
-                            fontWeight: 700,
-                            bgcolor: stok.mevcut > 0 ? '#e8f5e9' : '#ffebee',
-                            color: stok.mevcut > 0 ? '#2e7d32' : '#c62828',
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell align="right">₺{formatCurrency(stok.alis_fiyati)}</TableCell>
-                      <TableCell align="right">₺{formatCurrency(stok.satis_fiyati)}</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 600 }}>
-                        ₺{formatCurrency(stok.envanter_degeri)}
-                      </TableCell>
-                      <TableCell align="center">
-                        <IconButton size="small" onClick={() => handleOpenDialog(stok)} sx={{ color: themeColors.primary }}>
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                        {isAdmin && (
-                          <IconButton size="small" color="error" onClick={() => handleDelete(stok.id)}>
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {/* Toplam Satırı */}
-                  <TableRow sx={{ bgcolor: '#f5f5f5' }}>
-                    <TableCell colSpan={8} align="right" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
-                      Toplam Envanter Tutarı:
-                    </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.95rem', color: themeColors.primary }}>
-                      ₺{formatCurrency(toplamEnvanter)}
-                    </TableCell>
-                    <TableCell />
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </CardContent>
-      </Card>
+      <StockResults
+        loading={loading}
+        stocks={filteredStoklar}
+        isMobile={isMobile}
+        isAdmin={isAdmin}
+        primaryColor={themeColors.primary}
+        totalInventory={toplamEnvanter}
+        onEdit={handleOpenDialog}
+        onDelete={handleDelete}
+      />
 
       {/* Ekleme/Düzenleme Dialog */}
       <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
@@ -453,84 +652,35 @@ function AksesuarStok() {
         <DialogContent sx={{ pt: 3 }}>
           {error && <Alert severity="error" sx={{ mb: 2, mt: 1 }}>{error}</Alert>}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
-              {/* Ürün Resmi */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-                <Box
-                  component="label"
-                  htmlFor="aksesuar-resim-input"
-                  sx={{
-                    width: 90,
-                    height: 90,
-                    borderRadius: 2,
-                    border: '2px dashed',
-                    borderColor: formData.resim ? themeColors.primary : 'rgba(0,0,0,0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    overflow: 'hidden',
-                    position: 'relative',
-                    bgcolor: 'rgba(0,0,0,0.02)',
-                    flexShrink: 0,
-                    '&:hover': { borderColor: themeColors.primary },
-                  }}
-                >
-                  {formData.resim ? (
-                    <Box
-                      component="img"
-                      src={formData.resim}
-                      alt="Ürün"
-                      sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  ) : (
-                    <Box sx={{ textAlign: 'center', color: 'text.secondary' }}>
-                      <PhotoCameraIcon fontSize="small" />
-                      <Typography variant="caption" display="block" sx={{ fontSize: '0.6rem', lineHeight: 1.1, mt: 0.3 }}>
-                        Resim Ekle
-                      </Typography>
-                    </Box>
-                  )}
-                </Box>
-                <input
-                  id="aksesuar-resim-input"
-                  type="file"
-                  accept="image/*"
-                  hidden
-                  onChange={handleImageChange}
-                />
-                {formData.resim && (
-                  <Button
-                    size="small"
-                    color="error"
-                    onClick={handleRemoveImage}
-                    sx={{ fontSize: '0.65rem', minWidth: 0, p: 0.3 }}
-                  >
-                    Kaldır
-                  </Button>
-                )}
-              </Box>
-              {/* Stok Kodu + Birimi */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="Stok Kodu"
-                  name="stok_kodu"
-                  value={formData.stok_kodu}
-                  onChange={handleChange}
-                  required
-                  placeholder="869000000XXXX"
-                />
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="Birimi"
-                  name="birimi"
-                  value={formData.birimi}
-                  onChange={handleChange}
-                />
-              </Box>
+            <ProductPhotoPicker
+              images={formData.resimler}
+              mainImage={formData.resim}
+              processing={processingImages}
+              primaryColor={themeColors.primary}
+              onImageChange={handleImageChange}
+              onRemove={handleRemoveImage}
+              onSetMain={handleSetMainImage}
+            />
+            {/* Stok Kodu + Birimi */}
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Stok Kodu"
+                name="stok_kodu"
+                value={formData.stok_kodu}
+                onChange={handleChange}
+                required
+                placeholder="869000000XXXX"
+              />
+              <TextField
+                fullWidth
+                size="small"
+                label="Birimi"
+                name="birimi"
+                value={formData.birimi}
+                onChange={handleChange}
+              />
             </Box>
             <TextField
               fullWidth
@@ -540,6 +690,19 @@ function AksesuarStok() {
               value={formData.stok_adi}
               onChange={handleChange}
               required
+            />
+            <TextField
+              fullWidth
+              size="small"
+              label="Ürün Açıklaması (opsiyonel)"
+              name="aciklama"
+              value={formData.aciklama}
+              onChange={handleChange}
+              multiline
+              minRows={2}
+              maxRows={6}
+              placeholder="Ürünle ilgili kısa açıklama, özellikler vb. (zorunlu değil)"
+              helperText="Açıklama varsa ürün kartında stok bilgisinin altında kısaca, detayda ise tamamı görünür."
             />
             <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField
@@ -610,12 +773,12 @@ function AksesuarStok() {
           <Button onClick={handleCloseDialog} color="inherit">İptal</Button>
           <Button
             variant="contained"
-            startIcon={saving ? <CircularProgress size={16} /> : <SaveIcon />}
+            startIcon={(saving || processingImages) ? <CircularProgress size={16} /> : <SaveIcon />}
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || processingImages}
             sx={{ bgcolor: themeColors.primary, '&:hover': { bgcolor: themeColors.primaryDark } }}
           >
-            {saving ? 'Kaydediliyor...' : 'Kaydet'}
+            {processingImages ? 'Fotoğraflar hazırlanıyor...' : saving ? 'Kaydediliyor...' : 'Kaydet'}
           </Button>
         </DialogActions>
       </Dialog>

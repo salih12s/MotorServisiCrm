@@ -11,6 +11,8 @@ import {
   CircularProgress,
   Dialog,
   IconButton,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -30,20 +32,52 @@ function formatCurrency(value) {
   }).format(value || 0);
 }
 
-function AksesuarCard({ urun, onImageClick }) {
+// Ürünün tüm fotoğraflarını dizi olarak döndürür (ana fotoğraf ilk sırada)
+export function getResimler(urun) {
+  let list = [];
+  if (urun.resimler) {
+    if (Array.isArray(urun.resimler)) {
+      list = urun.resimler.filter(Boolean);
+    } else {
+      try {
+        const parsed = JSON.parse(urun.resimler);
+        if (Array.isArray(parsed)) list = parsed.filter(Boolean);
+      } catch {
+        list = [];
+      }
+    }
+  }
+  list = [...new Set(list.filter(Boolean))];
+  // Ana fotoğraf eski/uyumsuz kayıtlarda galeride olmasa bile ilk sırada gösterilir.
+  if (urun.resim) list = [urun.resim, ...list.filter((r) => r !== urun.resim)];
+  return list;
+}
+
+export function AksesuarCard({ urun, onClick }) {
   const stokVar = (urun.mevcut || 0) > 0;
+  const resimler = getResimler(urun);
   return (
     <Card
       elevation={0}
+      onClick={() => onClick(urun)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onClick(urun);
+        }
+      }}
       sx={{
         width: '100%',
-        height: '100%',
+        height: { xs: 390, sm: 450, md: 470 },
         display: 'flex',
         flexDirection: 'column',
         borderRadius: 3,
         border: '1px solid rgba(54,197,211,0.15)',
         background: 'rgba(255,255,255,0.03)',
         overflow: 'hidden',
+        cursor: 'pointer',
         transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
         '&:hover': {
           transform: 'translateY(-4px)',
@@ -52,9 +86,8 @@ function AksesuarCard({ urun, onImageClick }) {
         },
       }}
     >
-      {/* Resim - tüm kartlarda sabit yükseklik */}
+      {/* Resim - tüm kartlarda sabit yükseklik (yalnızca ana/vitrin fotoğrafı) */}
       <Box
-        onClick={urun.resim ? () => onImageClick(urun.resim) : undefined}
         sx={{
           position: 'relative',
           width: '100%',
@@ -65,7 +98,6 @@ function AksesuarCard({ urun, onImageClick }) {
           alignItems: 'center',
           justifyContent: 'center',
           borderBottom: '1px solid rgba(54,197,211,0.1)',
-          cursor: urun.resim ? 'zoom-in' : 'default',
         }}
       >
         {urun.resim ? (
@@ -79,10 +111,29 @@ function AksesuarCard({ urun, onImageClick }) {
         ) : (
           <ImageIcon sx={{ fontSize: 64, color: 'rgba(54,197,211,0.25)' }} />
         )}
+        {/* Birden fazla fotoğraf rozeti */}
+        {resimler.length > 1 && (
+          <Chip
+            size="small"
+            icon={<ImageIcon sx={{ fontSize: '0.85rem !important', color: '#fff !important' }} />}
+            label={resimler.length}
+            sx={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              height: 24,
+              fontWeight: 700,
+              fontSize: '0.7rem',
+              color: '#fff',
+              bgcolor: 'rgba(0,0,0,0.55)',
+              '& .MuiChip-label': { px: 0.75 },
+            }}
+          />
+        )}
       </Box>
 
       {/* Bilgi */}
-      <Box sx={{ p: { xs: 1.75, sm: 2.25 }, display: 'flex', flexDirection: 'column', flex: 1, gap: 1.25 }}>
+      <Box sx={{ p: { xs: 1.75, sm: 2.25 }, display: 'flex', flexDirection: 'column', flex: 1, gap: 1 }}>
         <Typography
           sx={{
             fontWeight: 600,
@@ -128,8 +179,211 @@ function AksesuarCard({ urun, onImageClick }) {
             '& .MuiChip-icon': { color: stokVar ? '#fff' : 'rgba(255,255,255,0.4)' },
           }}
         />
+
+        {/* Açıklama - varsa stok bilgisinin altında kısaca */}
+        <Box sx={{ minHeight: { xs: '2rem', sm: '2.2rem' } }}>
+          {urun.aciklama && (
+            <Typography
+              sx={{
+                fontSize: { xs: '0.72rem', sm: '0.78rem' },
+                color: 'rgba(255,255,255,0.55)',
+                lineHeight: 1.4,
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}
+            >
+              {urun.aciklama}
+            </Typography>
+          )}
+        </Box>
       </Box>
     </Card>
+  );
+}
+
+// Ürün detay penceresi - galeri (büyük ana foto + seçilebilir küçük fotoğraflar) + tam açıklama
+export function AksesuarDetayDialog({ urun, open, onClose }) {
+  const [aktifResim, setAktifResim] = useState(0);
+
+  useEffect(() => {
+    setAktifResim(0);
+  }, [urun]);
+
+  if (!urun) return null;
+
+  const resimler = getResimler(urun);
+  const stokVar = (urun.mevcut || 0) > 0;
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      slotProps={{
+        backdrop: { sx: { backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(4px)' } },
+      }}
+      PaperProps={{
+        sx: {
+          background: 'linear-gradient(180deg, #0a1622 0%, #02080f 100%)',
+          border: '1px solid rgba(54,197,211,0.25)',
+          borderRadius: 3,
+          color: '#fff',
+          m: { xs: 1.5, sm: 2 },
+          overflowX: 'hidden',
+        },
+      }}
+    >
+      <Box sx={{ position: 'relative', p: { xs: 2, sm: 3 }, minWidth: 0, overflowX: 'hidden' }}>
+        <IconButton
+          onClick={onClose}
+          aria-label="Kapat"
+          sx={{
+            position: 'absolute',
+            top: 10,
+            right: 10,
+            zIndex: 2,
+            bgcolor: 'rgba(4,167,184,0.9)',
+            color: '#fff',
+            '&:hover': { bgcolor: '#36C5D3' },
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
+
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={{ xs: 2, md: 3 }}>
+          {/* Galeri */}
+          <Box sx={{ width: { xs: '100%', md: '52%' }, flexShrink: 0 }}>
+            {/* Büyük ana fotoğraf */}
+            <Box
+              sx={{
+                width: '100%',
+                height: { xs: 240, sm: 320, md: 340 },
+                borderRadius: 2,
+                overflow: 'hidden',
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(54,197,211,0.18)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {resimler.length > 0 ? (
+                <Box
+                  component="img"
+                  src={resimler[aktifResim]}
+                  alt={urun.stok_adi}
+                  sx={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                />
+              ) : (
+                <ImageIcon sx={{ fontSize: 72, color: 'rgba(54,197,211,0.25)' }} />
+              )}
+            </Box>
+
+            {/* Seçilebilir küçük fotoğraflar */}
+            {resimler.length > 1 && (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1.5 }}>
+                {resimler.map((img, i) => (
+                  <Box
+                    key={i}
+                    onClick={() => setAktifResim(i)}
+                    sx={{
+                      width: 60,
+                      height: 60,
+                      borderRadius: 1.5,
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                      border: '2px solid',
+                      borderColor: i === aktifResim ? '#36C5D3' : 'rgba(255,255,255,0.12)',
+                      opacity: i === aktifResim ? 1 : 0.7,
+                      transition: 'all 0.15s ease',
+                      '&:hover': { opacity: 1, borderColor: 'rgba(54,197,211,0.6)' },
+                    }}
+                  >
+                    <Box
+                      component="img"
+                      src={img}
+                      alt={`${urun.stok_adi} ${i + 1}`}
+                      sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  </Box>
+                ))}
+              </Box>
+            )}
+          </Box>
+
+          {/* Bilgiler */}
+          <Box sx={{ flex: 1, minWidth: 0, pr: { xs: 0, sm: 4 } }}>
+            <Typography
+              sx={{
+                fontWeight: 800,
+                fontSize: { xs: '1.15rem', sm: '1.4rem' },
+                color: '#fff',
+                lineHeight: 1.3,
+                pr: 4,
+                overflowWrap: 'anywhere',
+                wordBreak: 'break-word',
+              }}
+            >
+              {urun.stok_adi}
+            </Typography>
+
+            <Typography
+              sx={{
+                mt: 1.5,
+                fontWeight: 900,
+                fontSize: { xs: '1.5rem', sm: '1.8rem' },
+                background: 'linear-gradient(135deg, #04A7B8 0%, #36C5D3 60%, #7be3ee 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}
+            >
+              ₺{formatCurrency(urun.satis_fiyati)}
+            </Typography>
+
+            <Chip
+              size="small"
+              icon={<Inventory2Icon sx={{ fontSize: '0.9rem !important' }} />}
+              label={stokVar ? `Stokta ${urun.mevcut} ${urun.birimi || 'Adet'}` : 'Stokta bitti'}
+              sx={{
+                mt: 1.5,
+                fontWeight: 700,
+                fontSize: '0.72rem',
+                height: 26,
+                color: stokVar ? '#fff' : 'rgba(255,255,255,0.55)',
+                bgcolor: stokVar ? 'rgba(4,167,184,0.9)' : 'rgba(255,255,255,0.08)',
+                border: stokVar ? 'none' : '1px solid rgba(255,255,255,0.12)',
+                '& .MuiChip-icon': { color: stokVar ? '#fff' : 'rgba(255,255,255,0.4)' },
+              }}
+            />
+
+            {urun.aciklama && (
+              <Box sx={{ mt: 2.5 }}>
+                <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#36C5D3', mb: 0.75 }}>
+                  Ürün Açıklaması
+                </Typography>
+                <Typography
+                  sx={{
+                    fontSize: '0.88rem',
+                    color: 'rgba(255,255,255,0.75)',
+                    lineHeight: 1.6,
+                    whiteSpace: 'pre-wrap',
+                    maxWidth: '100%',
+                    overflowWrap: 'anywhere',
+                    wordBreak: 'break-word',
+                  }}
+                >
+                  {urun.aciklama}
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        </Stack>
+      </Box>
+    </Dialog>
   );
 }
 
@@ -137,7 +391,8 @@ function AksesuarSatisPage() {
   const [urunler, setUrunler] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [zoomImage, setZoomImage] = useState(null);
+  const [stokFiltre, setStokFiltre] = useState('tumu'); // 'tumu' | 'stokta'
+  const [detayUrun, setDetayUrun] = useState(null);
 
   const loadUrunler = useCallback(async () => {
     try {
@@ -155,10 +410,13 @@ function AksesuarSatisPage() {
     loadUrunler();
   }, [loadUrunler]);
 
-  const filtered = urunler.filter((u) =>
-    u.stok_adi?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.stok_kodu?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filtered = urunler.filter((u) => {
+    const aramaOk =
+      u.stok_adi?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.stok_kodu?.toLowerCase().includes(searchTerm.toLowerCase());
+    const stokOk = stokFiltre === 'tumu' || (u.mevcut || 0) > 0;
+    return aramaOk && stokOk;
+  });
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#02080f', color: '#fff', overflowX: 'hidden' }}>
@@ -207,7 +465,7 @@ function AksesuarSatisPage() {
                   lineHeight: 1.1,
                 }}
               >
-                Aksesuarlar
+                Aksesuar ve Ekipman
               </Typography>
               <Typography
                 sx={{
@@ -217,7 +475,7 @@ function AksesuarSatisPage() {
                   fontWeight: 400,
                 }}
               >
-                Motosiklet aksesuar ve yedek parça ürünlerimiz
+                Motosiklet aksesuar, ekipman ve yedek parça ürünlerimiz
               </Typography>
             </Box>
           </Stack>
@@ -253,6 +511,36 @@ function AksesuarSatisPage() {
           }}
         />
 
+        <ToggleButtonGroup
+          value={stokFiltre}
+          exclusive
+          onChange={(_, value) => value && setStokFiltre(value)}
+          aria-label="Stok filtresi"
+          sx={{
+            mb: { xs: 3, md: 4 },
+            '& .MuiToggleButton-root': {
+              color: 'rgba(255,255,255,0.7)',
+              borderColor: 'rgba(54,197,211,0.3)',
+              px: { xs: 2.5, sm: 4 },
+              py: 0.9,
+              fontWeight: 700,
+              textTransform: 'none',
+              '&.Mui-selected': {
+                color: '#fff',
+                borderColor: 'transparent',
+                background: 'linear-gradient(135deg, #04A7B8 0%, #36C5D3 100%)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #36C5D3 0%, #04A7B8 100%)',
+                },
+              },
+              '&:hover': { background: 'rgba(54,197,211,0.1)' },
+            },
+          }}
+        >
+          <ToggleButton value="tumu">Tümü</ToggleButton>
+          <ToggleButton value="stokta">Stokta Var</ToggleButton>
+        </ToggleButtonGroup>
+
         {loading ? (
           <Box sx={{ py: 10, textAlign: 'center' }}>
             <CircularProgress sx={{ color: '#36C5D3' }} />
@@ -261,7 +549,11 @@ function AksesuarSatisPage() {
           <Box sx={{ py: 8, textAlign: 'center' }}>
             <ImageIcon sx={{ fontSize: 48, color: 'rgba(54,197,211,0.3)', mb: 2 }} />
             <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: '1rem' }}>
-              {searchTerm ? 'Aramanızla eşleşen ürün bulunamadı.' : 'Henüz ürün eklenmemiş.'}
+              {searchTerm
+                ? 'Aramanızla eşleşen ürün bulunamadı.'
+                : stokFiltre === 'stokta'
+                  ? 'Şu anda stokta ürün bulunmuyor.'
+                  : 'Henüz ürün eklenmemiş.'}
             </Typography>
           </Box>
         ) : (
@@ -279,62 +571,17 @@ function AksesuarSatisPage() {
             }}
           >
             {filtered.map((urun) => (
-              <AksesuarCard urun={urun} key={urun.id} onImageClick={setZoomImage} />
+              <AksesuarCard urun={urun} key={urun.id} onClick={setDetayUrun} />
             ))}
           </Box>
         )}
       </Container>
 
-      {/* Görsel büyütme modalı */}
-      <Dialog
-        open={Boolean(zoomImage)}
-        onClose={() => setZoomImage(null)}
-        maxWidth="md"
-        slotProps={{
-          backdrop: { sx: { backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(4px)' } },
-        }}
-        PaperProps={{
-          sx: {
-            background: 'transparent',
-            boxShadow: 'none',
-            overflow: 'visible',
-            m: 2,
-          },
-        }}
-      >
-        <Box sx={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
-          <IconButton
-            onClick={() => setZoomImage(null)}
-            aria-label="Kapat"
-            sx={{
-              position: 'absolute',
-              top: -16,
-              right: -16,
-              bgcolor: 'rgba(4,167,184,0.95)',
-              color: '#fff',
-              '&:hover': { bgcolor: '#36C5D3' },
-              boxShadow: '0 4px 14px rgba(0,0,0,0.5)',
-            }}
-          >
-            <CloseIcon />
-          </IconButton>
-          {zoomImage && (
-            <Box
-              component="img"
-              src={zoomImage}
-              alt="Ürün görseli"
-              sx={{
-                maxWidth: '100%',
-                maxHeight: '85vh',
-                borderRadius: 2,
-                border: '1px solid rgba(54,197,211,0.3)',
-                boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
-                objectFit: 'contain',
-              }}
-            />
-          )}
-        </Box>
-      </Dialog>
+      <AksesuarDetayDialog
+        urun={detayUrun}
+        open={Boolean(detayUrun)}
+        onClose={() => setDetayUrun(null)}
+      />
 
       <SiteFooter />
     </Box>

@@ -2,7 +2,6 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Button, Container, Typography, Stack } from '@mui/material';
 import {
-  ArrowDownward as ArrowDownwardIcon,
   ArrowForward as ArrowForwardIcon,
   PlayArrow as PlayArrowIcon,
 } from '@mui/icons-material';
@@ -261,7 +260,7 @@ function HeroSection() {
           <Button
             variant="outlined"
             size="large"
-            onClick={() => navigate('/fiyat-listesi')}
+            onClick={() => navigate('/aksesuarlar-satis')}
             sx={{
               color: '#36C5D3',
               borderColor: 'rgba(54,197,211,0.55)',
@@ -282,7 +281,7 @@ function HeroSection() {
               },
             }}
           >
-            Fiyat Listesi
+            Aksesuar ve Ekipman
           </Button>
         </Stack>
       </Container>
