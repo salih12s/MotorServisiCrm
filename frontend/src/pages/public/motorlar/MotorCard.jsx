@@ -71,6 +71,7 @@ function MotorCard({ motor, onClick }) {
             src={motor.coverImage || FALLBACK_IMAGE}
             alt={motor.name}
             loading="lazy"
+            decoding="async"
             onError={(e) => {
               e.currentTarget.src = FALLBACK_IMAGE;
             }}

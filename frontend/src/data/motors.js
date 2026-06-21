@@ -1,7 +1,10 @@
 // Musatti & Smarda 2026 Motor Kataloğu
 // Görsel yolu: /images/<filename>  (frontend/public/images/)
 
-const IMG = (n) => `/Images/${encodeURIComponent(n)}`;
+const IMG = (name) => {
+  const safeName = name.replace(/^Ekran görüntüsü 2026-04-29 (\d{6})\.png$/, 'motor-$1.png');
+  return `/Images/${encodeURIComponent(safeName)}`;
+};
 
 const motors = [
   // ============== MUSATTI - MOTOSİKLET ==============
