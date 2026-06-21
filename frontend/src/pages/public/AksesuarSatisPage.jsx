@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box,
   Container,
@@ -13,6 +13,7 @@ import {
   IconButton,
   ToggleButton,
   ToggleButtonGroup,
+  Pagination,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -23,7 +24,7 @@ import {
 } from '@mui/icons-material';
 import PublicNav from '../../components/PublicNav';
 import SiteFooter from '../../components/SiteFooter';
-import { aksesuarStokService } from '../../services/api';
+import { aksesuarStokService, getPublicAksesuarImageUrl } from '../../services/api';
 
 function formatCurrency(value) {
   return new Intl.NumberFormat('tr-TR', {
@@ -100,23 +101,24 @@ export function AksesuarCard({ urun, onClick }) {
           borderBottom: '1px solid rgba(54,197,211,0.1)',
         }}
       >
-        {urun.resim ? (
+        {(urun.resim || urun.resim_var) ? (
           <Box
             component="img"
-            src={urun.resim}
+            src={urun.resim || getPublicAksesuarImageUrl(urun.id)}
             alt={urun.stok_adi}
             loading="lazy"
+            decoding="async"
             sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
         ) : (
           <ImageIcon sx={{ fontSize: 64, color: 'rgba(54,197,211,0.25)' }} />
         )}
         {/* Birden fazla fotoğraf rozeti */}
-        {resimler.length > 1 && (
+        {(Number(urun.resim_sayisi) > 1 || resimler.length > 1) && (
           <Chip
             size="small"
             icon={<ImageIcon sx={{ fontSize: '0.85rem !important', color: '#fff !important' }} />}
-            label={resimler.length}
+            label={Number(urun.resim_sayisi) || resimler.length}
             sx={{
               position: 'absolute',
               top: 8,
@@ -391,32 +393,60 @@ function AksesuarSatisPage() {
   const [urunler, setUrunler] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [stokFiltre, setStokFiltre] = useState('tumu'); // 'tumu' | 'stokta'
   const [detayUrun, setDetayUrun] = useState(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const requestIdRef = useRef(0);
 
   const loadUrunler = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
     try {
       setLoading(true);
-      const response = await aksesuarStokService.getPublic();
-      setUrunler(response.data || []);
+      const response = await aksesuarStokService.getPublic({
+        page,
+        limit: 24,
+        search: debouncedSearch,
+        stokta: stokFiltre === 'stokta',
+      });
+      if (requestId !== requestIdRef.current) return;
+      setUrunler(response.data?.data || []);
+      setTotalPages(response.data?.pagination?.totalPages || 1);
     } catch (error) {
       console.error('Aksesuar listesi hatası:', error);
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) setLoading(false);
     }
-  }, []);
+  }, [page, debouncedSearch, stokFiltre]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1);
+      setDebouncedSearch(searchTerm.trim());
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   useEffect(() => {
     loadUrunler();
   }, [loadUrunler]);
 
-  const filtered = urunler.filter((u) => {
-    const aramaOk =
-      u.stok_adi?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.stok_kodu?.toLowerCase().includes(searchTerm.toLowerCase());
-    const stokOk = stokFiltre === 'tumu' || (u.mevcut || 0) > 0;
-    return aramaOk && stokOk;
-  });
+  const handleStokFiltre = (_, value) => {
+    if (!value) return;
+    setPage(1);
+    setStokFiltre(value);
+  };
+
+  const handleOpenDetail = useCallback(async (urun) => {
+    setDetayUrun(urun);
+    try {
+      const response = await aksesuarStokService.getPublicById(urun.id);
+      setDetayUrun(response.data);
+    } catch (error) {
+      console.error('Aksesuar detayı hatası:', error);
+    }
+  }, []);
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#02080f', color: '#fff', overflowX: 'hidden' }}>
@@ -514,7 +544,7 @@ function AksesuarSatisPage() {
         <ToggleButtonGroup
           value={stokFiltre}
           exclusive
-          onChange={(_, value) => value && setStokFiltre(value)}
+          onChange={handleStokFiltre}
           aria-label="Stok filtresi"
           sx={{
             mb: { xs: 3, md: 4 },
@@ -545,7 +575,7 @@ function AksesuarSatisPage() {
           <Box sx={{ py: 10, textAlign: 'center' }}>
             <CircularProgress sx={{ color: '#36C5D3' }} />
           </Box>
-        ) : filtered.length === 0 ? (
+        ) : urunler.length === 0 ? (
           <Box sx={{ py: 8, textAlign: 'center' }}>
             <ImageIcon sx={{ fontSize: 48, color: 'rgba(54,197,211,0.3)', mb: 2 }} />
             <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: '1rem' }}>
@@ -570,9 +600,26 @@ function AksesuarSatisPage() {
               alignItems: 'stretch',
             }}
           >
-            {filtered.map((urun) => (
-              <AksesuarCard urun={urun} key={urun.id} onClick={setDetayUrun} />
+            {urunler.map((urun) => (
+              <AksesuarCard urun={urun} key={urun.id} onClick={handleOpenDetail} />
             ))}
+          </Box>
+        )}
+
+        {totalPages > 1 && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}>
+            <Pagination
+              count={totalPages}
+              page={page}
+              onChange={(_, value) => setPage(value)}
+              disabled={loading}
+              showFirstButton
+              showLastButton
+              sx={{
+                '& .MuiPaginationItem-root': { color: 'rgba(255,255,255,0.75)' },
+                '& .Mui-selected': { bgcolor: '#04A7B8 !important', color: '#fff' },
+              }}
+            />
           </Box>
         )}
       </Container>

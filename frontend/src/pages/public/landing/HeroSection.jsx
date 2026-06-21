@@ -113,6 +113,8 @@ function HeroSection() {
         >
           <img
             src="/Demirkan.jpeg"
+            decoding="async"
+            fetchPriority="high"
             alt="Demirkan Motorlu Araçlar"
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />

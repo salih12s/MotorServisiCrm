@@ -6,10 +6,46 @@ const router = express.Router();
 // Tüm stok kayıtlarını getir
 router.get('/', async (req, res) => {
   try {
-    const result = await pool.query(
-      'SELECT * FROM aksesuar_stok ORDER BY stok_kodu ASC'
-    );
-    res.json(result.rows);
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 25, 1), 100);
+    const search = String(req.query.search || '').trim();
+    const offset = (page - 1) * limit;
+    const searchParam = `%${search}%`;
+    const whereClause = search ? 'WHERE stok_kodu ILIKE $1 OR stok_adi ILIKE $1' : '';
+    const queryParams = search ? [searchParam, limit, offset] : [limit, offset];
+    const limitIndex = search ? 2 : 1;
+    const offsetIndex = search ? 3 : 2;
+
+    const [result, summaryResult] = await Promise.all([
+      pool.query(
+      `SELECT id, stok_kodu, stok_adi, giren_miktar, cikan_miktar, mevcut,
+              birimi, alis_fiyati, satis_fiyati, envanter_degeri, aciklama,
+              created_at, updated_at,
+              CASE WHEN resim IS NOT NULL AND resim <> '' THEN TRUE ELSE FALSE END AS resim_var
+       FROM aksesuar_stok
+       ${whereClause}
+       ORDER BY stok_kodu ASC
+       LIMIT $${limitIndex} OFFSET $${offsetIndex}`,
+        queryParams
+      ),
+      pool.query(
+        `SELECT COUNT(*)::int AS total,
+                COALESCE(SUM(envanter_degeri), 0) AS toplam_envanter
+         FROM aksesuar_stok ${whereClause}`,
+        search ? [searchParam] : []
+      ),
+    ]);
+    const summary = summaryResult.rows[0];
+    res.json({
+      data: result.rows,
+      pagination: {
+        page,
+        limit,
+        total: summary.total,
+        totalPages: Math.max(Math.ceil(summary.total / limit), 1),
+      },
+      toplamEnvanter: summary.toplam_envanter,
+    });
   } catch (error) {
     console.error('Stok listesi hatası:', error);
     res.status(500).json({ message: 'Sunucu hatası' });
@@ -24,7 +60,9 @@ router.get('/ara', async (req, res) => {
       return res.json([]);
     }
     const result = await pool.query(
-      `SELECT * FROM aksesuar_stok 
+      `SELECT id, stok_kodu, stok_adi, giren_miktar, cikan_miktar, mevcut,
+              birimi, alis_fiyati, satis_fiyati, envanter_degeri, aciklama
+       FROM aksesuar_stok
        WHERE stok_kodu ILIKE $1 OR stok_adi ILIKE $1 
        ORDER BY stok_adi ASC LIMIT 20`,
       [`%${q}%`]
@@ -32,6 +70,20 @@ router.get('/ara', async (req, res) => {
     res.json(result.rows);
   } catch (error) {
     console.error('Stok arama hatası:', error);
+    res.status(500).json({ message: 'Sunucu hatası' });
+  }
+});
+
+// Fotoğraflar büyük base64 verileridir; yalnızca düzenleme açıldığında yüklenir.
+router.get('/:id', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM aksesuar_stok WHERE id = $1', [req.params.id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Stok kaydı bulunamadı' });
+    }
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Stok detayı hatası:', error);
     res.status(500).json({ message: 'Sunucu hatası' });
   }
 });

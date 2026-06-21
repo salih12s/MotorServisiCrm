@@ -39,6 +39,8 @@ function VizyonMisyonSection() {
     <Box
       sx={{
         py: { xs: 8, md: 12 },
+        contentVisibility: 'auto',
+        containIntrinsicSize: '1100px',
         background:
           'linear-gradient(180deg, #02080f 0%, #050d18 50%, #02080f 100%)',
       }}
@@ -193,13 +195,21 @@ function VizyonMisyonSection() {
               Temel İlkelerimiz
             </Typography>
           </Stack>
-          <Grid container spacing={{ xs: 2.5, md: 3 }} alignItems="stretch">
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
+              gap: { xs: 2.5, md: 3 },
+              alignItems: 'stretch',
+            }}
+          >
             {PRINCIPLES.map(({ title, text, Icon }) => (
-              <Grid item xs={6} md={3} key={title} sx={{ display: 'flex' }}>
-                <Box
+              <Box
+                key={title}
                   sx={{
                     width: '100%',
-                    minHeight: { xs: 200, md: 240 },
+                    height: { xs: 220, md: 240 },
+                    boxSizing: 'border-box',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
@@ -252,10 +262,9 @@ function VizyonMisyonSection() {
                   >
                     {text}
                   </Typography>
-                </Box>
-              </Grid>
+              </Box>
             ))}
-          </Grid>
+          </Box>
         </Card>
       </Container>
     </Box>

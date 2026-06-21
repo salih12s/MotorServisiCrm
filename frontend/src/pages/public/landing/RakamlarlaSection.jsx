@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Container, Typography, Stack, Grid, Card, Chip } from '@mui/material';
+import { Box, Container, Typography, Stack, Card, Chip } from '@mui/material';
 import {
   EmojiEvents as TrophyIcon,
   Schedule as ScheduleIcon,
@@ -20,6 +20,8 @@ function RakamlarlaSection() {
     <Box
       sx={{
         py: { xs: 8, md: 12 },
+        contentVisibility: 'auto',
+        containIntrinsicSize: '700px',
         background:
           'linear-gradient(180deg, #02080f 0%, #050d18 50%, #02080f 100%)',
       }}
@@ -62,13 +64,21 @@ function RakamlarlaSection() {
           </Typography>
         </Stack>
 
-        <Grid container spacing={{ xs: 2.5, md: 3.5 }} alignItems="stretch">
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', md: 'repeat(4, minmax(0, 1fr))' },
+            gap: { xs: 2.5, md: 3.5 },
+            alignItems: 'stretch',
+          }}
+        >
           {STATS.map(({ value, label, Icon }) => (
-            <Grid item xs={6} md={3} key={label} sx={{ display: 'flex' }}>
-              <Card
+            <Card
+              key={label}
                 sx={{
                   width: '100%',
-                  minHeight: { xs: 200, md: 230 },
+                  height: { xs: 230, md: 250 },
+                  boxSizing: 'border-box',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
@@ -125,10 +135,9 @@ function RakamlarlaSection() {
                 >
                   {label}
                 </Typography>
-              </Card>
-            </Grid>
+            </Card>
           ))}
-        </Grid>
+        </Box>
       </Container>
     </Box>
   );

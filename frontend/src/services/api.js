@@ -2,6 +2,8 @@ import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
+export const getPublicAksesuarImageUrl = (id) => `${API_URL}/public/aksesuarlar/${id}/resim`;
+
 const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -117,14 +119,16 @@ export const aksesuarService = {
 
 // Aksesuar Stok
 export const aksesuarStokService = {
-  getAll: () => api.get('/aksesuar-stok'),
+  getAll: (params) => api.get('/aksesuar-stok', { params }),
+  getById: (id) => api.get(`/aksesuar-stok/${id}`),
   search: (q) => api.get('/aksesuar-stok/ara', { params: { q } }),
   create: (data) => api.post('/aksesuar-stok', data),
   update: (id, data) => api.put(`/aksesuar-stok/${id}`, data),
   delete: (id) => api.delete(`/aksesuar-stok/${id}`),
   topluEkle: (stoklar) => api.post('/aksesuar-stok/toplu', { stoklar }),
   // Public (giriş gerektirmeyen) aksesuar satış kataloğu
-  getPublic: () => api.get('/public/aksesuarlar'),
+  getPublic: (params) => api.get('/public/aksesuarlar', { params }),
+  getPublicById: (id) => api.get(`/public/aksesuarlar/${id}`),
 };
 
 // Motor Satışları

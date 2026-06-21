@@ -67,14 +67,87 @@ app.use('/api/auth', authRoutes);
 // Açık (public) aksesuar satış kataloğu - giriş gerektirmez
 app.get('/api/public/aksesuarlar', async (req, res) => {
   try {
-    const result = await pool.query(
-      `SELECT id, stok_kodu, stok_adi, satis_fiyati, mevcut, birimi, resim, resimler, aciklama
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 24, 1), 48);
+    const search = String(req.query.search || '').trim();
+    const stokta = req.query.stokta === 'true';
+    const conditions = [];
+    const params = [];
+
+    if (search) {
+      params.push(`%${search}%`);
+      conditions.push(`(stok_adi ILIKE $${params.length} OR stok_kodu ILIKE $${params.length})`);
+    }
+    if (stokta) conditions.push('mevcut > 0');
+
+    const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    const countParams = [...params];
+    params.push(limit, (page - 1) * limit);
+
+    const [result, countResult] = await Promise.all([
+      pool.query(
+      `SELECT id, stok_kodu, stok_adi, satis_fiyati, mevcut, birimi, aciklama,
+              CASE WHEN resim IS NOT NULL AND resim <> '' THEN TRUE ELSE FALSE END AS resim_var,
+              CASE WHEN resimler IS NULL OR resimler = '' THEN 0
+                   ELSE GREATEST((SELECT COUNT(*) FROM json_array_elements_text(resimler::json)), 1)
+              END AS resim_sayisi
        FROM aksesuar_stok
-       ORDER BY stok_adi ASC`
-    );
-    res.json(result.rows);
+       ${whereClause}
+       ORDER BY stok_adi ASC
+       LIMIT $${params.length - 1} OFFSET $${params.length}`,
+       params
+      ),
+      pool.query(`SELECT COUNT(*)::int AS total FROM aksesuar_stok ${whereClause}`, countParams),
+    ]);
+    const total = countResult.rows[0].total;
+    res.json({
+      data: result.rows,
+      pagination: { page, limit, total, totalPages: Math.max(Math.ceil(total / limit), 1) },
+    });
   } catch (error) {
     console.error('Public aksesuar listesi hatası:', error);
+    res.status(500).json({ message: 'Sunucu hatası' });
+  }
+});
+
+// Liste JSON'unu şişirmemek için ana görsel ayrı ve tarayıcı önbelleğine uygun sunulur.
+app.get('/api/public/aksesuarlar/:id/resim', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT resim, updated_at FROM aksesuar_stok WHERE id = $1',
+      [req.params.id]
+    );
+    if (result.rows.length === 0 || !result.rows[0].resim) return res.status(404).end();
+
+    const match = result.rows[0].resim.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/s);
+    if (!match) return res.status(404).end();
+
+    const etag = `W/\"aksesuar-${req.params.id}-${new Date(result.rows[0].updated_at).getTime()}\"`;
+    if (req.headers['if-none-match'] === etag) return res.status(304).end();
+
+    res.set({
+      'Content-Type': match[1],
+      'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
+      ETag: etag,
+    });
+    res.send(Buffer.from(match[2], 'base64'));
+  } catch (error) {
+    console.error('Public aksesuar görsel hatası:', error);
+    res.status(500).end();
+  }
+});
+
+app.get('/api/public/aksesuarlar/:id', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, stok_kodu, stok_adi, satis_fiyati, mevcut, birimi, resim, resimler, aciklama
+       FROM aksesuar_stok WHERE id = $1`,
+      [req.params.id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ message: 'Ürün bulunamadı' });
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Public aksesuar detay hatası:', error);
     res.status(500).json({ message: 'Sunucu hatası' });
   }
 });

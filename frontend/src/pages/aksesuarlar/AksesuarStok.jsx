@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useCustomTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -28,6 +28,7 @@ import {
   useMediaQuery,
   useTheme,
   Alert,
+  Pagination,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -367,11 +368,17 @@ function AksesuarStok() {
   const [stoklar, setStoklar] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [toplamEnvanter, setToplamEnvanter] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingStok, setEditingStok] = useState(null);
   const [saving, setSaving] = useState(false);
   const [processingImages, setProcessingImages] = useState(false);
   const [error, setError] = useState('');
+  const requestIdRef = useRef(0);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -393,31 +400,57 @@ function AksesuarStok() {
   });
 
   const loadStoklar = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
     try {
       setLoading(true);
-      const response = await aksesuarStokService.getAll();
-      setStoklar(response.data || []);
+      const response = await aksesuarStokService.getAll({ page, limit: 25, search: debouncedSearch });
+      if (requestId !== requestIdRef.current) return;
+      setStoklar(response.data?.data || []);
+      setTotalItems(response.data?.pagination?.total || 0);
+      setTotalPages(response.data?.pagination?.totalPages || 1);
+      setToplamEnvanter(parseFloat(response.data?.toplamEnvanter || 0));
     } catch (error) {
       console.error('Stok listesi hatası:', error);
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) setLoading(false);
     }
-  }, []);
+  }, [page, debouncedSearch]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1);
+      setDebouncedSearch(searchQuery.trim());
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   useEffect(() => {
     loadStoklar();
   }, [loadStoklar]);
 
-  const handleOpenDialog = useCallback((stok = null) => {
+  const handleOpenDialog = useCallback(async (stok = null) => {
     if (stok) {
+      setError('');
+      setEditingStok(stok);
+      setDialogOpen(true);
+      setSaving(true);
+      let detayliStok = stok;
+      try {
+        const response = await aksesuarStokService.getById(stok.id);
+        detayliStok = response.data;
+      } catch (error) {
+        setError(error.response?.data?.message || 'Stok detayı yüklenemedi');
+        setSaving(false);
+        return;
+      }
       // resimler kolonu JSON dizi olarak saklanır; eski kayıtlarda sadece resim olabilir
       let resimlerArr = [];
-      if (stok.resimler) {
-        if (Array.isArray(stok.resimler)) {
-          resimlerArr = stok.resimler.filter(Boolean);
+      if (detayliStok.resimler) {
+        if (Array.isArray(detayliStok.resimler)) {
+          resimlerArr = detayliStok.resimler.filter(Boolean);
         } else {
           try {
-            const parsed = JSON.parse(stok.resimler);
+            const parsed = JSON.parse(detayliStok.resimler);
             if (Array.isArray(parsed)) resimlerArr = parsed.filter(Boolean);
           } catch {
             resimlerArr = [];
@@ -425,23 +458,24 @@ function AksesuarStok() {
         }
       }
       resimlerArr = [...new Set(resimlerArr)];
-      if (stok.resim) {
-        resimlerArr = [stok.resim, ...resimlerArr.filter((img) => img !== stok.resim)];
+      if (detayliStok.resim) {
+        resimlerArr = [detayliStok.resim, ...resimlerArr.filter((img) => img !== detayliStok.resim)];
       }
-      const anaResim = stok.resim || resimlerArr[0] || '';
-      setEditingStok(stok);
+      const anaResim = detayliStok.resim || resimlerArr[0] || '';
+      setEditingStok(detayliStok);
       setFormData({
-        stok_kodu: stok.stok_kodu,
-        stok_adi: stok.stok_adi,
-        giren_miktar: stok.giren_miktar,
-        cikan_miktar: stok.cikan_miktar,
-        birimi: stok.birimi,
-        alis_fiyati: stok.alis_fiyati,
-        satis_fiyati: stok.satis_fiyati,
+        stok_kodu: detayliStok.stok_kodu,
+        stok_adi: detayliStok.stok_adi,
+        giren_miktar: detayliStok.giren_miktar,
+        cikan_miktar: detayliStok.cikan_miktar,
+        birimi: detayliStok.birimi,
+        alis_fiyati: detayliStok.alis_fiyati,
+        satis_fiyati: detayliStok.satis_fiyati,
         resim: anaResim,
         resimler: resimlerArr,
-        aciklama: stok.aciklama || '',
+        aciklama: detayliStok.aciklama || '',
       });
+      setSaving(false);
     } else {
       setEditingStok(null);
       setFormData({
@@ -556,25 +590,13 @@ function AksesuarStok() {
     }
   }, [loadStoklar]);
 
-  // Filtreleme
-  const filteredStoklar = useMemo(() => stoklar.filter((s) =>
-    s.stok_kodu?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    s.stok_adi?.toLowerCase().includes(searchQuery.toLowerCase())
-  ), [stoklar, searchQuery]);
-
-  // Toplam envanter değeri
-  const toplamEnvanter = useMemo(
-    () => stoklar.reduce((sum, s) => sum + parseFloat(s.envanter_degeri || 0), 0),
-    [stoklar]
-  );
-
   return (
     <Box>
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
           <Chip
-            label={`Toplam: ${stoklar.length} ürün`}
+            label={`Toplam: ${totalItems} ürün`}
             size="small"
             sx={{ bgcolor: '#1a237e', color: 'white', fontWeight: 600 }}
           />
@@ -623,7 +645,7 @@ function AksesuarStok() {
 
       <StockResults
         loading={loading}
-        stocks={filteredStoklar}
+        stocks={stoklar}
         isMobile={isMobile}
         isAdmin={isAdmin}
         primaryColor={themeColors.primary}
@@ -631,6 +653,20 @@ function AksesuarStok() {
         onEdit={handleOpenDialog}
         onDelete={handleDelete}
       />
+
+      {totalPages > 1 && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+          <Pagination
+            count={totalPages}
+            page={page}
+            onChange={(_, value) => setPage(value)}
+            color="primary"
+            disabled={loading}
+            showFirstButton
+            showLastButton
+          />
+        </Box>
+      )}
 
       {/* Ekleme/Düzenleme Dialog */}
       <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
