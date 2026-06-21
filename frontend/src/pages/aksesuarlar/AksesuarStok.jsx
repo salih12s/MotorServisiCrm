@@ -45,7 +45,7 @@ import {
   StarBorder as StarBorderIcon,
   InfoOutlined as InfoOutlinedIcon,
 } from '@mui/icons-material';
-import { aksesuarStokService } from '../../services/api';
+import { aksesuarStokService, getPublicAksesuarImageUrl } from '../../services/api';
 
 const compressImage = (file, maxSize = 600, quality = 0.72) =>
   new Promise((resolve, reject) => {
@@ -259,7 +259,7 @@ const StockResults = React.memo(function StockResults({
                   <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
                     <Avatar
                       variant="rounded"
-                      src={stok.resim || undefined}
+                      src={stok.resim || (stok.resim_var ? getPublicAksesuarImageUrl(stok.id) : undefined)}
                       sx={{ width: 48, height: 48, bgcolor: 'rgba(0,0,0,0.06)' }}
                     >
                       <ImageIcon sx={{ color: 'rgba(0,0,0,0.3)' }} />
@@ -316,7 +316,7 @@ const StockResults = React.memo(function StockResults({
                 {stocks.map((stok) => (
                   <TableRow key={stok.id} hover>
                     <TableCell>
-                      <Avatar variant="rounded" src={stok.resim || undefined} sx={{ width: 40, height: 40, bgcolor: 'rgba(0,0,0,0.06)' }}>
+                      <Avatar variant="rounded" src={stok.resim || (stok.resim_var ? getPublicAksesuarImageUrl(stok.id) : undefined)} sx={{ width: 40, height: 40, bgcolor: 'rgba(0,0,0,0.06)' }}>
                         <ImageIcon fontSize="small" sx={{ color: 'rgba(0,0,0,0.3)' }} />
                       </Avatar>
                     </TableCell>

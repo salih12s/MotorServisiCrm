@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { /* useNavigate, */ useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -28,6 +28,7 @@ import {
   Divider,
   useMediaQuery,
   useTheme,
+  Pagination,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -52,6 +53,10 @@ function IsEmirleri() {
   const [isEmirleri, setIsEmirleri] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [stats, setStats] = useState({});
   const [filterDurum, setFilterDurum] = useState('');
   const [baslangicTarihi, setBaslangicTarihi] = useState('');
   const [bitisTarihi, setBitisTarihi] = useState('');
@@ -68,6 +73,7 @@ function IsEmirleri() {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+  const requestIdRef = useRef(0);
 
   // URL parametrelerinden filtreleri oku
   useEffect(() => {
@@ -81,25 +87,46 @@ function IsEmirleri() {
     }
   }, [searchParams]);
 
-  useEffect(() => {
-    loadIsEmirleri();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const loadIsEmirleri = async () => {
+  const loadIsEmirleri = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
     try {
       setLoading(true);
-      // Tüm verileri çek, filtreleme frontend'de yapılacak
-      const response = await isEmriService.getAll({});
-      // ID'ye göre azalan sıralama (en yeni en üstte)
-      const sorted = response.data.sort((a, b) => b.id - a.id);
-      setIsEmirleri(sorted);
+      const response = await isEmriService.getAll({
+        page,
+        limit: 25,
+        search: debouncedSearch,
+        durum: filterDurum || undefined,
+        tarih: filterBugun ? new Intl.DateTimeFormat('en-CA').format(new Date()) : undefined,
+        baslangic: !filterBugun && baslangicTarihi ? baslangicTarihi : undefined,
+        bitis: !filterBugun && bitisTarihi ? bitisTarihi : undefined,
+      });
+      if (requestId !== requestIdRef.current) return;
+      setIsEmirleri(response.data?.data || []);
+      setTotalPages(response.data?.pagination?.totalPages || 1);
+      setStats(response.data?.stats || {});
     } catch (error) {
+      if (requestId !== requestIdRef.current) return;
       console.error('İş emirleri yükleme hatası:', error);
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) setLoading(false);
     }
-  };
+  }, [page, debouncedSearch, filterDurum, filterBugun, baslangicTarihi, bitisTarihi]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1);
+      setDebouncedSearch(searchQuery.trim());
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filterDurum, filterBugun, baslangicTarihi, bitisTarihi]);
+
+  useEffect(() => {
+    loadIsEmirleri();
+  }, [loadIsEmirleri]);
 
   const handleDelete = async (id) => {
     if (window.confirm('Bu iş emrini silmek istediğinizden emin misiniz?')) {
@@ -161,65 +188,16 @@ function IsEmirleri() {
 
   const hasActiveFilters = searchQuery || filterDurum || baslangicTarihi || bitisTarihi || filterBugun;
 
-  // Bugünü başlangıç ve bitiş tarihiyle karşılaştır
-  const isToday = (dateStr) => {
-    if (!dateStr) return false;
-    const today = new Date();
-    const date = new Date(dateStr);
-    return date.toDateString() === today.toDateString();
-  };
-
-  // Filtreleme - arama filtresi
-  let filteredIsEmirleri = isEmirleri.filter((ie) =>
-    ie.musteri_ad_soyad?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    ie.fis_no?.toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
-    ie.marka?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    ie.telefon?.includes(searchQuery)
-  );
-
-  // Durum filtresi (frontend'de uygula)
-  if (filterDurum) {
-    filteredIsEmirleri = filteredIsEmirleri.filter(ie => ie.durum === filterDurum);
-  }
-
-  // Bugünkü işler filtresi
-  if (filterBugun) {
-    filteredIsEmirleri = filteredIsEmirleri.filter(ie => isToday(ie.created_at));
-  }
-
-  // Tarih aralığı filtresi
-  if (baslangicTarihi) {
-    filteredIsEmirleri = filteredIsEmirleri.filter(ie => {
-      if (!ie.created_at) return false;
-      const tarih = new Date(ie.created_at);
-      const baslangic = new Date(baslangicTarihi);
-      baslangic.setHours(0, 0, 0, 0);
-      return tarih >= baslangic;
-    });
-  }
-
-  if (bitisTarihi) {
-    filteredIsEmirleri = filteredIsEmirleri.filter(ie => {
-      if (!ie.created_at) return false;
-      const tarih = new Date(ie.created_at);
-      const bitis = new Date(bitisTarihi);
-      bitis.setHours(23, 59, 59, 999);
-      return tarih <= bitis;
-    });
-  }
-
-  // İstatistikler - FİLTRELENMİŞ verilerden hesapla
-  const toplamIsEmri = isEmirleri.length;
-  const bugunkuIsEmri = isEmirleri.filter(ie => isToday(ie.created_at)).length;
-  const beklemedekiIsEmri = isEmirleri.filter(ie => ie.durum === 'beklemede').length;
-  const islemdekiIsEmri = isEmirleri.filter(ie => ie.durum === 'islemde').length;
-  const odemeBekleyenIsEmri = isEmirleri.filter(ie => ie.durum === 'odeme_bekleniyor').length;
-  const tamamlananIsEmri = isEmirleri.filter(ie => ie.durum === 'tamamlandi').length;
-  const iptalIsEmri = isEmirleri.filter(ie => ie.durum === 'iptal_edildi').length;
-  const toplamTutar = isEmirleri.reduce((sum, ie) => sum + parseFloat(ie.gercek_toplam_ucret || 0), 0);
-
-  // FİLTRELENMİŞ VERİLER için kar hesaplama
-  const filtreliToplamKar = filteredIsEmirleri.reduce((sum, ie) => sum + parseFloat(ie.kar || 0), 0);
+  const filteredIsEmirleri = isEmirleri;
+  const toplamIsEmri = Number(stats.toplam || 0);
+  const bugunkuIsEmri = Number(stats.bugun || 0);
+  const beklemedekiIsEmri = Number(stats.beklemede || 0);
+  const islemdekiIsEmri = Number(stats.islemde || 0);
+  const odemeBekleyenIsEmri = Number(stats.odeme_bekleniyor || 0);
+  const tamamlananIsEmri = Number(stats.tamamlandi || 0);
+  const iptalIsEmri = Number(stats.iptal_edildi || 0);
+  const toplamTutar = parseFloat(stats.toplam_tutar || 0);
+  const filtreliToplamKar = parseFloat(stats.toplam_kar || 0);
 
   return (
     <Box>
@@ -865,6 +843,20 @@ function IsEmirleri() {
             </Table>
         </TableContainer>
       </Card>
+      )}
+
+      {totalPages > 1 && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+          <Pagination
+            count={totalPages}
+            page={page}
+            onChange={(_, value) => setPage(value)}
+            color="primary"
+            disabled={loading}
+            showFirstButton
+            showLastButton
+          />
+        </Box>
       )}
 
       {/* Detail Modal */}

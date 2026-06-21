@@ -17,7 +17,9 @@ const getNextFisNo = async () => {
 // Tüm iş emirlerini getir
 router.get('/', async (req, res) => {
   try {
-    const { tarih, durum } = req.query;
+    const { tarih, durum, search, baslangic, bitis } = req.query;
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 25, 1), 100);
     
     let query = `
       SELECT ie.*, 
@@ -39,15 +41,57 @@ router.get('/', async (req, res) => {
       params.push(durum);
       conditions.push(`ie.durum = $${params.length}`);
     }
+
+    if (search && String(search).trim()) {
+      params.push(`%${String(search).trim()}%`);
+      conditions.push(`(
+        ie.musteri_ad_soyad ILIKE $${params.length} OR
+        ie.fis_no::text ILIKE $${params.length} OR
+        ie.marka ILIKE $${params.length} OR
+        ie.model_tip ILIKE $${params.length} OR
+        ie.telefon ILIKE $${params.length}
+      )`);
+    }
+
+    if (baslangic) {
+      params.push(baslangic);
+      conditions.push(`ie.created_at >= $${params.length}::date`);
+    }
+
+    if (bitis) {
+      params.push(bitis);
+      conditions.push(`ie.created_at < ($${params.length}::date + INTERVAL '1 day')`);
+    }
     
     if (conditions.length > 0) {
       query += ' WHERE ' + conditions.join(' AND ');
     }
     
-    query += ' GROUP BY ie.id ORDER BY ie.created_at DESC';
-    
-    const result = await pool.query(query, params);
-    res.json(result.rows);
+    const whereClause = conditions.length > 0 ? ' WHERE ' + conditions.join(' AND ') : '';
+    query += ` GROUP BY ie.id ORDER BY ie.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+
+    const listParams = [...params, limit, (page - 1) * limit];
+    const [result, countResult, statsResult, filteredStatsResult] = await Promise.all([
+      pool.query(query, listParams),
+      pool.query(`SELECT COUNT(*)::int AS total FROM is_emirleri ie${whereClause}`, params),
+      pool.query(`SELECT
+        COUNT(*)::int AS toplam,
+        COUNT(*) FILTER (WHERE DATE(created_at) = CURRENT_DATE)::int AS bugun,
+        COUNT(*) FILTER (WHERE durum = 'beklemede')::int AS beklemede,
+        COUNT(*) FILTER (WHERE durum = 'islemde')::int AS islemde,
+        COUNT(*) FILTER (WHERE durum = 'odeme_bekleniyor')::int AS odeme_bekleniyor,
+        COUNT(*) FILTER (WHERE durum = 'tamamlandi')::int AS tamamlandi,
+        COUNT(*) FILTER (WHERE durum = 'iptal_edildi')::int AS iptal_edildi,
+        COALESCE(SUM(gercek_toplam_ucret), 0) AS toplam_tutar
+        FROM is_emirleri`),
+      pool.query(`SELECT COALESCE(SUM(kar), 0) AS toplam_kar FROM is_emirleri ie${whereClause}`, params),
+    ]);
+    const total = countResult.rows[0].total;
+    res.json({
+      data: result.rows,
+      pagination: { page, limit, total, totalPages: Math.max(Math.ceil(total / limit), 1) },
+      stats: { ...statsResult.rows[0], toplam_kar: filteredStatsResult.rows[0].toplam_kar },
+    });
   } catch (error) {
     console.error('İş emirleri listesi hatası:', error);
     res.status(500).json({ message: 'Sunucu hatası' });
