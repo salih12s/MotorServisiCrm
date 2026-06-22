@@ -29,6 +29,7 @@ import {
   useTheme,
   Alert,
   Pagination,
+  Snackbar,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -259,7 +260,7 @@ const StockResults = React.memo(function StockResults({
                   <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
                     <Avatar
                       variant="rounded"
-                      src={stok.resim || (stok.resim_var ? getPublicAksesuarImageUrl(stok.id) : undefined)}
+                      src={stok.resim || (stok.resim_var ? getPublicAksesuarImageUrl(stok.id, stok.updated_at) : undefined)}
                       sx={{ width: 48, height: 48, bgcolor: 'rgba(0,0,0,0.06)' }}
                     >
                       <ImageIcon sx={{ color: 'rgba(0,0,0,0.3)' }} />
@@ -316,7 +317,7 @@ const StockResults = React.memo(function StockResults({
                 {stocks.map((stok) => (
                   <TableRow key={stok.id} hover>
                     <TableCell>
-                      <Avatar variant="rounded" src={stok.resim || (stok.resim_var ? getPublicAksesuarImageUrl(stok.id) : undefined)} sx={{ width: 40, height: 40, bgcolor: 'rgba(0,0,0,0.06)' }}>
+                      <Avatar variant="rounded" src={stok.resim || (stok.resim_var ? getPublicAksesuarImageUrl(stok.id, stok.updated_at) : undefined)} sx={{ width: 40, height: 40, bgcolor: 'rgba(0,0,0,0.06)' }}>
                         <ImageIcon fontSize="small" sx={{ color: 'rgba(0,0,0,0.3)' }} />
                       </Avatar>
                     </TableCell>
@@ -378,6 +379,7 @@ function AksesuarStok() {
   const [saving, setSaving] = useState(false);
   const [processingImages, setProcessingImages] = useState(false);
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   const requestIdRef = useRef(0);
 
   const theme = useTheme();
@@ -567,8 +569,10 @@ function AksesuarStok() {
       };
       if (editingStok) {
         await aksesuarStokService.update(editingStok.id, payload);
+        setSuccessMsg('Ürün başarıyla güncellendi. Vitrin fotoğrafı dahil değişiklikler kaydedildi.');
       } else {
         await aksesuarStokService.create(payload);
+        setSuccessMsg('Yeni ürün başarıyla eklendi.');
       }
       handleCloseDialog();
       loadStoklar();
@@ -818,6 +822,17 @@ function AksesuarStok() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={Boolean(successMsg)}
+        autoHideDuration={3000}
+        onClose={() => setSuccessMsg('')}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert onClose={() => setSuccessMsg('')} severity="success" variant="filled" sx={{ fontWeight: 600 }}>
+          {successMsg}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

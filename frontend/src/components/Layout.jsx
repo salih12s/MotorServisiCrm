@@ -31,6 +31,7 @@ import {
   Inventory as InventoryIcon,
   ExpandLess,
   ExpandMore,
+  Home as HomeIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { useCustomTheme } from '../context/ThemeContext';
@@ -344,10 +345,35 @@ function Layout() {
         })}
       </List>
 
+      {/* Anasayfaya Git */}
+      <Box sx={{ px: 1.5, pb: 0.5 }}>
+        <ListItemButton
+          onClick={() => {
+            navigate('/');
+            setMobileOpen(false);
+          }}
+          sx={{
+            borderRadius: 2,
+            py: 1.1,
+            bgcolor: 'rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            '&:hover': { bgcolor: 'rgba(255,255,255,0.14)' },
+          }}
+        >
+          <ListItemIcon sx={{ minWidth: 40, color: 'rgba(255,255,255,0.85)' }}>
+            <HomeIcon />
+          </ListItemIcon>
+          <ListItemText
+            primary="Anasayfaya Git"
+            primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem', color: 'white' }}
+          />
+        </ListItemButton>
+      </Box>
+
       {/* Logo Alt Kısım */}
-      <Box 
-        sx={{ 
-          p: 3, 
+      <Box
+        sx={{
+          p: 3,
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',

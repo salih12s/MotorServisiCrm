@@ -4,6 +4,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import { CssBaseline } from '@mui/material';
 import { CustomThemeProvider, useCustomTheme } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { CartProvider } from './context/CartContext';
 
 // Pages
 import Login from './pages/public/Login';
@@ -245,7 +246,9 @@ function ThemedApp() {
       <CssBaseline />
       <BrowserRouter>
         <AuthProvider>
-          <AppRoutes />
+          <CartProvider>
+            <AppRoutes />
+          </CartProvider>
         </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>

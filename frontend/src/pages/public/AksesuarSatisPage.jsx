@@ -14,6 +14,9 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Pagination,
+  Button,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -21,10 +24,12 @@ import {
   Image as ImageIcon,
   Inventory2 as Inventory2Icon,
   Close as CloseIcon,
+  AddShoppingCart as AddShoppingCartIcon,
 } from '@mui/icons-material';
 import PublicNav from '../../components/PublicNav';
 import SiteFooter from '../../components/SiteFooter';
 import { aksesuarStokService, getPublicAksesuarImageUrl } from '../../services/api';
+import { useCart } from '../../context/CartContext';
 
 function formatCurrency(value) {
   return new Intl.NumberFormat('tr-TR', {
@@ -54,7 +59,7 @@ export function getResimler(urun) {
   return list;
 }
 
-export function AksesuarCard({ urun, onClick }) {
+export function AksesuarCard({ urun, onClick, onAddToCart }) {
   const stokVar = (urun.mevcut || 0) > 0;
   const resimler = getResimler(urun);
   return (
@@ -104,7 +109,7 @@ export function AksesuarCard({ urun, onClick }) {
         {(urun.resim || urun.resim_var) ? (
           <Box
             component="img"
-            src={urun.resim || getPublicAksesuarImageUrl(urun.id)}
+            src={urun.resim || getPublicAksesuarImageUrl(urun.id, urun.updated_at)}
             alt={urun.stok_adi}
             loading="lazy"
             decoding="async"
@@ -165,22 +170,50 @@ export function AksesuarCard({ urun, onClick }) {
           ₺{formatCurrency(urun.satis_fiyati)}
         </Typography>
 
-        {/* Stok durumu - kartın altında */}
-        <Chip
-          size="small"
-          icon={<Inventory2Icon sx={{ fontSize: '0.9rem !important' }} />}
-          label={stokVar ? `Stokta ${urun.mevcut} ${urun.birimi || 'Adet'}` : 'Stokta bitti'}
-          sx={{
-            alignSelf: 'flex-start',
-            fontWeight: 700,
-            fontSize: '0.72rem',
-            height: 26,
-            color: stokVar ? '#fff' : 'rgba(255,255,255,0.55)',
-            bgcolor: stokVar ? 'rgba(4,167,184,0.9)' : 'rgba(255,255,255,0.08)',
-            border: stokVar ? 'none' : '1px solid rgba(255,255,255,0.12)',
-            '& .MuiChip-icon': { color: stokVar ? '#fff' : 'rgba(255,255,255,0.4)' },
-          }}
-        />
+        {/* Stok durumu + Sepete Ekle - kartın altında, yan yana */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+          <Chip
+            size="small"
+            icon={<Inventory2Icon sx={{ fontSize: '0.9rem !important' }} />}
+            label={stokVar ? `Stokta ${urun.mevcut} ${urun.birimi || 'Adet'}` : 'Stokta bitti'}
+            sx={{
+              fontWeight: 700,
+              fontSize: '0.72rem',
+              height: 26,
+              color: stokVar ? '#fff' : 'rgba(255,255,255,0.55)',
+              bgcolor: stokVar ? 'rgba(4,167,184,0.9)' : 'rgba(255,255,255,0.08)',
+              border: stokVar ? 'none' : '1px solid rgba(255,255,255,0.12)',
+              '& .MuiChip-icon': { color: stokVar ? '#fff' : 'rgba(255,255,255,0.4)' },
+            }}
+          />
+          <Button
+            size="small"
+            variant="contained"
+            disabled={!stokVar}
+            startIcon={<AddShoppingCartIcon sx={{ fontSize: '1rem !important' }} />}
+            onClick={(event) => {
+              event.stopPropagation();
+              onAddToCart?.(urun);
+            }}
+            sx={{
+              ml: 'auto',
+              minWidth: 0,
+              px: 1.25,
+              py: 0.4,
+              fontSize: '0.7rem',
+              fontWeight: 700,
+              textTransform: 'none',
+              borderRadius: 50,
+              background: 'linear-gradient(135deg, #04A7B8 0%, #36C5D3 100%)',
+              boxShadow: 'none',
+              '& .MuiButton-startIcon': { mr: 0.5 },
+              '&:hover': { background: 'linear-gradient(135deg, #36C5D3 0%, #04A7B8 100%)' },
+              '&.Mui-disabled': { background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.35)' },
+            }}
+          >
+            Sepete Ekle
+          </Button>
+        </Box>
 
         {/* Açıklama - varsa stok bilgisinin altında kısaca */}
         <Box sx={{ minHeight: { xs: '2rem', sm: '2.2rem' } }}>
@@ -206,7 +239,7 @@ export function AksesuarCard({ urun, onClick }) {
 }
 
 // Ürün detay penceresi - galeri (büyük ana foto + seçilebilir küçük fotoğraflar) + tam açıklama
-export function AksesuarDetayDialog({ urun, open, onClose }) {
+export function AksesuarDetayDialog({ urun, open, onClose, onAddToCart }) {
   const [aktifResim, setAktifResim] = useState(0);
 
   useEffect(() => {
@@ -362,6 +395,28 @@ export function AksesuarDetayDialog({ urun, open, onClose }) {
               }}
             />
 
+            <Box sx={{ mt: 2 }}>
+              <Button
+                variant="contained"
+                disabled={!stokVar}
+                startIcon={<AddShoppingCartIcon />}
+                onClick={() => onAddToCart?.(urun)}
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  borderRadius: 50,
+                  px: 3,
+                  py: 1,
+                  background: 'linear-gradient(135deg, #04A7B8 0%, #36C5D3 100%)',
+                  boxShadow: '0 6px 20px rgba(54,197,211,0.4)',
+                  '&:hover': { background: 'linear-gradient(135deg, #36C5D3 0%, #04A7B8 100%)' },
+                  '&.Mui-disabled': { background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.35)' },
+                }}
+              >
+                {stokVar ? 'Sepete Ekle' : 'Stokta Yok'}
+              </Button>
+            </Box>
+
             {urun.aciklama && (
               <Box sx={{ mt: 2.5 }}>
                 <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#36C5D3', mb: 0.75 }}>
@@ -398,7 +453,24 @@ function AksesuarSatisPage() {
   const [detayUrun, setDetayUrun] = useState(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const requestIdRef = useRef(0);
+  const { addItem } = useCart();
+
+  const handleAddToCart = useCallback((urun) => {
+    const res = addItem(urun, 1);
+    if (res.ok) {
+      setSnackbar({ open: true, message: `${urun.stok_adi} sepete eklendi`, severity: 'success' });
+    } else if (res.reason === 'limit') {
+      setSnackbar({
+        open: true,
+        message: `Stokta en fazla ${res.stok} ${urun.birimi || 'adet'} var, daha fazla ekleyemezsiniz.`,
+        severity: 'warning',
+      });
+    } else if (res.reason === 'outofstock') {
+      setSnackbar({ open: true, message: 'Bu ürün stokta bulunmuyor.', severity: 'warning' });
+    }
+  }, [addItem]);
 
   const loadUrunler = useCallback(async () => {
     const requestId = ++requestIdRef.current;
@@ -406,7 +478,7 @@ function AksesuarSatisPage() {
       setLoading(true);
       const response = await aksesuarStokService.getPublic({
         page,
-        limit: 24,
+        limit: 50,
         search: debouncedSearch,
         stokta: stokFiltre === 'stokta',
       });
@@ -571,6 +643,27 @@ function AksesuarSatisPage() {
           <ToggleButton value="stokta">Stokta Var</ToggleButton>
         </ToggleButtonGroup>
 
+        {/* Üst sayfalama - rahat geçiş için ürünlerin üstünde */}
+        {totalPages > 1 && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: { xs: 3, md: 4 } }}>
+            <Pagination
+              count={totalPages}
+              page={page}
+              onChange={(_, value) => {
+                setPage(value);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              disabled={loading}
+              showFirstButton
+              showLastButton
+              sx={{
+                '& .MuiPaginationItem-root': { color: 'rgba(255,255,255,0.75)' },
+                '& .Mui-selected': { bgcolor: '#04A7B8 !important', color: '#fff' },
+              }}
+            />
+          </Box>
+        )}
+
         {loading ? (
           <Box sx={{ py: 10, textAlign: 'center' }}>
             <CircularProgress sx={{ color: '#36C5D3' }} />
@@ -601,7 +694,12 @@ function AksesuarSatisPage() {
             }}
           >
             {urunler.map((urun) => (
-              <AksesuarCard urun={urun} key={urun.id} onClick={handleOpenDetail} />
+              <AksesuarCard
+                urun={urun}
+                key={urun.id}
+                onClick={handleOpenDetail}
+                onAddToCart={handleAddToCart}
+              />
             ))}
           </Box>
         )}
@@ -611,7 +709,10 @@ function AksesuarSatisPage() {
             <Pagination
               count={totalPages}
               page={page}
-              onChange={(_, value) => setPage(value)}
+              onChange={(_, value) => {
+                setPage(value);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
               disabled={loading}
               showFirstButton
               showLastButton
@@ -628,7 +729,24 @@ function AksesuarSatisPage() {
         urun={detayUrun}
         open={Boolean(detayUrun)}
         onClose={() => setDetayUrun(null)}
+        onAddToCart={handleAddToCart}
       />
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={2500}
+        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ fontWeight: 600, ...(snackbar.severity === 'success' ? { bgcolor: '#04A7B8' } : {}) }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
 
       <SiteFooter />
     </Box>

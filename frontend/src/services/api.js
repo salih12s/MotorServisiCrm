@@ -2,7 +2,14 @@ import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-export const getPublicAksesuarImageUrl = (id) => `${API_URL}/public/aksesuarlar/${id}/resim`;
+// Görsel URL'si. version (örn. updated_at) verilirse cache-busting için ?v= eklenir;
+// böylece vitrin fotoğrafı değişince tarayıcı eski görseli değil yenisini yükler.
+export const getPublicAksesuarImageUrl = (id, version) => {
+  const base = `${API_URL}/public/aksesuarlar/${id}/resim`;
+  if (version == null || version === '') return base;
+  const v = encodeURIComponent(new Date(version).getTime() || version);
+  return `${base}?v=${v}`;
+};
 
 const api = axios.create({
   baseURL: API_URL,

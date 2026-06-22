@@ -31,12 +31,43 @@ function HeroSection() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background:
-          'radial-gradient(ellipse at 20% 20%, rgba(4,167,184,0.22) 0%, transparent 55%),' +
-          'radial-gradient(ellipse at 80% 80%, rgba(54,197,211,0.18) 0%, transparent 55%),' +
-          'linear-gradient(180deg, #02080f 0%, #050d18 50%, #02080f 100%)',
+        backgroundColor: '#02080f',
       }}
     >
+      {/* Arka plan videosu - tüm bölümü kaplar, içerik ortada kalır */}
+      <Box
+        component="video"
+        src="/Demirkan.mp4"
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        poster="/Demirkan.jpeg"
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          zIndex: 0,
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* Videonun üzerine metni okunur kılan karartma katmanı */}
+      <Box
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 1,
+          background:
+            'radial-gradient(ellipse at center, rgba(2,8,15,0.45) 0%, rgba(2,8,15,0.7) 100%),' +
+            'linear-gradient(180deg, rgba(2,8,15,0.55) 0%, rgba(2,8,15,0.35) 50%, rgba(2,8,15,0.75) 100%)',
+          pointerEvents: 'none',
+        }}
+      />
+
       {/* Decorative grid */}
       <Box
         sx={{
@@ -93,20 +124,20 @@ function HeroSection() {
           alignItems: 'center',
           justifyContent: 'center',
           textAlign: 'center',
-          py: { xs: 8, md: 6 },
+          py: { xs: 3, md: 3 },
           px: { xs: 2, md: 3 },
         }}
       >
         <Box
           sx={{
-            width: { xs: 170, sm: 220, md: 280 },
-            height: { xs: 170, sm: 220, md: 280 },
+            width: { xs: 110, sm: 140, md: 170 },
+            height: { xs: 110, sm: 140, md: 170 },
             borderRadius: '50%',
             overflow: 'hidden',
             border: '3px solid rgba(54,197,211,0.7)',
             boxShadow:
               '0 0 60px rgba(54,197,211,0.5), 0 0 140px rgba(4,167,184,0.35)',
-            mb: { xs: 2.5, md: 3.5 },
+            mb: { xs: 1.5, md: 2 },
             backgroundColor: 'rgba(2,8,15,0.4)',
             backdropFilter: 'blur(6px)',
           }}
@@ -124,7 +155,7 @@ function HeroSection() {
           component="div"
           sx={{
             fontWeight: 900,
-            fontSize: { xs: '2.6rem', sm: '4rem', md: '5.5rem' },
+            fontSize: { xs: '2rem', sm: '3rem', md: '4rem' },
             lineHeight: 1,
             color: '#fff',
             letterSpacing: { xs: 1, md: 2 },
@@ -141,7 +172,7 @@ function HeroSection() {
             component="span"
             sx={{
               color: '#36C5D3',
-              fontSize: { xs: '2rem', sm: '3rem', md: '4.2rem' },
+              fontSize: { xs: '1.6rem', sm: '2.3rem', md: '3rem' },
               textShadow: '0 0 18px rgba(54,197,211,0.85)',
               lineHeight: 1,
               display: 'inline-flex',
@@ -154,9 +185,9 @@ function HeroSection() {
 
         <Typography
           sx={{
-            mt: { xs: 1, md: 1.5 },
+            mt: { xs: 0.5, md: 1 },
             fontWeight: 800,
-            fontSize: { xs: '2rem', sm: '3rem', md: '4rem' },
+            fontSize: { xs: '1.5rem', sm: '2.2rem', md: '2.8rem' },
             lineHeight: 1,
             letterSpacing: { xs: 2, md: 4 },
             background:
@@ -171,8 +202,8 @@ function HeroSection() {
 
         <Typography
           sx={{
-            mt: { xs: 2, md: 3 },
-            fontSize: { xs: '0.95rem', sm: '1.15rem', md: '1.35rem' },
+            mt: { xs: 1.25, md: 1.75 },
+            fontSize: { xs: '0.85rem', sm: '1rem', md: '1.15rem' },
             color: 'rgba(255,255,255,0.92)',
             fontWeight: 500,
             letterSpacing: 0.3,
@@ -184,8 +215,8 @@ function HeroSection() {
 
         <Typography
           sx={{
-            mt: { xs: 1.5, md: 2 },
-            fontSize: { xs: '0.85rem', sm: '1rem', md: '1.1rem' },
+            mt: { xs: 1, md: 1.25 },
+            fontSize: { xs: '0.8rem', sm: '0.95rem', md: '1rem' },
             fontWeight: 700,
             color: '#36C5D3',
             letterSpacing: 1,
@@ -199,10 +230,10 @@ function HeroSection() {
 
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
-          spacing={{ xs: 1.5, sm: 2 }}
+          spacing={{ xs: 1.25, sm: 2 }}
           justifyContent="center"
           alignItems="center"
-          sx={{ mt: { xs: 3, md: 4.5 } }}
+          sx={{ mt: { xs: 2, md: 2.5 } }}
         >
           <Button
             variant="contained"
@@ -213,8 +244,8 @@ function HeroSection() {
               background: 'linear-gradient(135deg, #04A7B8 0%, #36C5D3 100%)',
               color: '#fff',
               fontWeight: 700,
-              px: { xs: 3.5, md: 5 },
-              py: { xs: 1.4, md: 1.7 },
+              px: { xs: 3.5, md: 4.5 },
+              py: { xs: 1.1, md: 1.3 },
               borderRadius: 50,
               textTransform: 'none',
               fontSize: { xs: '0.95rem', md: '1.05rem' },
@@ -240,8 +271,8 @@ function HeroSection() {
               color: '#fff',
               borderColor: 'rgba(255,255,255,0.55)',
               fontWeight: 700,
-              px: { xs: 3.5, md: 5 },
-              py: { xs: 1.4, md: 1.7 },
+              px: { xs: 3.5, md: 4.5 },
+              py: { xs: 1.1, md: 1.3 },
               borderRadius: 50,
               textTransform: 'none',
               fontSize: { xs: '0.95rem', md: '1.05rem' },
@@ -267,8 +298,8 @@ function HeroSection() {
               color: '#36C5D3',
               borderColor: 'rgba(54,197,211,0.55)',
               fontWeight: 700,
-              px: { xs: 3.5, md: 5 },
-              py: { xs: 1.4, md: 1.7 },
+              px: { xs: 3.5, md: 4.5 },
+              py: { xs: 1.1, md: 1.3 },
               borderRadius: 50,
               textTransform: 'none',
               fontSize: { xs: '0.95rem', md: '1.05rem' },

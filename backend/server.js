@@ -68,7 +68,7 @@ app.use('/api/auth', authRoutes);
 app.get('/api/public/aksesuarlar', async (req, res) => {
   try {
     const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
-    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 24, 1), 48);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 24, 1), 100);
     const search = String(req.query.search || '').trim();
     const stokta = req.query.stokta === 'true';
     const conditions = [];
@@ -86,7 +86,7 @@ app.get('/api/public/aksesuarlar', async (req, res) => {
 
     const [result, countResult] = await Promise.all([
       pool.query(
-      `SELECT id, stok_kodu, stok_adi, satis_fiyati, mevcut, birimi, aciklama,
+      `SELECT id, stok_kodu, stok_adi, satis_fiyati, mevcut, birimi, aciklama, updated_at,
               CASE WHEN resim IS NOT NULL AND resim <> '' THEN TRUE ELSE FALSE END AS resim_var,
               CASE WHEN resimler IS NULL OR resimler = '' THEN 0
                    ELSE GREATEST((SELECT COUNT(*) FROM json_array_elements_text(resimler::json)), 1)
@@ -127,7 +127,10 @@ app.get('/api/public/aksesuarlar/:id/resim', async (req, res) => {
 
     res.set({
       'Content-Type': match[1],
-      'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
+      // Kısa max-age + revalidate: vitrin fotoğrafı değişince (ETag updated_at'e bağlı)
+      // tarayıcı en geç birkaç dakika içinde yeni görseli alır. URL'deki ?v= parametresi
+      // ile birlikte güncel görsel anında yansır.
+      'Cache-Control': 'public, max-age=300, must-revalidate',
       ETag: etag,
     });
     res.send(Buffer.from(match[2], 'base64'));

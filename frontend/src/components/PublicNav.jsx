@@ -16,8 +16,16 @@ import {
   ListItemButton,
   ListItemText,
   Divider,
+  Badge,
 } from '@mui/material';
-import { Login as LoginIcon, Menu as MenuIcon, Close as CloseIcon } from '@mui/icons-material';
+import {
+  Login as LoginIcon,
+  Menu as MenuIcon,
+  Close as CloseIcon,
+  ShoppingCartOutlined as ShoppingCartOutlinedIcon,
+} from '@mui/icons-material';
+import { useCart } from '../context/CartContext';
+import CartDrawer from './CartDrawer';
 
 function ScrollNav({ children, solid }) {
   const trigger = useScrollTrigger({
@@ -51,6 +59,8 @@ function PublicNav({ solid = false }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
+  const { count } = useCart();
 
   const goTo = (path) => {
     setMobileOpen(false);
@@ -62,7 +72,10 @@ function PublicNav({ solid = false }) {
       <ScrollNav solid={solid}>
         <AppBar position="fixed" elevation={0} sx={{ background: 'transparent' }}>
         <Container maxWidth="xl">
-          <Toolbar disableGutters sx={{ py: 1, gap: { xs: 1, md: 2 } }}>
+          <Toolbar
+            disableGutters
+            sx={{ py: 1, gap: { xs: 1, md: 2 }, justifyContent: 'space-between' }}
+          >
             <Box
               sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer' }}
               onClick={() => navigate('/')}
@@ -103,12 +116,10 @@ function PublicNav({ solid = false }) {
               </Box>
             </Box>
 
-            <Box sx={{ flexGrow: 1 }} />
-
             <Stack
               direction="row"
               spacing={3}
-              sx={{ display: { xs: 'none', md: 'flex' }, mr: 2 }}
+              sx={{ display: { xs: 'none', md: 'flex' }, flexGrow: 1, justifyContent: 'space-between', mx: 3 }}
             >
               {MENU.map((item) => {
                 const active = location.pathname === item.path;
@@ -135,6 +146,39 @@ function PublicNav({ solid = false }) {
                 );
               })}
             </Stack>
+
+            <Button
+              variant="outlined"
+              onClick={() => setCartOpen(true)}
+              startIcon={
+                <Badge
+                  badgeContent={count}
+                  color="error"
+                  overlap="circular"
+                  sx={{ '& .MuiBadge-badge': { fontWeight: 700, fontSize: '0.65rem', minWidth: 16, height: 16 } }}
+                >
+                  <ShoppingCartOutlinedIcon />
+                </Badge>
+              }
+              sx={{
+                color: '#fff',
+                borderColor: 'rgba(54,197,211,0.5)',
+                fontWeight: 700,
+                px: { xs: 1.5, sm: 2.5 },
+                py: 1,
+                borderRadius: 50,
+                textTransform: 'none',
+                letterSpacing: 0.5,
+                fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                minWidth: 0,
+                mr: { xs: 0.5, sm: 1 },
+                '& .MuiButton-startIcon': { marginRight: { xs: 0.5, sm: 1 } },
+                '&:hover': { borderColor: '#36C5D3', background: 'rgba(54,197,211,0.12)' },
+                transition: 'all 0.3s ease',
+              }}
+            >
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Sepetim</Box>
+            </Button>
 
             <Button
               variant="contained"
@@ -236,6 +280,9 @@ function PublicNav({ solid = false }) {
           })}
         </List>
       </Drawer>
+
+      {/* Sepet çekmecesi */}
+      <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
     </>
   );
 }
