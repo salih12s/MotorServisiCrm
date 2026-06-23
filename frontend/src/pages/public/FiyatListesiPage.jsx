@@ -213,22 +213,10 @@ function CategoryTable({ items, navigate }) {
                 fontSize: { xs: '0.72rem', sm: '0.82rem' },
                 borderBottom: '1px solid rgba(54,197,211,0.2)',
                 py: 1.5,
-                display: { xs: 'none', md: 'table-cell' },
-              }}
-            >
-              Tavsiye Edilen Taksitli Satış Fiyatı
-            </TableCell>
-            <TableCell
-              sx={{
-                color: '#36C5D3',
-                fontWeight: 700,
-                fontSize: { xs: '0.72rem', sm: '0.82rem' },
-                borderBottom: '1px solid rgba(54,197,211,0.2)',
-                py: 1.5,
                 display: { xs: 'none', sm: 'table-cell' },
               }}
             >
-              Tavsiye Edilen Nakit & Tek Çekim Fiyatı
+              Tavsiye Edilen Nakit ve Tek Çekim Fiyatı
             </TableCell>
             <TableCell
               sx={{
@@ -311,8 +299,8 @@ function CategoryTable({ items, navigate }) {
                 >
                   {item.name}
                 </Typography>
-                {/* Mobile only: show prices below name */}
-                <Box sx={{ display: { xs: 'block', md: 'none' }, mt: 0.5 }}>
+                {/* Mobile only: show the cash/single-payment price below the name */}
+                <Box sx={{ display: { xs: 'block', sm: 'none' }, mt: 0.5 }}>
                   {item.yakinBayilerde ? (
                     <Chip
                       label="Yakında Bayilerde"
@@ -327,24 +315,17 @@ function CategoryTable({ items, navigate }) {
                       }}
                     />
                   ) : (
-                    <Stack direction="row" spacing={1} flexWrap="wrap" gap={0.5}>
-                      {item.taksit && (
-                        <Typography sx={{ fontSize: '0.7rem', color: '#36C5D3', fontWeight: 600 }}>
-                          Taksit: {item.taksit}
-                        </Typography>
-                      )}
-                      {item.nakit && (
-                        <Typography sx={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.55)', fontWeight: 500 }}>
-                          Nakit: {item.nakit}
-                        </Typography>
-                      )}
-                    </Stack>
+                    item.nakit && (
+                      <Typography sx={{ fontSize: '0.7rem', color: '#fff', fontWeight: 600 }}>
+                        {item.nakit}
+                      </Typography>
+                    )
                   )}
                 </Box>
               </TableCell>
 
-              {/* Taksit */}
-              <TableCell sx={{ py: 1.5, borderBottom: 'none', display: { xs: 'none', md: 'table-cell' } }}>
+              {/* Nakit */}
+              <TableCell sx={{ py: 1.5, borderBottom: 'none', display: { xs: 'none', sm: 'table-cell' } }}>
                 {item.yakinBayilerde ? (
                   <Chip
                     label="Yakında Bayilerde"
@@ -360,27 +341,14 @@ function CategoryTable({ items, navigate }) {
                 ) : (
                   <Typography
                     sx={{
-                      fontWeight: 700,
+                      fontWeight: item.nakit ? 600 : 400,
                       fontSize: '0.9rem',
-                      color: item.taksit ? '#fff' : 'rgba(255,255,255,0.3)',
+                      color: item.nakit ? '#fff' : 'rgba(255,255,255,0.3)',
                     }}
                   >
-                    {item.taksit || '——'}
+                    {item.nakit || '——'}
                   </Typography>
                 )}
-              </TableCell>
-
-              {/* Nakit */}
-              <TableCell sx={{ py: 1.5, borderBottom: 'none', display: { xs: 'none', sm: 'table-cell' } }}>
-                <Typography
-                  sx={{
-                    fontWeight: item.nakit ? 600 : 400,
-                    fontSize: '0.9rem',
-                    color: item.nakit ? 'rgba(255,165,0,0.9)' : 'rgba(255,255,255,0.3)',
-                  }}
-                >
-                  {item.yakinBayilerde ? '——' : (item.nakit || '——')}
-                </Typography>
               </TableCell>
 
               {/* Ödeme */}
