@@ -4,6 +4,10 @@ const CartContext = createContext(null);
 
 const STORAGE_KEY = 'demirkan_sepet';
 
+// Aksesuar ve bisiklet ürünlerinin id'leri çakışabileceği için sepet öğeleri
+// tür + id birleşimiyle anahtarlanır. Eski kayıtlar (key alanı olmayan) aksesuar sayılır.
+export const cartItemKey = (item) => item.key || `aksesuar:${item.id}`;
+
 function loadInitial() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -29,14 +33,16 @@ export function CartProvider({ children }) {
 
   // Ürünü sepete ekler; aynı ürün varsa adedini artırır.
   // Stoktaki miktar (mevcut) aşılamaz; aşılırsa { ok:false, reason:'limit' } döner.
-  const addItem = useCallback((urun, adet = 1) => {
+  // tur: 'aksesuar' (varsayılan) veya 'bisiklet' - görsel ve anahtarlama için kullanılır.
+  const addItem = useCallback((urun, adet = 1, tur = 'aksesuar') => {
     if (!urun || urun.id == null) return { ok: false, reason: 'invalid' };
     const stok = Number(urun.mevcut);
     const stokVar = Number.isFinite(stok);
+    const key = `${tur}:${urun.id}`;
     let result = { ok: true };
 
     setItems((prev) => {
-      const mevcut = prev.find((i) => i.id === urun.id);
+      const mevcut = prev.find((i) => cartItemKey(i) === key);
 
       // Stokta hiç yoksa eklenmez
       if (stokVar && stok <= 0) {
@@ -50,9 +56,9 @@ export function CartProvider({ children }) {
         if (stokVar && istenen > stok) {
           result = { ok: false, reason: 'limit', stok };
           // Mevcut adedi stok sınırına sabitle (zaten sınırdaysa değişmez)
-          return prev.map((i) => (i.id === urun.id ? { ...i, adet: stok, mevcut: guncelMevcut } : i));
+          return prev.map((i) => (cartItemKey(i) === key ? { ...i, adet: stok, mevcut: guncelMevcut } : i));
         }
-        return prev.map((i) => (i.id === urun.id ? { ...i, adet: istenen, mevcut: guncelMevcut } : i));
+        return prev.map((i) => (cartItemKey(i) === key ? { ...i, adet: istenen, mevcut: guncelMevcut } : i));
       }
 
       let baslangic = adet;
@@ -64,6 +70,8 @@ export function CartProvider({ children }) {
         ...prev,
         {
           id: urun.id,
+          key,
+          tur,
           stok_adi: urun.stok_adi,
           satis_fiyati: Number(urun.satis_fiyati) || 0,
           birimi: urun.birimi || 'Adet',
@@ -79,17 +87,18 @@ export function CartProvider({ children }) {
     return result;
   }, []);
 
-  const removeItem = useCallback((id) => {
-    setItems((prev) => prev.filter((i) => i.id !== id));
+  // Aşağıdaki işlemler tür+id anahtarı (cartItemKey) ile çalışır.
+  const removeItem = useCallback((key) => {
+    setItems((prev) => prev.filter((i) => cartItemKey(i) !== key));
   }, []);
 
   // Adedi belirli bir değere ayarlar; 0 veya altına inerse üründen çıkarır.
   // Stok sınırını aşamaz.
-  const setQuantity = useCallback((id, adet) => {
+  const setQuantity = useCallback((key, adet) => {
     setItems((prev) =>
       prev
         .map((i) => {
-          if (i.id !== id) return i;
+          if (cartItemKey(i) !== key) return i;
           const sinirli = i.mevcut != null ? Math.min(adet, i.mevcut) : adet;
           return { ...i, adet: sinirli };
         })
@@ -98,11 +107,11 @@ export function CartProvider({ children }) {
   }, []);
 
   // Adedi 1 artırır; stok sınırına ulaşıldıysa artırmaz ve false döner.
-  const increment = useCallback((id) => {
+  const increment = useCallback((key) => {
     let ok = true;
     setItems((prev) =>
       prev.map((i) => {
-        if (i.id !== id) return i;
+        if (cartItemKey(i) !== key) return i;
         if (i.mevcut != null && i.adet >= i.mevcut) {
           ok = false;
           return i;
@@ -113,10 +122,10 @@ export function CartProvider({ children }) {
     return ok;
   }, []);
 
-  const decrement = useCallback((id) => {
+  const decrement = useCallback((key) => {
     setItems((prev) =>
       prev
-        .map((i) => (i.id === id ? { ...i, adet: i.adet - 1 } : i))
+        .map((i) => (cartItemKey(i) === key ? { ...i, adet: i.adet - 1 } : i))
         .filter((i) => i.adet > 0)
     );
   }, []);

@@ -14,6 +14,7 @@ import BasindaPage from './pages/public/BasindaPage';
 import MotorlarPage from './pages/public/MotorlarPage';
 import FiyatListesiPage from './pages/public/FiyatListesiPage';
 import AksesuarSatisPage from './pages/public/AksesuarSatisPage';
+import HobiGrupPage from './pages/public/HobiGrupPage';
 import Dashboard from './pages/dashboard/Dashboard';
 import IsEmirleri from './pages/isEmirleri/IsEmirleri';
 import IsEmriForm from './pages/isEmirleri/IsEmriForm';
@@ -24,6 +25,8 @@ import Giderler from './pages/giderler/Giderler';
 import Kullanicilar from './pages/kullanicilar/Kullanicilar';
 import Aksesuarlar from './pages/aksesuarlar/Aksesuarlar';
 import AksesuarStok from './pages/aksesuarlar/AksesuarStok';
+import HobiGrupStok from './pages/hobiGrup/HobiGrupStok';
+import HobiGrupSatis from './pages/hobiGrup/HobiGrupSatis';
 import MotorSatislari from './pages/motorSatislari/MotorSatislari';
 
 // Components
@@ -197,6 +200,7 @@ function AppRoutes() {
       <Route path="/motorlar" element={<MotorlarPage />} />
       <Route path="/fiyat-listesi" element={<FiyatListesiPage />} />
       <Route path="/aksesuarlar-satis" element={<AksesuarSatisPage />} />
+      <Route path="/hobi-grup" element={<HobiGrupPage />} />
 
       <Route element={<PanelLayoutRoute />}>
         <Route path="is-emirleri" element={<NormalRoute><IsEmirleri /></NormalRoute>} />
@@ -230,6 +234,8 @@ function AppRoutes() {
         />
         <Route path="aksesuarlar" element={<AksesuarRoute><Aksesuarlar /></AksesuarRoute>} />
         <Route path="aksesuar-stok" element={<AksesuarRoute><AksesuarStok /></AksesuarRoute>} />
+        <Route path="hobi-grup-satis" element={<AksesuarRoute><HobiGrupSatis /></AksesuarRoute>} />
+        <Route path="hobi-grup-stok" element={<AksesuarRoute><HobiGrupStok /></AksesuarRoute>} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

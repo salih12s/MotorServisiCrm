@@ -15,6 +15,7 @@ import {
   ArrowDownward as ArrowDownwardIcon,
   ShoppingBag as ShoppingBagIcon,
   TwoWheeler as TwoWheelerIcon,
+  PedalBike as PedalBikeIcon,
 } from '@mui/icons-material';
 import { raporService, authService, motorSatisService } from '../../services/api';
 import { useCustomTheme } from '../../context/ThemeContext';
@@ -31,7 +32,7 @@ import GunlukRaporTab from './GunlukRaporTab';
 function Raporlar() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const { setAksesuarTheme, setMotorSatisTheme, setDefaultTheme } = useCustomTheme();
+  const { setAksesuarTheme, setMotorSatisTheme, setHobiGrupTheme, setDefaultTheme } = useCustomTheme();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const [activeTab, setActiveTab] = useState(0);
@@ -62,6 +63,14 @@ function Raporlar() {
   const [aksesuarRapor, setAksesuarRapor] = useState(null);
   const [selectedAksesuar, setSelectedAksesuar] = useState(null);
   const [aksesuarDetailModalOpen, setAksesuarDetailModalOpen] = useState(false);
+
+  // Hobi Grup (Bisiklet) Rapor State
+  const [bisikletSelectedDate, setBisikletSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [bisikletEndDate, setBisikletEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [bisikletRapor, setBisikletRapor] = useState(null);
+  const [selectedBisiklet, setSelectedBisiklet] = useState(null);
+  const [bisikletDetailModalOpen, setBisikletDetailModalOpen] = useState(false);
+  const [selectedBisikletKullanici, setSelectedBisikletKullanici] = useState('');
 
   // Sıralama State'leri
   const [isEmriSortField, setIsEmriSortField] = useState('created_at');
@@ -112,11 +121,14 @@ function Raporlar() {
     } else if (activeTab === 2) {
       // Aksesuar Satışları sekmesi - mor tema
       setAksesuarTheme();
+    } else if (activeTab === 3) {
+      // Hobi Grup sekmesi - yeşil tema
+      setHobiGrupTheme();
     } else {
       // Diğer sekmeler - varsayılan tema
       setDefaultTheme();
     }
-  }, [activeTab, setAksesuarTheme, setMotorSatisTheme, setDefaultTheme]);
+  }, [activeTab, setAksesuarTheme, setMotorSatisTheme, setHobiGrupTheme, setDefaultTheme]);
 
   // Sayfa kapanınca varsayılan temaya dön
   useEffect(() => {
@@ -133,10 +145,12 @@ function Raporlar() {
     } else if (activeTab === 2) {
       loadAksesuarRapor();
     } else if (activeTab === 3) {
+      loadBisikletRapor();
+    } else if (activeTab === 4) {
       loadFisKarRapor();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, selectedDate, endDate, fisKarBaslangic, fisKarBitis, aksesuarSelectedDate, aksesuarEndDate, motorSatisSelectedDate, motorSatisEndDate]);
+  }, [activeTab, selectedDate, endDate, fisKarBaslangic, fisKarBitis, aksesuarSelectedDate, aksesuarEndDate, bisikletSelectedDate, bisikletEndDate, motorSatisSelectedDate, motorSatisEndDate]);
 
   const loadGunlukRapor = async () => {
     try {
@@ -229,6 +243,29 @@ function Raporlar() {
       console.error('Aksesuar rapor hatası:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadBisikletRapor = async () => {
+    try {
+      setLoading(true);
+      const response = await raporService.getBisikletAralik(bisikletSelectedDate, bisikletEndDate);
+      setBisikletRapor(response.data);
+    } catch (error) {
+      console.error('Hobi grup rapor hatası:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleViewBisikletDetail = async (satis) => {
+    if (!isAdmin) return;
+    try {
+      const response = await raporService.getBisikletDetay(satis.id);
+      setSelectedBisiklet(response.data);
+      setBisikletDetailModalOpen(true);
+    } catch (error) {
+      console.error('Hobi grup detay hatası:', error);
     }
   };
 
@@ -406,6 +443,42 @@ function Raporlar() {
       }
     : aksesuarRapor;
 
+  // Sıralanmış hobi grup (bisiklet) verileri - aksesuar raporuyla aynı mantık
+  const filteredBisikletler = (bisikletRapor?.detayli_aksesuarlar || [])
+    .filter((satis) => matchesCreatorFilter(satis, selectedBisikletKullanici));
+  const sortedBisikletler = sortData(filteredBisikletler, aksesuarSortField, aksesuarSortDirection);
+
+  const filteredBisikletRapor = selectedBisikletKullanici && bisikletRapor
+    ? {
+        ...bisikletRapor,
+        detayli_aksesuarlar: filteredBisikletler,
+        gunluk_veriler: Object.values(filteredBisikletler.reduce((gunler, satis) => {
+          const tarihDegeri = satis.tamamlama_tarihi || satis.created_at || satis.satis_tarihi;
+          const tarih = tarihDegeri ? format(new Date(tarihDegeri), 'yyyy-MM-dd') : 'Tarihsiz';
+          if (!gunler[tarih]) {
+            gunler[tarih] = {
+              tarih,
+              satis_sayisi: 0,
+              toplam_satis: 0,
+              toplam_maliyet: 0,
+              toplam_kar: 0,
+            };
+          }
+          gunler[tarih].satis_sayisi += 1;
+          gunler[tarih].toplam_satis += parseFloat(satis.toplam_satis || 0);
+          gunler[tarih].toplam_maliyet += parseFloat(satis.toplam_maliyet || 0);
+          gunler[tarih].toplam_kar += parseFloat(satis.kar || 0);
+          return gunler;
+        }, {})).sort((a, b) => b.tarih.localeCompare(a.tarih)),
+        genel_ozet: {
+          toplam_satis_sayisi: filteredBisikletler.length,
+          toplam_satis: filteredBisikletler.reduce((sum, satis) => sum + parseFloat(satis.toplam_satis || 0), 0),
+          toplam_maliyet: filteredBisikletler.reduce((sum, satis) => sum + parseFloat(satis.toplam_maliyet || 0), 0),
+          toplam_kar: filteredBisikletler.reduce((sum, satis) => sum + parseFloat(satis.kar || 0), 0),
+        },
+      }
+    : bisikletRapor;
+
   // Sıralama ikonu
   const SortIcon = ({ field, currentField, direction }) => {
     if (field !== currentField) return null;
@@ -446,14 +519,19 @@ function Raporlar() {
             icon={<DirectionsCarIcon />} 
             iconPosition="start"
           />
-          <Tab 
-            label="Aksesuar Satışları" 
-            icon={<ShoppingBagIcon />} 
+          <Tab
+            label="Aksesuar Satışları"
+            icon={<ShoppingBagIcon />}
             iconPosition="start"
           />
-          <Tab 
-            label="Fiş Kar Analizi" 
-            icon={<ReceiptIcon />} 
+          <Tab
+            label="Hobi Grup"
+            icon={<PedalBikeIcon />}
+            iconPosition="start"
+          />
+          <Tab
+            label="Fiş Kar Analizi"
+            icon={<ReceiptIcon />}
             iconPosition="start"
           />
         </Tabs>
@@ -522,6 +600,25 @@ function Raporlar() {
         />
       )}
       {activeTab === 3 && (
+        <AksesuarRaporTab
+          theme={theme}
+          isMobile={isMobile}
+          loading={loading}
+          aksesuarSelectedDate={bisikletSelectedDate}
+          setAksesuarSelectedDate={setBisikletSelectedDate}
+          aksesuarEndDate={bisikletEndDate}
+          setAksesuarEndDate={setBisikletEndDate}
+          aksesuarRapor={filteredBisikletRapor}
+          sortedAksesuarlar={sortedBisikletler}
+          selectedKullanici={selectedBisikletKullanici}
+          setSelectedKullanici={setSelectedBisikletKullanici}
+          kullanicilar={kullanicilar}
+          handleViewAksesuarDetail={handleViewBisikletDetail}
+          HeaderIcon={PedalBikeIcon}
+          emptyText="Bu tarih aralığında hobi grup satışı bulunmuyor"
+        />
+      )}
+      {activeTab === 4 && (
         <FisKarRaporTab
           loading={loading}
           isAdmin={isAdmin}
@@ -538,6 +635,7 @@ function Raporlar() {
           handleViewDetail={handleViewDetail}
           handleViewAksesuarDetail={handleViewAksesuarDetail}
           handleViewMotorSatisDetail={handleViewMotorSatisDetail}
+          handleViewBisikletDetail={handleViewBisikletDetail}
         />
       )}
 
@@ -555,6 +653,17 @@ function Raporlar() {
         onClose={() => setAksesuarDetailModalOpen(false)}
         isMobile={isMobile}
         selectedAksesuar={selectedAksesuar}
+      />
+
+      {/* Hobi Grup Satış Detay Modal */}
+      <AksesuarDetayModal
+        open={bisikletDetailModalOpen}
+        onClose={() => setBisikletDetailModalOpen(false)}
+        isMobile={isMobile}
+        selectedAksesuar={selectedBisiklet}
+        baslik="Hobi Grup Satış Detayları"
+        accentColor="#2E7D32"
+        accentDark="#1B5E20"
       />
 
       {/* Motor Satış Detay Modal (Fiş Kar Analizi için) */}

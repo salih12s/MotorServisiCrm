@@ -35,6 +35,7 @@ const AksesuarDetayDialog = ({
   isAdmin,
   themeColors,
   handleOpenModal,
+  baslik = 'Aksesuar Detayları',
 }) => (
   <Dialog
     open={open}
@@ -51,7 +52,7 @@ const AksesuarDetayDialog = ({
     }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <ShoppingBagIcon />
-        <Typography variant="h6">Aksesuar Detayları</Typography>
+        <Typography variant="h6">{baslik}</Typography>
       </Box>
       <IconButton onClick={onClose} sx={{ color: 'white' }}>
         <CloseIcon />

@@ -286,23 +286,47 @@ router.get('/fis-kar', async (req, res) => {
       LEFT JOIN kullanicilar k ON a.olusturan_kullanici_id = k.id
     `;
     
+    // Hobi Grup Bisiklet & E-Bike Satışları
+    let bisikletQuery = `
+      SELECT
+        b.id,
+        CONCAT('BSK-', b.id) as fis_no,
+        b.ad_soyad as musteri_ad_soyad,
+        b.odeme_sekli as marka,
+        '' as model_tip,
+        b.toplam_satis as gercek_toplam_ucret,
+        b.toplam_maliyet,
+        b.kar,
+        b.satis_tarihi as created_at,
+        'tamamlandi' as durum,
+        b.olusturan_kisi,
+        k.ad_soyad as olusturan_ad_soyad,
+        k.kullanici_adi as olusturan_kullanici_adi,
+        'bisiklet' as kaynak_tip
+      FROM bisiklet_satislar b
+      LEFT JOIN kullanicilar k ON b.olusturan_kullanici_id = k.id
+    `;
+
     const params = [];
-    
+
     if (baslangic && bitis) {
       params.push(baslangic, bitis);
       isEmriQuery += ` WHERE DATE(ie.created_at) BETWEEN $1 AND $2`;
       aksesuarQuery += ` WHERE DATE(a.satis_tarihi) BETWEEN $1 AND $2`;
+      bisikletQuery += ` WHERE DATE(b.satis_tarihi) BETWEEN $1 AND $2`;
     } else if (tarih) {
       params.push(tarih);
       isEmriQuery += ` WHERE DATE(ie.created_at) = $1`;
       aksesuarQuery += ` WHERE DATE(a.satis_tarihi) = $1`;
+      bisikletQuery += ` WHERE DATE(b.satis_tarihi) = $1`;
     }
-    
+
     const isEmriResult = await pool.query(isEmriQuery + ' ORDER BY ie.created_at DESC', params);
     const aksesuarResult = await pool.query(aksesuarQuery + ' ORDER BY a.satis_tarihi DESC', params);
-    
+    const bisikletResult = await pool.query(bisikletQuery + ' ORDER BY b.satis_tarihi DESC', params);
+
     // Birleştir ve tarihe göre sırala
-    const tumKayitlar = [...isEmriResult.rows, ...aksesuarResult.rows].sort((a, b) => 
+    const tumKayitlar = [...isEmriResult.rows, ...aksesuarResult.rows, ...bisikletResult.rows].sort((a, b) =>
       new Date(b.created_at) - new Date(a.created_at)
     );
     
@@ -328,14 +352,23 @@ router.get('/fis-kar', async (req, res) => {
       acc.kar += parseFloat(row.kar) || 0;
       return acc;
     }, { gelir: 0, maliyet: 0, kar: 0 });
-    
+
+    const bisikletToplam = bisikletResult.rows.reduce((acc, row) => {
+      acc.gelir += parseFloat(row.gercek_toplam_ucret) || 0;
+      acc.maliyet += parseFloat(row.toplam_maliyet) || 0;
+      acc.kar += parseFloat(row.kar) || 0;
+      return acc;
+    }, { gelir: 0, maliyet: 0, kar: 0 });
+
     res.json({
       fisler: tumKayitlar,
       is_emirleri: isEmriResult.rows,
       aksesuarlar: aksesuarResult.rows,
+      bisikletler: bisikletResult.rows,
       toplam,
       is_emri_toplam: isEmriToplam,
-      aksesuar_toplam: aksesuarToplam
+      aksesuar_toplam: aksesuarToplam,
+      bisiklet_toplam: bisikletToplam
     });
   } catch (error) {
     console.error('Fiş kar raporu hatası:', error);
@@ -498,6 +531,133 @@ router.get('/aksesuar/:id', async (req, res) => {
     });
   } catch (error) {
     console.error('Aksesuar detay hatası:', error);
+    res.status(500).json({ message: 'Sunucu hatası' });
+  }
+});
+
+// ==================== HOBİ GRUP BİSİKLET RAPORLARI ====================
+
+// Bisiklet satış tarih aralığı raporu
+router.get('/bisiklet/aralik', async (req, res) => {
+  try {
+    const { baslangic, bitis } = req.query;
+
+    if (!baslangic || !bitis) {
+      return res.status(400).json({ message: 'Başlangıç ve bitiş tarihi gerekli' });
+    }
+
+    // Tarih aralığındaki tamamlanan satışlar (günlük özet) - tamamlama_tarihi'ne göre
+    const satislarOzet = await pool.query(
+      `SELECT
+        DATE(COALESCE(tamamlama_tarihi, created_at)) as tarih,
+        COUNT(*) as satis_sayisi,
+        COALESCE(SUM(toplam_satis), 0) as toplam_satis,
+        COALESCE(SUM(toplam_maliyet), 0) as toplam_maliyet,
+        COALESCE(SUM(kar), 0) as toplam_kar
+       FROM bisiklet_satislar
+       WHERE durum = 'tamamlandi' AND DATE(COALESCE(tamamlama_tarihi, created_at)) BETWEEN $1 AND $2
+       GROUP BY DATE(COALESCE(tamamlama_tarihi, created_at))
+       ORDER BY DATE(COALESCE(tamamlama_tarihi, created_at)) DESC`,
+      [baslangic, bitis]
+    );
+
+    // Detaylı liste
+    const detayliSatislar = await pool.query(
+      `SELECT
+        b.id,
+        b.ad_soyad,
+        b.telefon,
+        b.odeme_sekli,
+        b.toplam_satis,
+        b.toplam_maliyet,
+        b.kar,
+        b.durum,
+        b.created_at,
+        b.tamamlama_tarihi,
+        b.olusturan_kisi,
+        k.ad_soyad as olusturan_ad_soyad,
+        k.kullanici_adi as olusturan_kullanici_adi,
+        TO_CHAR(b.satis_tarihi, 'YYYY-MM-DD') as satis_tarihi
+       FROM bisiklet_satislar b
+       LEFT JOIN kullanicilar k ON b.olusturan_kullanici_id = k.id
+       WHERE b.durum = 'tamamlandi' AND DATE(COALESCE(b.tamamlama_tarihi, b.created_at)) BETWEEN $1 AND $2
+       ORDER BY b.tamamlama_tarihi DESC`,
+      [baslangic, bitis]
+    );
+
+    // Her satış için parçaları getir
+    const satislarWithParcalar = await Promise.all(detayliSatislar.rows.map(async (satis) => {
+      const parcalarResult = await pool.query(
+        'SELECT * FROM bisiklet_satis_parcalar WHERE bisiklet_satis_id = $1 ORDER BY id',
+        [satis.id]
+      );
+      return {
+        ...satis,
+        parcalar: parcalarResult.rows
+      };
+    }));
+
+    // Genel toplam
+    const genelToplam = await pool.query(
+      `SELECT
+        COALESCE(SUM(toplam_satis), 0) as toplam_satis,
+        COALESCE(SUM(toplam_maliyet), 0) as toplam_maliyet,
+        COALESCE(SUM(kar), 0) as toplam_kar,
+        COUNT(*) as toplam_satis_sayisi
+       FROM bisiklet_satislar
+       WHERE durum = 'tamamlandi' AND DATE(COALESCE(tamamlama_tarihi, created_at)) BETWEEN $1 AND $2`,
+      [baslangic, bitis]
+    );
+
+    res.json({
+      baslangic,
+      bitis,
+      gunluk_veriler: satislarOzet.rows,
+      detayli_aksesuarlar: satislarWithParcalar,
+      genel_ozet: {
+        toplam_satis_sayisi: parseInt(genelToplam.rows[0].toplam_satis_sayisi),
+        toplam_satis: parseFloat(genelToplam.rows[0].toplam_satis),
+        toplam_maliyet: parseFloat(genelToplam.rows[0].toplam_maliyet),
+        toplam_kar: parseFloat(genelToplam.rows[0].toplam_kar)
+      }
+    });
+  } catch (error) {
+    console.error('Bisiklet tarih aralığı rapor hatası:', error);
+    res.status(500).json({ message: 'Sunucu hatası' });
+  }
+});
+
+// Bisiklet satış detayını getir (parçalarıyla birlikte)
+router.get('/bisiklet/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const satisResult = await pool.query(
+      `SELECT b.id, b.ad_soyad, b.telefon, b.odeme_sekli, b.aciklama, b.durum, b.odeme_detaylari,
+       TO_CHAR(b.satis_tarihi, 'YYYY-MM-DD') as satis_tarihi,
+       b.toplam_maliyet, b.toplam_satis, b.kar, b.odeme_tutari, b.created_at, b.tamamlama_tarihi,
+       b.olusturan_kisi, k.ad_soyad as olusturan_ad_soyad, k.kullanici_adi as olusturan_kullanici_adi
+       FROM bisiklet_satislar b
+       LEFT JOIN kullanicilar k ON b.olusturan_kullanici_id = k.id
+       WHERE b.id = $1`,
+      [id]
+    );
+
+    if (satisResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Satış kaydı bulunamadı' });
+    }
+
+    const parcalarResult = await pool.query(
+      'SELECT * FROM bisiklet_satis_parcalar WHERE bisiklet_satis_id = $1 ORDER BY id',
+      [id]
+    );
+
+    res.json({
+      ...satisResult.rows[0],
+      parcalar: parcalarResult.rows
+    });
+  } catch (error) {
+    console.error('Bisiklet satış detay hatası:', error);
     res.status(500).json({ message: 'Sunucu hatası' });
   }
 });

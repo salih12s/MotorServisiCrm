@@ -48,6 +48,8 @@ const renderCreator = (kayit) => (
   </Box>
 );
 
+// HeaderIcon ve emptyText propları ile hobi grup (bisiklet) raporu için de kullanılır;
+// varsayılanlar aksesuar raporu davranışını korur.
 const AksesuarRaporTab = ({
   theme,
   isMobile,
@@ -62,6 +64,8 @@ const AksesuarRaporTab = ({
   setSelectedKullanici,
   kullanicilar,
   handleViewAksesuarDetail,
+  HeaderIcon = ShoppingBagIcon,
+  emptyText = 'Bu tarih aralığında aksesuar satışı bulunmuyor',
 }) => (
   <Box>
     {/* Tarih Aralığı */}
@@ -185,14 +189,14 @@ const AksesuarRaporTab = ({
         <Card sx={{ mb: 3 }}>
           <CardContent sx={{ p: 0 }}>
             <Box sx={{ p: isMobile ? 1.5 : 2.5, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 1 }}>
-              <ShoppingBagIcon color="primary" />
+              <HeaderIcon color="primary" />
               <Typography variant="h6" fontWeight={700} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>Günlük Özet</Typography>
             </Box>
             
             {(aksesuarRapor.gunluk_veriler || []).length === 0 ? (
               <Box sx={{ textAlign: 'center', py: 6 }}>
-                <ShoppingBagIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
-                <Typography color="text.secondary">Bu tarih aralığında aksesuar satışı bulunmuyor</Typography>
+                <HeaderIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
+                <Typography color="text.secondary">{emptyText}</Typography>
               </Box>
             ) : isMobile ? (
               /* Mobile Card View */
@@ -293,7 +297,7 @@ const AksesuarRaporTab = ({
           <CardContent sx={{ p: 0 }}>
             <Box sx={{ p: isMobile ? 1.5 : 2.5, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <ShoppingBagIcon color="primary" />
+                <HeaderIcon color="primary" />
                 <Typography variant="h6" fontWeight={700} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
                   Detaylı Satışlar
                 </Typography>
@@ -307,8 +311,8 @@ const AksesuarRaporTab = ({
             
             {sortedAksesuarlar.length === 0 ? (
               <Box sx={{ textAlign: 'center', py: 6 }}>
-                <ShoppingBagIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
-                <Typography color="text.secondary">Bu tarih aralığında aksesuar satışı bulunmuyor</Typography>
+                <HeaderIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
+                <Typography color="text.secondary">{emptyText}</Typography>
               </Box>
             ) : isMobile ? (
               /* Mobile Card View */

@@ -31,6 +31,16 @@ const motorSatisTheme = {
   secondaryDark: '#BF360C',
 };
 
+// Hobi Grup Bisiklet & E-Bike (Yeşil) tema
+const hobiGrupTheme = {
+  primary: '#2E7D32',
+  primaryLight: '#4CAF50',
+  primaryDark: '#1B5E20',
+  secondary: '#1B5E20',
+  secondaryLight: '#2E7D32',
+  secondaryDark: '#0F3D13',
+};
+
 const ThemeContext = createContext(null);
 
 export const useCustomTheme = () => {
@@ -44,14 +54,17 @@ export const useCustomTheme = () => {
 export const CustomThemeProvider = ({ children }) => {
   const [currentTheme, setCurrentTheme] = useState('default');
 
-  const themeColors = currentTheme === 'aksesuar' 
-    ? aksesuarTheme 
-    : currentTheme === 'motorSatis' 
-      ? motorSatisTheme 
-      : defaultTheme;
+  const themeColors = currentTheme === 'aksesuar'
+    ? aksesuarTheme
+    : currentTheme === 'motorSatis'
+      ? motorSatisTheme
+      : currentTheme === 'hobiGrup'
+        ? hobiGrupTheme
+        : defaultTheme;
 
   const setAksesuarTheme = useCallback(() => setCurrentTheme('aksesuar'), []);
   const setMotorSatisTheme = useCallback(() => setCurrentTheme('motorSatis'), []);
+  const setHobiGrupTheme = useCallback(() => setCurrentTheme('hobiGrup'), []);
   const setDefaultTheme = useCallback(() => setCurrentTheme('default'), []);
 
   const theme = useMemo(() => createTheme({
@@ -163,8 +176,9 @@ export const CustomThemeProvider = ({ children }) => {
     <ThemeContext.Provider value={{ 
       theme, 
       currentTheme, 
-      setAksesuarTheme, 
+      setAksesuarTheme,
       setMotorSatisTheme,
+      setHobiGrupTheme,
       setDefaultTheme,
       themeColors 
     }}>

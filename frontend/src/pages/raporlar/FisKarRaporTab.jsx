@@ -21,6 +21,7 @@ import {
   DirectionsCar as DirectionsCarIcon,
   ShoppingBag as ShoppingBagIcon,
   TwoWheeler as TwoWheelerIcon,
+  PedalBike as PedalBikeIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -42,6 +43,7 @@ const FisKarRaporTab = ({
   handleViewDetail,
   handleViewAksesuarDetail,
   handleViewMotorSatisDetail,
+  handleViewBisikletDetail,
 }) => (
   <Box>
     {/* Tarih Aralığı Seçici */}
@@ -127,7 +129,7 @@ const FisKarRaporTab = ({
         {/* Kategori Bazlı Özet - Yan Yana */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
           {/* İş Emirleri Özet */}
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} sm={6} md={3}>
             <Card sx={{ height: '100%', borderTop: '4px solid #1976d2' }}>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -159,7 +161,7 @@ const FisKarRaporTab = ({
           </Grid>
 
           {/* Aksesuar Satışları Özet */}
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} sm={6} md={3}>
             <Card sx={{ height: '100%', borderTop: '4px solid #9c27b0' }}>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -190,8 +192,40 @@ const FisKarRaporTab = ({
             </Card>
           </Grid>
 
+          {/* Hobi Grup Bisiklet & E-Bike Özet */}
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ height: '100%', borderTop: '4px solid #2E7D32' }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <PedalBikeIcon sx={{ color: '#2E7D32' }} />
+                  <Typography variant="h6" fontWeight={700}>Hobi Grup</Typography>
+                  <Chip label={`${fisKarRapor.bisikletler?.length || 0}`} size="small" sx={{ ml: 'auto' }} />
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="body2" color="text.secondary">Gelir:</Typography>
+                  <Typography fontWeight={600} sx={{ color: '#2e7d32' }}>
+                    {formatCurrency(fisKarRapor.bisiklet_toplam?.gelir || 0)}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="body2" color="text.secondary">Maliyet:</Typography>
+                  <Typography fontWeight={600} sx={{ color: '#c62828' }}>
+                    {formatCurrency(fisKarRapor.bisiklet_toplam?.maliyet || 0)}
+                  </Typography>
+                </Box>
+                <Divider sx={{ my: 1 }} />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="body2" fontWeight={700}>Kar:</Typography>
+                  <Typography variant="h6" fontWeight={700} sx={{ color: (fisKarRapor.bisiklet_toplam?.kar || 0) >= 0 ? '#2e7d32' : '#c62828' }}>
+                    {formatCurrency(fisKarRapor.bisiklet_toplam?.kar || 0)}
+                  </Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+
           {/* Motor Satışları Özet */}
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} sm={6} md={3}>
             <Card sx={{ height: '100%', borderTop: '4px solid #e65100' }}>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -431,6 +465,95 @@ const FisKarRaporTab = ({
                             }}
                           >
                             {formatCurrency(a.kar)}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </Card>
+
+        {/* Hobi Grup Bisiklet & E-Bike Satışları Tablosu */}
+        <Card sx={{ mt: 3, mb: 3 }}>
+          <CardContent sx={{ p: 0 }}>
+            <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 1 }}>
+              <PedalBikeIcon sx={{ color: '#2E7D32' }} />
+              <Typography variant="h6" fontWeight={700} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' }, color: '#2E7D32' }}>
+                Hobi Grup Satışları
+              </Typography>
+              <Chip
+                label={`${fisKarRapor.bisikletler?.length || 0} kayıt`}
+                size="small"
+                sx={{ bgcolor: '#e8f5e9', color: '#2E7D32', ml: 'auto' }}
+              />
+              {fisKarRapor.bisiklet_toplam && (
+                <Chip
+                  label={`Kar: ${formatCurrency(fisKarRapor.bisiklet_toplam.kar)}`}
+                  size="small"
+                  sx={{ bgcolor: '#e8f5e9', color: '#2e7d32' }}
+                />
+              )}
+            </Box>
+            <TableContainer sx={{ overflowX: 'auto' }}>
+              <Table sx={{ minWidth: { xs: 600, sm: '100%' } }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 700 }}>Fiş No</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Müşteri</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Ödeme Şekli</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 700 }}>Tarih</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700 }}>Satış</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700 }}>Maliyet</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700 }}>Kar</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {(fisKarRapor.bisikletler || []).length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                        <PedalBikeIcon sx={{ fontSize: 40, color: 'text.disabled', mb: 1 }} />
+                        <Typography color="text.secondary">Bu tarih aralığında hobi grup satışı bulunmuyor</Typography>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    (fisKarRapor.bisikletler || []).map((b) => (
+                      <TableRow
+                        key={b.id}
+                        hover
+                        onDoubleClick={() => handleViewBisikletDetail && handleViewBisikletDetail(b)}
+                        sx={{ cursor: isAdmin ? 'pointer' : 'default' }}
+                      >
+                        <TableCell>
+                          <Typography fontWeight={700} sx={{ color: '#2E7D32' }}>{b.fis_no}</Typography>
+                        </TableCell>
+                        <TableCell>{b.musteri_ad_soyad}</TableCell>
+                        <TableCell>{b.marka || '-'}</TableCell>
+                        <TableCell align="center">
+                          <Typography variant="body2">
+                            {format(new Date(b.created_at), 'dd.MM.yyyy', { locale: tr })}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography sx={{ color: '#2e7d32' }}>
+                            {formatCurrency(b.gercek_toplam_ucret)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography sx={{ color: '#c62828' }}>
+                            {formatCurrency(b.toplam_maliyet)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography
+                            fontWeight={700}
+                            sx={{
+                              color: parseFloat(b.kar) >= 0 ? '#2e7d32' : '#c62828'
+                            }}
+                          >
+                            {formatCurrency(b.kar)}
                           </Typography>
                         </TableCell>
                       </TableRow>

@@ -19,8 +19,8 @@ import {
   WhatsApp as WhatsAppIcon,
   ShoppingCartOutlined as ShoppingCartOutlinedIcon,
 } from '@mui/icons-material';
-import { useCart } from '../context/CartContext';
-import { getPublicAksesuarImageUrl } from '../services/api';
+import { useCart, cartItemKey } from '../context/CartContext';
+import { getPublicAksesuarImageUrl, getPublicBisikletImageUrl } from '../services/api';
 import { WHATSAPP_NUMBER } from '../config/site';
 
 function formatCurrency(value) {
@@ -32,7 +32,11 @@ function formatCurrency(value) {
 
 function cartItemImage(item) {
   if (item.resim) return item.resim;
-  if (item.resim_var) return getPublicAksesuarImageUrl(item.id, item.updated_at);
+  if (item.resim_var) {
+    return item.tur === 'bisiklet'
+      ? getPublicBisikletImageUrl(item.id, item.updated_at)
+      : getPublicAksesuarImageUrl(item.id, item.updated_at);
+  }
   return null;
 }
 
@@ -56,7 +60,7 @@ function CartDrawer({ open, onClose }) {
   const [uyari, setUyari] = useState('');
 
   const handleIncrement = (item) => {
-    const ok = increment(item.id);
+    const ok = increment(cartItemKey(item));
     if (!ok) {
       setUyari(`Stokta en fazla ${item.mevcut} ${item.birimi || 'adet'} var, daha fazla ekleyemezsiniz.`);
     }
@@ -109,7 +113,7 @@ function CartDrawer({ open, onClose }) {
             Sepetiniz boş.
           </Typography>
           <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', mt: 0.5 }}>
-            Aksesuar ve ekipman sayfasından ürün ekleyebilirsiniz.
+            Aksesuar veya Hobi Grup sayfasından ürün ekleyebilirsiniz.
           </Typography>
         </Box>
       ) : (
@@ -119,7 +123,7 @@ function CartDrawer({ open, onClose }) {
               const img = cartItemImage(item);
               return (
                 <Box
-                  key={item.id}
+                  key={cartItemKey(item)}
                   sx={{
                     display: 'flex',
                     gap: 1.5,
@@ -174,7 +178,7 @@ function CartDrawer({ open, onClose }) {
                       <Stack direction="row" alignItems="center" spacing={0.5}>
                         <IconButton
                           size="small"
-                          onClick={() => decrement(item.id)}
+                          onClick={() => decrement(cartItemKey(item))}
                           sx={{ color: '#fff', border: '1px solid rgba(255,255,255,0.2)', p: 0.25 }}
                           aria-label="Adet azalt"
                         >
@@ -200,7 +204,7 @@ function CartDrawer({ open, onClose }) {
                       </Stack>
                       <IconButton
                         size="small"
-                        onClick={() => removeItem(item.id)}
+                        onClick={() => removeItem(cartItemKey(item))}
                         sx={{ color: '#ff6b6b' }}
                         aria-label="Ürünü sil"
                       >

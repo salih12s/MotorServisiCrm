@@ -20,16 +20,22 @@ import {
 } from '@mui/material';
 import {
   Search as SearchIcon,
-  ShoppingBag as ShoppingBagIcon,
+  PedalBike as PedalBikeIcon,
+  ElectricBolt as ElectricBoltIcon,
   Image as ImageIcon,
   Inventory2 as Inventory2Icon,
   Close as CloseIcon,
   AddShoppingCart as AddShoppingCartIcon,
+  CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 import PublicNav from '../../components/PublicNav';
 import SiteFooter from '../../components/SiteFooter';
-import { aksesuarStokService, getPublicAksesuarImageUrl } from '../../services/api';
+import { bisikletStokService, getPublicBisikletImageUrl } from '../../services/api';
 import { useCart } from '../../context/CartContext';
+
+const MAVI = '#04A7B8';
+const MAVI_ACIK = '#36C5D3';
+const MAVI_GRADIENT = 'linear-gradient(135deg, #04A7B8 0%, #36C5D3 60%, #7be3ee 100%)';
 
 function formatCurrency(value) {
   return new Intl.NumberFormat('tr-TR', {
@@ -38,8 +44,7 @@ function formatCurrency(value) {
   }).format(value || 0);
 }
 
-// Ürünün tüm fotoğraflarını dizi olarak döndürür (ana fotoğraf ilk sırada)
-export function getResimler(urun) {
+function getResimler(urun) {
   let list = [];
   if (urun.resimler) {
     if (Array.isArray(urun.resimler)) {
@@ -54,14 +59,23 @@ export function getResimler(urun) {
     }
   }
   list = [...new Set(list.filter(Boolean))];
-  // Ana fotoğraf eski/uyumsuz kayıtlarda galeride olmasa bile ilk sırada gösterilir.
   if (urun.resim) list = [urun.resim, ...list.filter((r) => r !== urun.resim)];
   return list;
 }
 
-export function AksesuarCard({ urun, onClick, onAddToCart }) {
+function getOzellikler(aciklama) {
+  if (!aciklama) return [];
+  return aciklama
+    .split('\n')
+    .map((s) => s.replace(/^[-•*]\s*/, '').trim())
+    .filter(Boolean);
+}
+
+function BisikletCard({ urun, onClick, onAddToCart }) {
   const stokVar = (urun.mevcut || 0) > 0;
   const resimler = getResimler(urun);
+  const resimSayisi = Number(urun.resim_sayisi) || resimler.length;
+
   return (
     <Card
       elevation={0}
@@ -76,11 +90,10 @@ export function AksesuarCard({ urun, onClick, onAddToCart }) {
       }}
       sx={{
         width: '100%',
-        height: { xs: 'auto', sm: 450, md: 470 },
-        minHeight: { xs: 390, sm: 450, md: 470 },
+        height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        borderRadius: 3,
+        borderRadius: 2,
         border: '1px solid rgba(54,197,211,0.15)',
         background: 'rgba(255,255,255,0.03)',
         overflow: 'hidden',
@@ -91,44 +104,51 @@ export function AksesuarCard({ urun, onClick, onAddToCart }) {
           borderColor: 'rgba(54,197,211,0.45)',
           boxShadow: '0 12px 30px rgba(4,167,184,0.18)',
         },
+        '&:hover .bisiklet-card-img': { transform: 'scale(1.04)' },
       }}
     >
-      {/* Resim - tüm kartlarda sabit yükseklik (yalnızca ana/vitrin fotoğrafı) */}
       <Box
         sx={{
           position: 'relative',
           width: '100%',
-          height: { xs: 180, sm: 220, md: 240 },
+          height: { xs: 190, sm: 230, md: 250 },
           flexShrink: 0,
           background: 'rgba(255,255,255,0.05)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           borderBottom: '1px solid rgba(54,197,211,0.1)',
+          overflow: 'hidden',
         }}
       >
-        {(urun.resim || urun.resim_var) ? (
+        {urun.resim || urun.resim_var ? (
           <Box
             component="img"
-            src={urun.resim || getPublicAksesuarImageUrl(urun.id, urun.updated_at)}
+            className="bisiklet-card-img"
+            src={urun.resim || getPublicBisikletImageUrl(urun.id, urun.updated_at)}
             alt={urun.stok_adi}
             loading="lazy"
             decoding="async"
-            sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            sx={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              transition: 'transform 0.35s ease',
+            }}
           />
         ) : (
-          <ImageIcon sx={{ fontSize: 64, color: 'rgba(54,197,211,0.25)' }} />
+          <PedalBikeIcon sx={{ fontSize: 72, color: 'rgba(54,197,211,0.25)' }} />
         )}
-        {/* Birden fazla fotoğraf rozeti */}
-        {(Number(urun.resim_sayisi) > 1 || resimler.length > 1) && (
+
+        {resimSayisi > 1 && (
           <Chip
             size="small"
             icon={<ImageIcon sx={{ fontSize: '0.85rem !important', color: '#fff !important' }} />}
-            label={Number(urun.resim_sayisi) || resimler.length}
+            label={resimSayisi}
             sx={{
               position: 'absolute',
-              top: 8,
-              right: 8,
+              top: 10,
+              right: 10,
               height: 24,
               fontWeight: 700,
               fontSize: '0.7rem',
@@ -140,46 +160,57 @@ export function AksesuarCard({ urun, onClick, onAddToCart }) {
         )}
       </Box>
 
-      {/* Bilgi */}
       <Box sx={{ p: { xs: 1.75, sm: 2.25 }, display: 'flex', flexDirection: 'column', flex: 1, gap: 1 }}>
         <Typography
           sx={{
-            fontWeight: 600,
-            fontSize: { xs: '0.9rem', sm: '1rem' },
+            fontWeight: 700,
+            fontSize: { xs: '0.92rem', sm: '1.02rem' },
             color: '#fff',
             lineHeight: 1.3,
             display: '-webkit-box',
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
-            minHeight: { xs: '2.3rem', sm: '2.6rem' },
+            minHeight: { xs: '2.4rem', sm: '2.65rem' },
           }}
         >
           {urun.stok_adi}
         </Typography>
+
+        <Box sx={{ minHeight: { xs: '2rem', sm: '2.2rem' } }}>
+          {urun.aciklama && (
+            <Typography
+              sx={{
+                fontSize: { xs: '0.72rem', sm: '0.78rem' },
+                color: 'rgba(255,255,255,0.55)',
+                lineHeight: 1.45,
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}
+            >
+              {getOzellikler(urun.aciklama).join(' • ')}
+            </Typography>
+          )}
+        </Box>
 
         <Typography
           sx={{
             mt: 'auto',
             fontWeight: 900,
             fontSize: { xs: '1.2rem', sm: '1.4rem' },
-            background: 'linear-gradient(135deg, #04A7B8 0%, #36C5D3 60%, #7be3ee 100%)',
+            lineHeight: 1.15,
+            background: MAVI_GRADIENT,
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
+            whiteSpace: 'nowrap',
           }}
         >
           ₺{formatCurrency(urun.satis_fiyati)}
         </Typography>
 
-        {/* Stok durumu + Sepete Ekle - kartın altında, yan yana */}
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            flexWrap: 'wrap',
-          }}
-        >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
           <Chip
             size="small"
             icon={<Inventory2Icon sx={{ fontSize: '0.9rem !important' }} />}
@@ -188,7 +219,6 @@ export function AksesuarCard({ urun, onClick, onAddToCart }) {
               fontWeight: 700,
               fontSize: '0.72rem',
               height: 26,
-              maxWidth: '100%',
               color: stokVar ? '#fff' : 'rgba(255,255,255,0.55)',
               bgcolor: stokVar ? 'rgba(4,167,184,0.9)' : 'rgba(255,255,255,0.08)',
               border: stokVar ? 'none' : '1px solid rgba(255,255,255,0.12)',
@@ -207,7 +237,6 @@ export function AksesuarCard({ urun, onClick, onAddToCart }) {
             sx={{
               ml: 'auto',
               minWidth: 0,
-              flexShrink: 0,
               px: 1.25,
               py: 0.4,
               fontSize: '0.7rem',
@@ -224,32 +253,12 @@ export function AksesuarCard({ urun, onClick, onAddToCart }) {
             Sepete Ekle
           </Button>
         </Box>
-
-        {/* Açıklama - varsa stok bilgisinin altında kısaca */}
-        <Box sx={{ minHeight: { xs: '2rem', sm: '2.2rem' } }}>
-          {urun.aciklama && (
-            <Typography
-              sx={{
-                fontSize: { xs: '0.72rem', sm: '0.78rem' },
-                color: 'rgba(255,255,255,0.55)',
-                lineHeight: 1.4,
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-              }}
-            >
-              {urun.aciklama}
-            </Typography>
-          )}
-        </Box>
       </Box>
     </Card>
   );
 }
 
-// Ürün detay penceresi - galeri (büyük ana foto + seçilebilir küçük fotoğraflar) + tam açıklama
-export function AksesuarDetayDialog({ urun, open, onClose, onAddToCart }) {
+function BisikletDetayDialog({ urun, open, onClose, onAddToCart }) {
   const [aktifResim, setAktifResim] = useState(0);
 
   useEffect(() => {
@@ -260,6 +269,8 @@ export function AksesuarDetayDialog({ urun, open, onClose, onAddToCart }) {
 
   const resimler = getResimler(urun);
   const stokVar = (urun.mevcut || 0) > 0;
+  const ozellikler = getOzellikler(urun.aciklama);
+  const cokSatirli = ozellikler.length > 1;
 
   return (
     <Dialog
@@ -292,16 +303,14 @@ export function AksesuarDetayDialog({ urun, open, onClose, onAddToCart }) {
             zIndex: 2,
             bgcolor: 'rgba(4,167,184,0.9)',
             color: '#fff',
-            '&:hover': { bgcolor: '#36C5D3' },
+            '&:hover': { bgcolor: MAVI_ACIK },
           }}
         >
           <CloseIcon />
         </IconButton>
 
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={{ xs: 2, md: 3 }}>
-          {/* Galeri */}
           <Box sx={{ width: { xs: '100%', md: '52%' }, flexShrink: 0 }}>
-            {/* Büyük ana fotoğraf */}
             <Box
               sx={{
                 width: '100%',
@@ -323,11 +332,10 @@ export function AksesuarDetayDialog({ urun, open, onClose, onAddToCart }) {
                   sx={{ width: '100%', height: '100%', objectFit: 'contain' }}
                 />
               ) : (
-                <ImageIcon sx={{ fontSize: 72, color: 'rgba(54,197,211,0.25)' }} />
+                <PedalBikeIcon sx={{ fontSize: 72, color: 'rgba(54,197,211,0.25)' }} />
               )}
             </Box>
 
-            {/* Seçilebilir küçük fotoğraflar */}
             {resimler.length > 1 && (
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1.5 }}>
                 {resimler.map((img, i) => (
@@ -342,7 +350,7 @@ export function AksesuarDetayDialog({ urun, open, onClose, onAddToCart }) {
                       cursor: 'pointer',
                       flexShrink: 0,
                       border: '2px solid',
-                      borderColor: i === aktifResim ? '#36C5D3' : 'rgba(255,255,255,0.12)',
+                      borderColor: i === aktifResim ? MAVI_ACIK : 'rgba(255,255,255,0.12)',
                       opacity: i === aktifResim ? 1 : 0.7,
                       transition: 'all 0.15s ease',
                       '&:hover': { opacity: 1, borderColor: 'rgba(54,197,211,0.6)' },
@@ -360,8 +368,20 @@ export function AksesuarDetayDialog({ urun, open, onClose, onAddToCart }) {
             )}
           </Box>
 
-          {/* Bilgiler */}
           <Box sx={{ flex: 1, minWidth: 0, pr: { xs: 0, sm: 4 } }}>
+            <Typography
+              sx={{
+                fontSize: '0.7rem',
+                fontWeight: 800,
+                letterSpacing: 2,
+                color: MAVI_ACIK,
+                textTransform: 'uppercase',
+                mb: 0.5,
+              }}
+            >
+              Hobi Grup • Bisiklet & E-Bike
+            </Typography>
+
             <Typography
               sx={{
                 fontWeight: 800,
@@ -381,7 +401,7 @@ export function AksesuarDetayDialog({ urun, open, onClose, onAddToCart }) {
                 mt: 1.5,
                 fontWeight: 900,
                 fontSize: { xs: '1.5rem', sm: '1.8rem' },
-                background: 'linear-gradient(135deg, #04A7B8 0%, #36C5D3 60%, #7be3ee 100%)',
+                background: MAVI_GRADIENT,
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
               }}
@@ -427,24 +447,45 @@ export function AksesuarDetayDialog({ urun, open, onClose, onAddToCart }) {
               </Button>
             </Box>
 
-            {urun.aciklama && (
+            {ozellikler.length > 0 && (
               <Box sx={{ mt: 2.5 }}>
-                <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#36C5D3', mb: 0.75 }}>
-                  Ürün Açıklaması
+                <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: MAVI_ACIK, mb: 1 }}>
+                  {cokSatirli ? 'Özellikler ve Detaylar' : 'Ürün Açıklaması'}
                 </Typography>
-                <Typography
-                  sx={{
-                    fontSize: '0.88rem',
-                    color: 'rgba(255,255,255,0.75)',
-                    lineHeight: 1.6,
-                    whiteSpace: 'pre-wrap',
-                    maxWidth: '100%',
-                    overflowWrap: 'anywhere',
-                    wordBreak: 'break-word',
-                  }}
-                >
-                  {urun.aciklama}
-                </Typography>
+                {cokSatirli ? (
+                  <Stack spacing={0.75}>
+                    {ozellikler.map((oz, i) => (
+                      <Box key={i} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                        <CheckCircleIcon sx={{ fontSize: 16, color: MAVI, mt: '3px', flexShrink: 0 }} />
+                        <Typography
+                          sx={{
+                            fontSize: '0.88rem',
+                            color: 'rgba(255,255,255,0.8)',
+                            lineHeight: 1.55,
+                            overflowWrap: 'anywhere',
+                            wordBreak: 'break-word',
+                          }}
+                        >
+                          {oz}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Stack>
+                ) : (
+                  <Typography
+                    sx={{
+                      fontSize: '0.88rem',
+                      color: 'rgba(255,255,255,0.75)',
+                      lineHeight: 1.6,
+                      whiteSpace: 'pre-wrap',
+                      maxWidth: '100%',
+                      overflowWrap: 'anywhere',
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    {urun.aciklama}
+                  </Typography>
+                )}
               </Box>
             )}
           </Box>
@@ -454,12 +495,12 @@ export function AksesuarDetayDialog({ urun, open, onClose, onAddToCart }) {
   );
 }
 
-function AksesuarSatisPage() {
+function HobiGrupPage() {
   const [urunler, setUrunler] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [stokFiltre, setStokFiltre] = useState('tumu'); // 'tumu' | 'stokta'
+  const [stokFiltre, setStokFiltre] = useState('tumu');
   const [detayUrun, setDetayUrun] = useState(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -468,7 +509,7 @@ function AksesuarSatisPage() {
   const { addItem } = useCart();
 
   const handleAddToCart = useCallback((urun) => {
-    const res = addItem(urun, 1);
+    const res = addItem(urun, 1, 'bisiklet');
     if (res.ok) {
       setSnackbar({ open: true, message: `${urun.stok_adi} sepete eklendi`, severity: 'success' });
     } else if (res.reason === 'limit') {
@@ -486,9 +527,9 @@ function AksesuarSatisPage() {
     const requestId = ++requestIdRef.current;
     try {
       setLoading(true);
-      const response = await aksesuarStokService.getPublic({
+      const response = await bisikletStokService.getPublic({
         page,
-        limit: 50,
+        limit: 24,
         search: debouncedSearch,
         stokta: stokFiltre === 'stokta',
       });
@@ -496,7 +537,7 @@ function AksesuarSatisPage() {
       setUrunler(response.data?.data || []);
       setTotalPages(response.data?.pagination?.totalPages || 1);
     } catch (error) {
-      console.error('Aksesuar listesi hatası:', error);
+      console.error('Bisiklet listesi hatası:', error);
     } finally {
       if (requestId === requestIdRef.current) setLoading(false);
     }
@@ -523,18 +564,20 @@ function AksesuarSatisPage() {
   const handleOpenDetail = useCallback(async (urun) => {
     setDetayUrun(urun);
     try {
-      const response = await aksesuarStokService.getPublicById(urun.id);
+      const response = await bisikletStokService.getPublicById(urun.id);
       setDetayUrun(response.data);
     } catch (error) {
-      console.error('Aksesuar detayı hatası:', error);
+      console.error('Bisiklet detayı hatası:', error);
     }
   }, []);
+
+  const bosDurum = !loading && urunler.length === 0;
+  const filtreliBosDurum = bosDurum && (searchTerm || stokFiltre === 'stokta');
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#02080f', color: '#fff', overflowX: 'hidden' }}>
       <PublicNav solid />
 
-      {/* Hero Banner */}
       <Box
         sx={{
           pt: { xs: '72px', sm: '80px', md: '88px' },
@@ -552,18 +595,18 @@ function AksesuarSatisPage() {
           >
             <Box
               sx={{
-                width: 48,
-                height: 48,
+                width: 52,
+                height: 52,
                 borderRadius: 2,
                 background: 'linear-gradient(135deg, #04A7B8, #36C5D3)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 6px 20px rgba(54,197,211,0.4)',
+                boxShadow: '0 6px 24px rgba(54,197,211,0.42)',
                 flexShrink: 0,
               }}
             >
-              <ShoppingBagIcon sx={{ color: '#fff', fontSize: 26 }} />
+              <PedalBikeIcon sx={{ color: '#fff', fontSize: 30 }} />
             </Box>
             <Box>
               <Typography
@@ -571,13 +614,13 @@ function AksesuarSatisPage() {
                 sx={{
                   fontWeight: 900,
                   fontSize: { xs: '1.8rem', sm: '2.4rem', md: '3rem' },
-                  background: 'linear-gradient(135deg, #04A7B8 0%, #36C5D3 50%, #7be3ee 100%)',
+                  background: MAVI_GRADIENT,
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   lineHeight: 1.1,
                 }}
               >
-                Aksesuar ve Ekipman
+                Hobi Grup • Bisiklet & E-Bike
               </Typography>
               <Typography
                 sx={{
@@ -585,27 +628,30 @@ function AksesuarSatisPage() {
                   fontSize: { xs: '0.9rem', md: '1rem' },
                   color: 'rgba(255,255,255,0.6)',
                   fontWeight: 400,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.75,
+                  flexWrap: 'wrap',
                 }}
               >
-                Motosiklet aksesuar, ekipman ve yedek parça ürünlerimiz
+                <ElectricBoltIcon sx={{ fontSize: 16, color: MAVI_ACIK }} />
+                Bisiklet ve elektrikli bisiklet koleksiyonumuz
               </Typography>
             </Box>
           </Stack>
         </Container>
       </Box>
 
-      {/* Main Content */}
       <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
-        {/* Arama */}
         <TextField
           fullWidth
-          placeholder="Aksesuar ara... (örn: kask, eldiven, yağ...)"
+          placeholder="Bisiklet veya e-bike ara..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon sx={{ color: '#36C5D3' }} />
+                <SearchIcon sx={{ color: MAVI_ACIK }} />
               </InputAdornment>
             ),
           }}
@@ -617,7 +663,7 @@ function AksesuarSatisPage() {
               color: '#fff',
               '& fieldset': { borderColor: 'rgba(54,197,211,0.25)' },
               '&:hover fieldset': { borderColor: 'rgba(54,197,211,0.5)' },
-              '&.Mui-focused fieldset': { borderColor: '#36C5D3' },
+              '&.Mui-focused fieldset': { borderColor: MAVI_ACIK },
             },
             '& .MuiInputBase-input::placeholder': { color: 'rgba(255,255,255,0.35)', opacity: 1 },
           }}
@@ -653,41 +699,27 @@ function AksesuarSatisPage() {
           <ToggleButton value="stokta">Stokta Var</ToggleButton>
         </ToggleButtonGroup>
 
-        {/* Üst sayfalama - rahat geçiş için ürünlerin üstünde */}
-        {totalPages > 1 && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', mb: { xs: 3, md: 4 } }}>
-            <Pagination
-              count={totalPages}
-              page={page}
-              onChange={(_, value) => {
-                setPage(value);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              disabled={loading}
-              showFirstButton
-              showLastButton
-              sx={{
-                '& .MuiPaginationItem-root': { color: 'rgba(255,255,255,0.75)' },
-                '& .Mui-selected': { bgcolor: '#04A7B8 !important', color: '#fff' },
-              }}
-            />
-          </Box>
-        )}
-
         {loading ? (
           <Box sx={{ py: 10, textAlign: 'center' }}>
-            <CircularProgress sx={{ color: '#36C5D3' }} />
+            <CircularProgress sx={{ color: MAVI_ACIK }} />
           </Box>
-        ) : urunler.length === 0 ? (
-          <Box sx={{ py: 8, textAlign: 'center' }}>
-            <ImageIcon sx={{ fontSize: 48, color: 'rgba(54,197,211,0.3)', mb: 2 }} />
-            <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: '1rem' }}>
-              {searchTerm
-                ? 'Aramanızla eşleşen ürün bulunamadı.'
-                : stokFiltre === 'stokta'
-                  ? 'Şu anda stokta ürün bulunmuyor.'
-                  : 'Henüz ürün eklenmemiş.'}
-            </Typography>
+        ) : bosDurum ? (
+          <Box sx={{ py: 10, textAlign: 'center' }}>
+            <PedalBikeIcon sx={{ fontSize: 64, color: 'rgba(54,197,211,0.3)', mb: 2 }} />
+            {filtreliBosDurum ? (
+              <Typography sx={{ color: 'rgba(255,255,255,0.45)', fontSize: '1rem' }}>
+                {searchTerm ? 'Aramanızla eşleşen ürün bulunamadı.' : 'Şu anda stokta ürün bulunmuyor.'}
+              </Typography>
+            ) : (
+              <>
+                <Typography sx={{ fontWeight: 800, fontSize: '1.4rem', color: 'rgba(255,255,255,0.85)' }}>
+                  Çok Yakında
+                </Typography>
+                <Typography sx={{ mt: 1, color: 'rgba(255,255,255,0.45)', maxWidth: 460, mx: 'auto' }}>
+                  Bisiklet ve e-bike koleksiyonumuz hazırlanıyor, kısa süre içinde bu sayfada olacak.
+                </Typography>
+              </>
+            )}
           </Box>
         ) : (
           <Box
@@ -698,13 +730,12 @@ function AksesuarSatisPage() {
                 xs: 'repeat(1, 1fr)',
                 sm: 'repeat(2, 1fr)',
                 md: 'repeat(3, 1fr)',
-                lg: 'repeat(4, 1fr)',
               },
               alignItems: 'stretch',
             }}
           >
             {urunler.map((urun) => (
-              <AksesuarCard
+              <BisikletCard
                 urun={urun}
                 key={urun.id}
                 onClick={handleOpenDetail}
@@ -735,7 +766,7 @@ function AksesuarSatisPage() {
         )}
       </Container>
 
-      <AksesuarDetayDialog
+      <BisikletDetayDialog
         urun={detayUrun}
         open={Boolean(detayUrun)}
         onClose={() => setDetayUrun(null)}
@@ -752,7 +783,7 @@ function AksesuarSatisPage() {
           onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
           severity={snackbar.severity}
           variant="filled"
-          sx={{ fontWeight: 600, ...(snackbar.severity === 'success' ? { bgcolor: '#04A7B8' } : {}) }}
+          sx={{ fontWeight: 600, ...(snackbar.severity === 'success' ? { bgcolor: MAVI } : {}) }}
         >
           {snackbar.message}
         </Alert>
@@ -763,4 +794,4 @@ function AksesuarSatisPage() {
   );
 }
 
-export default AksesuarSatisPage;
+export default HobiGrupPage;

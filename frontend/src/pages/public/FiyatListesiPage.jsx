@@ -29,95 +29,96 @@ import { useNavigate } from 'react-router-dom';
 import PublicNav from '../../components/PublicNav';
 import SiteFooter from '../../components/SiteFooter';
 
+// Fiyatlar musattimotor.com/fiyat-listesi sayfasındaki tavsiye edilen satış fiyatlarıdır.
 const priceData = [
   {
     category: 'Chopper',
     items: [
-      { name: 'Dark Pow',         image: '/Images/Dark_pow.jpg',              taksit: '427.499,00 ₺', nakit: '367.815,00 ₺' },
-      { name: 'Kai-Zen',          image: '/Images/Kai_zen.webp',             taksit: '318.100,00 ₺', nakit: '273.672,00 ₺' },
-      { name: 'Milanio 250',      image: '/Images/Milanio_250.jpg',          taksit: '285.449,00 ₺', nakit: '245.641,00 ₺' },
-      { name: 'Milanio S400',     image: '/Images/Milanio_s400.webp',        taksit: '345.500,00 ₺', nakit: null },
-      { name: 'King Pow',         image: '/Images/King_pow.webp',            taksit: '354.710,00 ₺', nakit: '305.193,00 ₺' },
-      { name: 'X-Pow',            image: '/Images/X_pow.webp',               taksit: null, nakit: null, yakinBayilerde: true },
-      { name: 'Dark Pow Pro',     image: '/Images/Dark_pow_pro.webp',        taksit: null, nakit: null, yakinBayilerde: true },
+      { name: 'Dark Pow',         image: '/Images/Dark_pow.jpg',              fiyat: '427.499,00 ₺' },
+      { name: 'Kai-Zen',          image: '/Images/Kai_zen.webp',             fiyat: '318.100,00 ₺' },
+      { name: 'Milanio 250',      image: '/Images/Milanio_250.jpg',          fiyat: '285.449,00 ₺' },
+      { name: 'Milanio S400',     image: '/Images/Milanio_s400.webp',        fiyat: '345.500,00 ₺' },
+      { name: 'King Pow',         image: '/Images/King_pow.webp',            fiyat: '354.710,00 ₺' },
+      { name: 'X-Pow',            image: '/Images/X_pow.webp',               fiyat: null, yakinBayilerde: true },
+      { name: 'Dark Pow Pro',     image: '/Images/Dark_pow_pro.webp',        fiyat: null, yakinBayilerde: true },
     ],
   },
   {
     category: 'Racing',
     items: [
-      { name: 'M125R',      image: '/Images/M125r.webp',      taksit: '169.499,00 ₺', nakit: '145.674,00 ₺' },
-      { name: 'M250R',      image: '/Images/m250r.webp',      taksit: '255.499,00 ₺', nakit: '219.589,00 ₺' },
-      { name: 'Vitron 250', image: '/Images/vitron250.webp',  taksit: null, nakit: null, yakinBayilerde: true },
+      { name: 'M125R',      image: '/Images/M125r.webp',      fiyat: '169.499,00 ₺' },
+      { name: 'M250R',      image: '/Images/m250r.webp',      fiyat: '255.499,00 ₺' },
+      { name: 'Vitron 250', image: '/Images/vitron250.webp',  fiyat: null, yakinBayilerde: true },
     ],
   },
   {
     category: 'Scooter',
     items: [
-      { name: 'Glamaro Max 125',            image: '/Images/Glamaro125.webp',               taksit: '112.499,00 ₺', nakit: '96.783,00 ₺' },
-      { name: 'Glamaro Max 125 – Kameralı', image: '/Images/Glamaro_max125_kamerali.webp',  taksit: '101.193,00 ₺', nakit: '117.999,00 ₺' },
-      { name: 'Lemuzin 125',                image: '/Images/Lemuzin_125.webp',              taksit: '82.437,00 ₺',  nakit: '71.500,00 ₺' },
-      { name: 'Bella 50',                   image: '/Images/bella50.webp',                  taksit: '63.200,00 ₺',  nakit: '54.357,00 ₺' },
-      { name: 'Rabel 50',                   image: '/Images/rabel50.webp',                  taksit: '88.233,00 ₺',  nakit: '75.895,00 ₺' },
-      { name: 'Siena 50',                   image: '/Images/Siena50.webp',                  taksit: '82.385,00 ₺',  nakit: '70.835,00 ₺' },
-      { name: 'Rajon 50X',                  image: '/Images/Rajon50x.webp',                 taksit: '98.324,00 ₺',  nakit: '84.420,00 ₺' },
-      { name: 'Atekon 200',                 image: '/Images/atekon200.webp',                taksit: null, nakit: null, yakinBayilerde: true },
-      { name: 'Siena 110',                  image: '/Images/siena110.webp',                 taksit: '76.942,00 ₺',  nakit: '66.201,00 ₺' },
-      { name: 'Rajon 125X',                 image: '/Images/rajox125x.webp',                taksit: '102.983,00 ₺', nakit: '88.616,00 ₺' },
+      { name: 'Glamaro Max 125',            image: '/Images/Glamaro125.webp',               fiyat: '112.499,00 ₺' },
+      { name: 'Glamaro Max 125 – Kameralı', image: '/Images/Glamaro_max125_kamerali.webp',  fiyat: '117.999,00 ₺' },
+      { name: 'Lemuzin 125',                image: '/Images/Lemuzin_125.webp',              fiyat: '82.437,00 ₺' },
+      { name: 'Bella 50',                   image: '/Images/bella50.webp',                  fiyat: '63.200,00 ₺' },
+      { name: 'Rabel 50',                   image: '/Images/rabel50.webp',                  fiyat: '88.233,00 ₺' },
+      { name: 'Siena 50',                   image: '/Images/Siena50.webp',                  fiyat: '82.385,00 ₺' },
+      { name: 'Rajon 50X',                  image: '/Images/Rajon50x.webp',                 fiyat: '98.324,00 ₺' },
+      { name: 'Atekon 200',                 image: '/Images/atekon200.webp',                fiyat: null, yakinBayilerde: true },
+      { name: 'Siena 110',                  image: '/Images/siena110.webp',                 fiyat: '76.942,00 ₺' },
+      { name: 'Rajon 125X',                 image: '/Images/rajox125x.webp',                fiyat: '102.983,00 ₺' },
     ],
   },
   {
     category: 'ATV',
     items: [
-      { name: 'Rage 400',  image: '/Images/rage400.webp',  taksit: null, nakit: null, yakinBayilerde: true },
-      { name: 'İron X300', image: '/Images/ironx300.webp', taksit: null, nakit: null, yakinBayilerde: true },
-      { name: 'İron X250', image: '/Images/ironx250.webp', taksit: null, nakit: null, yakinBayilerde: true },
-      { name: 'İron X200', image: '/Images/ironx200.webp', taksit: '96.800,00 ₺', nakit: '83.000,00 ₺' },
+      { name: 'Rage 400',  image: '/Images/rage400.webp',  fiyat: null, yakinBayilerde: true },
+      { name: 'İron X300', image: '/Images/ironx300.webp', fiyat: null, yakinBayilerde: true },
+      { name: 'İron X250', image: '/Images/ironx250.webp', fiyat: null, yakinBayilerde: true },
+      { name: 'İron X200', image: '/Images/ironx200.webp', fiyat: '96.800,00 ₺' },
     ],
   },
   {
     category: 'UTV',
     items: [
-      { name: 'Off Track', image: '/Images/OffTruck.jpg', taksit: null, nakit: null, yakinBayilerde: true },
+      { name: 'Off Track', image: '/Images/OffTruck.jpg', fiyat: null, yakinBayilerde: true },
     ],
   },
   {
     category: 'E-Scooter',
     items: [
-      { name: 'Sport 701 Pro',   image: '/Images/Sport701Pro.webp', taksit: '119.700,00 ₺', nakit: '99.800,00 ₺' },
-      { name: 'Smarda – SMD X1', image: '/Images/SmardaSMDx1.png',  taksit: null, nakit: null, yakinBayilerde: true },
+      { name: 'Sport 701 Pro',   image: '/Images/Sport701Pro.webp', fiyat: '119.700,00 ₺' },
+      { name: 'Smarda – SMD X1', image: '/Images/SmardaSMDx1.png',  fiyat: null, yakinBayilerde: true },
     ],
   },
   {
     category: 'E-Technology',
     items: [
-      { name: 'Smarda – Marsilya Max 1600', image: '/Images/SmardaMarsilyamax1600.webp', taksit: '118.310,00 ₺', nakit: '99.900,00 ₺' },
-      { name: 'Smarda – Soft Pro',          image: '/Images/SmardaSoftPro.webp',         taksit: '76.999,00 ₺',  nakit: '65.971,00 ₺' },
-      { name: 'Smarda – Violet 1200',       image: '/Images/SmardaViolet1200.webp',      taksit: '107.150,00 ₺', nakit: '92.850,00 ₺' },
-      { name: 'Smarda – Tork Pro',          image: '/Images/SmardaTorkPro.webp',         taksit: '97.710,00 ₺',  nakit: '84.183,00 ₺' },
-      { name: 'Smarda – Dora 4000',         image: '/Images/SmardaDora400.webp',         taksit: '118.599,00 ₺', nakit: '99.900,00 ₺' },
-      { name: 'Smarda – SMD X3',            image: '/Images/SmardaSMDx3.webp',           taksit: null, nakit: null, yakinBayilerde: true },
+      { name: 'Smarda – Marsilya Max 1600', image: '/Images/SmardaMarsilyamax1600.webp', fiyat: '118.310,00 ₺' },
+      { name: 'Smarda – Soft Pro',          image: '/Images/SmardaSoftPro.webp',         fiyat: '76.999,00 ₺' },
+      { name: 'Smarda – Violet 1200',       image: '/Images/SmardaViolet1200.webp',      fiyat: '104.245,00 ₺' },
+      { name: 'Smarda – Tork Pro',          image: '/Images/SmardaTorkPro.webp',         fiyat: '97.710,00 ₺' },
+      { name: 'Smarda – Dora 4000',         image: '/Images/SmardaDora400.webp',         fiyat: '118.599,00 ₺' },
+      { name: 'Smarda – SMD X3',            image: '/Images/SmardaSMDx3.webp',           fiyat: null, yakinBayilerde: true },
     ],
   },
   {
     category: 'E-Car',
     items: [
-      { name: 'Smarda – Elegolf',   image: '/Images/SmardaEleGolf.webp',   taksit: null, nakit: null, yakinBayilerde: true },
-      { name: 'Doch Pro 66000',     image: '/Images/DochPro66000.webp',    taksit: '289.750,00 ₺', nakit: '249.642,00 ₺' },
-      { name: 'Smarda – Venedik',   image: '/Images/SmardaVenedik.webp',   taksit: '169.200,00 ₺', nakit: '134.840,00 ₺' },
-      { name: 'Venedik Pro',        image: '/Images/VenedikPro.webp',      taksit: '180.918,00 ₺', nakit: '162.000,00 ₺' },
-      { name: 'Smarda – Golftruck', image: '/Images/SmardaGolfTruck.webp', taksit: null, nakit: null, yakinBayilerde: true },
+      { name: 'Smarda – Elegolf',   image: '/Images/SmardaEleGolf.webp',   fiyat: null, yakinBayilerde: true },
+      { name: 'Doch Pro 66000',     image: '/Images/DochPro66000.webp',    fiyat: '289.750,00 ₺' },
+      { name: 'Smarda – Venedik',   image: '/Images/SmardaVenedik.webp',   fiyat: '169.200,00 ₺' },
+      { name: 'Venedik Pro',        image: '/Images/VenedikPro.webp',      fiyat: '180.918,00 ₺' },
+      { name: 'Smarda – Golftruck', image: '/Images/SmardaGolfTruck.webp', fiyat: null, yakinBayilerde: true },
     ],
   },
   {
     category: 'Cross',
     items: [
-      { name: 'M-Truck250', image: '/Images/Mtruck250.webp', taksit: null, nakit: null, yakinBayilerde: true },
+      { name: 'M-Truck250', image: '/Images/Mtruck250.webp', fiyat: null, yakinBayilerde: true },
     ],
   },
   {
     category: 'Su Araçları',
     items: [
-      { name: 'Car Bot', image: '/Images/CarBot.webp', taksit: null, nakit: null, yakinBayilerde: true },
+      { name: 'Car Bot', image: '/Images/CarBot.webp', fiyat: null, yakinBayilerde: true },
     ],
   },
 ];
@@ -216,7 +217,7 @@ function CategoryTable({ items, navigate }) {
                 display: { xs: 'none', sm: 'table-cell' },
               }}
             >
-              Tavsiye Edilen Nakit ve Tek Çekim Fiyatı
+              Tavsiye Edilen Satış Fiyatı
             </TableCell>
             <TableCell
               sx={{
@@ -315,9 +316,9 @@ function CategoryTable({ items, navigate }) {
                       }}
                     />
                   ) : (
-                    item.nakit && (
+                    item.fiyat && (
                       <Typography sx={{ fontSize: '0.7rem', color: '#fff', fontWeight: 600 }}>
-                        {item.nakit}
+                        {item.fiyat}
                       </Typography>
                     )
                   )}
@@ -341,12 +342,12 @@ function CategoryTable({ items, navigate }) {
                 ) : (
                   <Typography
                     sx={{
-                      fontWeight: item.nakit ? 600 : 400,
+                      fontWeight: item.fiyat ? 600 : 400,
                       fontSize: '0.9rem',
-                      color: item.nakit ? '#fff' : 'rgba(255,255,255,0.3)',
+                      color: item.fiyat ? '#fff' : 'rgba(255,255,255,0.3)',
                     }}
                   >
-                    {item.nakit || '——'}
+                    {item.fiyat || '——'}
                   </Typography>
                 )}
               </TableCell>

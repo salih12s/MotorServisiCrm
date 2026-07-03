@@ -35,7 +35,17 @@ import { useAuth } from '../context/AuthContext';
 import { calculateTotals } from './aksesuarModalUtils';
 import AksesuarUrunlerSection from './AksesuarUrunlerSection';
 
-function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
+// service / stokService / baslik propları ile farklı satış türlerine (örn. hobi grup bisiklet)
+// uyarlanabilir; varsayılanlar aksesuar satışı davranışını korur.
+function AksesuarModal({
+  open,
+  onClose,
+  onSuccess,
+  editId = null,
+  service = aksesuarService,
+  stokService = aksesuarStokService,
+  baslik = 'Aksesuar',
+}) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { themeColors } = useCustomTheme();
@@ -83,7 +93,7 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
     searchTimeoutRef.current = setTimeout(async () => {
       setStokSearchLoading(true);
       try {
-        const response = await aksesuarStokService.search(query);
+        const response = await stokService.search(query);
         setStokOptions(response.data || []);
       } catch (err) {
         console.error('Stok arama hatası:', err);
@@ -92,7 +102,7 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
         setStokSearchLoading(false);
       }
     }, 300);
-  }, []);
+  }, [stokService]);
 
   // Edit modunda veriyi yükle
   useEffect(() => {
@@ -100,7 +110,7 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
       if (editId && open) {
         setLoading(true);
         try {
-          const response = await aksesuarService.getById(editId);
+          const response = await service.getById(editId);
           const data = response.data || response;
           
           // Tarih düzeltmesi - sadece YYYY-MM-DD kısmını al, Date objesine çevirme
@@ -123,7 +133,7 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
           setParcalar(data.parcalar || []);
         } catch (err) {
           console.error('Edit yükleme hatası:', err);
-          setError('Aksesuar yüklenirken hata oluştu');
+          setError('Kayıt yüklenirken hata oluştu');
         } finally {
           setLoading(false);
         }
@@ -131,7 +141,7 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
     };
 
     loadAksesuar();
-  }, [editId, open, user]);
+  }, [editId, open, user, service]);
 
   // Modal kapandığında formu temizle
   useEffect(() => {
@@ -216,9 +226,9 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
       };
 
       if (isEdit) {
-        await aksesuarService.update(editId, data);
+        await service.update(editId, data);
       } else {
-        await aksesuarService.create(data);
+        await service.create(data);
       }
 
       if (onSuccess) {
@@ -268,7 +278,7 @@ function AksesuarModal({ open, onClose, onSuccess, editId = null }) {
           </Avatar>
           <Box>
             <Typography variant="h6" fontWeight={700}>
-              {isEdit ? 'Aksesuar Düzenle' : 'Yeni Aksesuar Satışı'}
+              {isEdit ? `${baslik} Düzenle` : `Yeni ${baslik} Satışı`}
             </Typography>
           </Box>
         </Box>

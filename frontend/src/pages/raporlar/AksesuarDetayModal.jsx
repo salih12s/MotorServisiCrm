@@ -29,7 +29,15 @@ import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { formatCurrency } from './raporlarUtils';
 
-const AksesuarDetayModal = ({ open, onClose, isMobile, selectedAksesuar }) => (
+const AksesuarDetayModal = ({
+  open,
+  onClose,
+  isMobile,
+  selectedAksesuar,
+  baslik = 'Aksesuar Satış Detayları',
+  accentColor = '#04A7B8',
+  accentDark = '#038999',
+}) => (
   <Dialog
     open={open}
     onClose={onClose}
@@ -44,7 +52,7 @@ const AksesuarDetayModal = ({ open, onClose, isMobile, selectedAksesuar }) => (
     }}
   >
     <DialogTitle sx={{ 
-      bgcolor: '#04A7B8', 
+      bgcolor: accentColor,
       color: 'white',
       display: 'flex',
       alignItems: 'center',
@@ -54,7 +62,7 @@ const AksesuarDetayModal = ({ open, onClose, isMobile, selectedAksesuar }) => (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <ReceiptIcon sx={{ fontSize: { xs: 20, sm: 24 } }} />
         <Typography variant="h6" fontWeight={700} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
-          Aksesuar Satış Detayları
+          {baslik}
         </Typography>
       </Box>
       <IconButton
@@ -72,7 +80,7 @@ const AksesuarDetayModal = ({ open, onClose, isMobile, selectedAksesuar }) => (
           <Card variant="outlined" sx={{ mb: 2 }}>
             <CardContent sx={{ p: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <PersonIcon color="primary" />
+                <PersonIcon sx={{ color: accentColor }} />
                 <Typography variant="subtitle1" fontWeight={600}>Müşteri Bilgileri</Typography>
               </Box>
               <Grid container spacing={2}>
@@ -121,7 +129,7 @@ const AksesuarDetayModal = ({ open, onClose, isMobile, selectedAksesuar }) => (
           <Card variant="outlined" sx={{ mb: 2 }}>
             <CardContent sx={{ p: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <AssignmentIcon color="primary" />
+                <AssignmentIcon sx={{ color: accentColor }} />
                 <Typography variant="subtitle1" fontWeight={600}>Satılan Ürünler</Typography>
                 <Chip label={`${selectedAksesuar.parcalar?.length || 0} ürün`} size="small" sx={{ ml: 1 }} />
               </Box>
@@ -200,7 +208,14 @@ const AksesuarDetayModal = ({ open, onClose, isMobile, selectedAksesuar }) => (
       )}
     </DialogContent>
     <DialogActions sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
-      <Button onClick={onClose} variant="contained" sx={{ bgcolor: '#04A7B8' }}>
+      <Button
+        onClick={onClose}
+        variant="contained"
+        sx={{
+          bgcolor: accentColor,
+          '&:hover': { bgcolor: accentDark },
+        }}
+      >
         Kapat
       </Button>
     </DialogActions>

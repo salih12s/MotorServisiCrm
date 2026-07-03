@@ -49,7 +49,7 @@ function ScrollNav({ children, solid }) {
 const MENU = [
   { path: '/', label: 'Anasayfa' },
   { path: '/hakkimizda', label: 'Hakkımızda' },
-  { path: '/basinda', label: 'Basında Biz' },
+  { path: '/hobi-grup', label: 'Hobi Grup • Bisiklet & E-Bike' },
   { path: '/motorlar', label: 'Motorlarımız' },
   { path: '/fiyat-listesi', label: 'Fiyat Listesi' },
   { path: '/aksesuarlar-satis', label: 'Aksesuarlar' },
@@ -118,8 +118,15 @@ function PublicNav({ solid = false }) {
 
             <Stack
               direction="row"
-              spacing={3}
-              sx={{ display: { xs: 'none', md: 'flex' }, flexGrow: 1, justifyContent: 'space-between', mx: 3 }}
+              spacing={{ lg: 0.75, xl: 1.75 }}
+              sx={{
+                display: { xs: 'none', lg: 'flex' },
+                flexGrow: 1,
+                minWidth: 0,
+                justifyContent: 'center',
+                alignItems: 'stretch',
+                mx: { lg: 1.5, xl: 3 },
+              }}
             >
               {MENU.map((item) => {
                 const active = location.pathname === item.path;
@@ -131,6 +138,14 @@ function PublicNav({ solid = false }) {
                       color: active ? '#36C5D3' : '#fff',
                       fontWeight: 600,
                       letterSpacing: 0.5,
+                      lineHeight: 1.2,
+                      textAlign: 'center',
+                      whiteSpace: 'normal',
+                      wordBreak: 'normal',
+                      minWidth: 0,
+                      maxWidth: item.path === '/hobi-grup' ? { lg: 190, xl: 230 } : { lg: 130, xl: 155 },
+                      px: { lg: 0.75, xl: 1.25 },
+                      fontSize: { lg: '0.78rem', xl: '0.88rem' },
                       borderBottom: active
                         ? '2px solid #36C5D3'
                         : '2px solid transparent',
@@ -215,7 +230,7 @@ function PublicNav({ solid = false }) {
             <IconButton
               onClick={() => setMobileOpen(true)}
               sx={{
-                display: { xs: 'inline-flex', md: 'none' },
+                display: { xs: 'inline-flex', lg: 'none' },
                 color: '#fff',
                 ml: 0.5,
               }}

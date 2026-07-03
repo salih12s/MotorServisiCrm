@@ -29,6 +29,7 @@ import {
   ShoppingBag as ShoppingBagIcon,
   TwoWheeler as TwoWheelerIcon,
   Inventory as InventoryIcon,
+  PedalBike as PedalBikeIcon,
   ExpandLess,
   ExpandMore,
   Home as HomeIcon,
@@ -68,8 +69,20 @@ const menuItems = [
       { title: 'Aksesuar Stok', path: '/aksesuar-stok', icon: <InventoryIcon /> },
     ],
   },
-  { 
-    title: 'Raporlar', 
+  {
+    title: 'Hobi Grup Bisiklet & E-Bike',
+    path: '/hobi-grup-panel',
+    icon: <PedalBikeIcon />,
+    roles: ['admin', 'user', 'personel'],
+    color: '#2E7D32',
+    showForAksesuarOnly: true,
+    subItems: [
+      { title: 'Hobi Grup Satış', path: '/hobi-grup-satis', icon: <ShoppingBagIcon /> },
+      { title: 'Hobi Grup Stok', path: '/hobi-grup-stok', icon: <InventoryIcon /> },
+    ],
+  },
+  {
+    title: 'Raporlar',
     path: '/raporlar', 
     icon: <AssessmentIcon />,
     roles: ['admin'],
@@ -93,9 +106,9 @@ const menuItems = [
 function Layout() {
   const [anchorEl, setAnchorEl] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [aksesuarOpen, setAksesuarOpen] = useState(false);
+  const [openMenus, setOpenMenus] = useState({});
   const { user, logout } = useAuth();
-  const { setAksesuarTheme, setMotorSatisTheme, setDefaultTheme, themeColors } = useCustomTheme();
+  const { setAksesuarTheme, setMotorSatisTheme, setHobiGrupTheme, setDefaultTheme, themeColors } = useCustomTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -103,13 +116,16 @@ function Layout() {
   useEffect(() => {
     if (location.pathname === '/aksesuarlar' || location.pathname === '/aksesuar-stok') {
       setAksesuarTheme();
-      setAksesuarOpen(true);
+      setOpenMenus((prev) => ({ ...prev, '/aksesuarlar': true }));
+    } else if (location.pathname === '/hobi-grup-satis' || location.pathname === '/hobi-grup-stok') {
+      setHobiGrupTheme();
+      setOpenMenus((prev) => ({ ...prev, '/hobi-grup-panel': true }));
     } else if (location.pathname === '/motor-satislari') {
       setMotorSatisTheme();
     } else {
       setDefaultTheme();
     }
-  }, [location.pathname, setAksesuarTheme, setMotorSatisTheme, setDefaultTheme]);
+  }, [location.pathname, setAksesuarTheme, setMotorSatisTheme, setHobiGrupTheme, setDefaultTheme]);
 
   // Kullanıcı rolüne göre ve yetkilerine göre menu filtrele
   const filteredMenuItems = menuItems.filter(item => {
@@ -169,6 +185,8 @@ function Layout() {
 
   const getCurrentPageTitle = () => {
     if (location.pathname === '/aksesuar-stok') return 'Aksesuar Stok';
+    if (location.pathname === '/hobi-grup-satis') return 'Hobi Grup Satış';
+    if (location.pathname === '/hobi-grup-stok') return 'Hobi Grup Stok';
     const item = filteredMenuItems.find(item => item.path === location.pathname);
     if (item) return item.title;
     if (location.pathname.startsWith('/is-emirleri/')) return 'İş Emri Detay';
@@ -235,7 +253,7 @@ function Layout() {
                 <ListItemButton
                   onClick={() => {
                     if (hasSubItems) {
-                      setAksesuarOpen(!aksesuarOpen);
+                      setOpenMenus((prev) => ({ ...prev, [item.path]: !prev[item.path] }));
                     } else {
                       navigate(item.path);
                       setMobileOpen(false);
@@ -269,7 +287,7 @@ function Layout() {
                     }}
                   />
                   {hasSubItems ? (
-                    aksesuarOpen ? <ExpandLess sx={{ color: 'rgba(255,255,255,0.7)' }} /> : <ExpandMore sx={{ color: 'rgba(255,255,255,0.7)' }} />
+                    openMenus[item.path] ? <ExpandLess sx={{ color: 'rgba(255,255,255,0.7)' }} /> : <ExpandMore sx={{ color: 'rgba(255,255,255,0.7)' }} />
                   ) : (
                     (isActive && !hasSubItems) && (
                       <Box
@@ -286,7 +304,7 @@ function Layout() {
                 </ListItemButton>
               </ListItem>
               {hasSubItems && (
-                <Collapse in={aksesuarOpen} timeout="auto" unmountOnExit>
+                <Collapse in={!!openMenus[item.path]} timeout="auto" unmountOnExit>
                   <List component="div" disablePadding>
                     {item.subItems.map((subItem) => {
                       const isSubItemActive = location.pathname === subItem.path;

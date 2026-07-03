@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Box, Button, Container, Typography, Stack } from '@mui/material';
 import {
   ArrowForward as ArrowForwardIcon,
-  PlayArrow as PlayArrowIcon,
+  PedalBike as PedalBikeIcon,
 } from '@mui/icons-material';
 
 const HEADER_HEIGHT = {
@@ -262,33 +262,74 @@ function HeroSection() {
             Koleksiyonu Keşfet
           </Button>
 
-          <Button
-            variant="outlined"
-            size="large"
-            startIcon={<PlayArrowIcon />}
-            onClick={() => navigate('/login')}
+          <Box
             sx={{
-              color: '#fff',
-              borderColor: 'rgba(255,255,255,0.55)',
-              fontWeight: 700,
-              px: { xs: 3.5, md: 4.5 },
-              py: { xs: 1.1, md: 1.3 },
-              borderRadius: 50,
-              textTransform: 'none',
-              fontSize: { xs: '0.95rem', md: '1.05rem' },
+              position: 'relative',
               width: { xs: '100%', sm: 'auto' },
               maxWidth: { xs: 320, sm: 'none' },
-              backdropFilter: 'blur(10px)',
-              background: 'rgba(0,0,0,0.35)',
-              transition: 'all 0.25s ease',
-              '&:hover': {
-                borderColor: '#36C5D3',
-                background: 'rgba(54,197,211,0.2)',
-              },
             }}
           >
-            Servis Hizmetleri
-          </Button>
+            <Box
+              sx={{
+                position: { xs: 'static', sm: 'absolute' },
+                top: { sm: -12 },
+                right: { sm: -8 },
+                zIndex: 1,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 0.4,
+                px: { xs: 1, sm: 1.2 },
+                py: 0.2,
+                mb: { xs: 0.7, sm: 0 },
+                mr: { xs: 1.2, sm: 0 },
+                ml: { xs: 'auto', sm: 0 },
+                width: 'fit-content',
+                borderRadius: 50,
+                background: 'linear-gradient(135deg, #f5b431 0%, #ffd76a 100%)',
+                color: '#1a1200',
+                fontWeight: 800,
+                fontSize: { xs: '0.64rem', sm: '0.7rem' },
+                letterSpacing: { xs: 0.6, sm: 0.8 },
+                boxShadow: '0 4px 18px rgba(245,180,49,0.55)',
+                pointerEvents: 'none',
+                animation: 'heroYeniPulse 2s ease-in-out infinite',
+                '@keyframes heroYeniPulse': {
+                  '0%, 100%': { transform: 'scale(1)' },
+                  '50%': { transform: 'scale(1.08)' },
+                },
+              }}
+            >
+              ★ YENİ
+            </Box>
+
+            <Button
+              variant="outlined"
+              size="large"
+              startIcon={<PedalBikeIcon />}
+              onClick={() => navigate('/hobi-grup')}
+              sx={{
+                color: '#DDF8E6',
+                borderColor: 'rgba(126,222,155,0.68)',
+                fontWeight: 700,
+                px: { xs: 3.5, md: 4.5 },
+                py: { xs: 1.1, md: 1.3 },
+                borderRadius: 50,
+                textTransform: 'none',
+                fontSize: { xs: '0.95rem', md: '1.05rem' },
+                width: { xs: '100%', sm: 'auto' },
+                backdropFilter: 'blur(10px)',
+                background: 'linear-gradient(135deg, rgba(20,70,39,0.46) 0%, rgba(77,154,94,0.22) 100%)',
+                boxShadow: '0 8px 28px rgba(74,222,128,0.12)',
+                transition: 'all 0.25s ease',
+                '&:hover': {
+                  borderColor: '#A7E8B8',
+                  background: 'linear-gradient(135deg, rgba(34,120,66,0.52) 0%, rgba(122,210,145,0.26) 100%)',
+                },
+              }}
+            >
+              Hobi Grup • Bisiklet & E-Bike
+            </Button>
+          </Box>
 
           <Button
             variant="outlined"

@@ -11,6 +11,14 @@ export const getPublicAksesuarImageUrl = (id, version) => {
   return `${base}?v=${v}`;
 };
 
+// Bisiklet / E-Bike (Hobi Grup) görsel URL'si - aksesuar ile aynı cache-busting mantığı
+export const getPublicBisikletImageUrl = (id, version) => {
+  const base = `${API_URL}/public/bisikletler/${id}/resim`;
+  if (version == null || version === '') return base;
+  const v = encodeURIComponent(new Date(version).getTime() || version);
+  return `${base}?v=${v}`;
+};
+
 const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -104,6 +112,9 @@ export const raporService = {
   // Aksesuar raporları
   getAksesuarAralik: (baslangic, bitis) => api.get('/raporlar/aksesuar/aralik', { params: { baslangic, bitis } }),
   getAksesuarDetay: (id) => api.get(`/raporlar/aksesuar/${id}`),
+  // Hobi Grup bisiklet raporları
+  getBisikletAralik: (baslangic, bitis) => api.get('/raporlar/bisiklet/aralik', { params: { baslangic, bitis } }),
+  getBisikletDetay: (id) => api.get(`/raporlar/bisiklet/${id}`),
 };
 
 // Giderler
@@ -136,6 +147,28 @@ export const aksesuarStokService = {
   // Public (giriş gerektirmeyen) aksesuar satış kataloğu
   getPublic: (params) => api.get('/public/aksesuarlar', { params }),
   getPublicById: (id) => api.get(`/public/aksesuarlar/${id}`),
+};
+
+// Bisiklet / E-Bike Satışları (Hobi Grup) - aksesuar satışları ile aynı yapı
+export const bisikletSatisService = {
+  getAll: () => api.get('/bisiklet-satislari'),
+  getById: (id) => api.get(`/bisiklet-satislari/${id}`),
+  create: (data) => api.post('/bisiklet-satislari', data),
+  update: (id, data) => api.put(`/bisiklet-satislari/${id}`, data),
+  delete: (id) => api.delete(`/bisiklet-satislari/${id}`),
+};
+
+// Bisiklet / E-Bike Stok (Hobi Grup)
+export const bisikletStokService = {
+  getAll: (params) => api.get('/bisiklet-stok', { params }),
+  getById: (id) => api.get(`/bisiklet-stok/${id}`),
+  search: (q) => api.get('/bisiklet-stok/ara', { params: { q } }),
+  create: (data) => api.post('/bisiklet-stok', data),
+  update: (id, data) => api.put(`/bisiklet-stok/${id}`, data),
+  delete: (id) => api.delete(`/bisiklet-stok/${id}`),
+  // Public (giriş gerektirmeyen) hobi grup kataloğu
+  getPublic: (params) => api.get('/public/bisikletler', { params }),
+  getPublicById: (id) => api.get(`/public/bisikletler/${id}`),
 };
 
 // Motor Satışları

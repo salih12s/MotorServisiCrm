@@ -483,6 +483,64 @@ const initDatabase = async () => {
     `);
     console.log('✓ Aksesuar Stok tablosuna resim/resimler/aciklama sütunları eklendi');
 
+    // Bisiklet / E-Bike (Hobi Grup) Stok tablosu
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS bisiklet_stok (
+        id SERIAL PRIMARY KEY,
+        stok_kodu VARCHAR(50) UNIQUE NOT NULL,
+        stok_adi VARCHAR(255) NOT NULL,
+        giren_miktar INTEGER DEFAULT 0,
+        cikan_miktar INTEGER DEFAULT 0,
+        mevcut INTEGER DEFAULT 0,
+        birimi VARCHAR(20) DEFAULT 'Adet',
+        alis_fiyati DECIMAL(10, 2) DEFAULT 0,
+        satis_fiyati DECIMAL(10, 2) DEFAULT 0,
+        envanter_degeri DECIMAL(12, 2) DEFAULT 0,
+        resim TEXT,
+        resimler TEXT,
+        aciklama TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✓ Bisiklet Stok (Hobi Grup) tablosu oluşturuldu');
+
+    // Bisiklet / E-Bike (Hobi Grup) Satışları tablosu - aksesuarlar ile aynı yapı
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS bisiklet_satislar (
+        id SERIAL PRIMARY KEY,
+        ad_soyad VARCHAR(100),
+        telefon VARCHAR(20),
+        odeme_tutari DECIMAL(10, 2) DEFAULT 0,
+        odeme_sekli VARCHAR(50),
+        aciklama TEXT,
+        durum VARCHAR(50) DEFAULT 'beklemede',
+        toplam_maliyet DECIMAL(10, 2) DEFAULT 0,
+        toplam_satis DECIMAL(10, 2) DEFAULT 0,
+        kar DECIMAL(10, 2) DEFAULT 0,
+        odeme_detaylari TEXT,
+        satis_tarihi DATE DEFAULT CURRENT_DATE,
+        tamamlama_tarihi TIMESTAMP,
+        olusturan_kullanici_id INTEGER REFERENCES kullanicilar(id),
+        olusturan_kisi VARCHAR(100),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✓ Bisiklet Satışları tablosu oluşturuldu');
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS bisiklet_satis_parcalar (
+        id SERIAL PRIMARY KEY,
+        bisiklet_satis_id INTEGER REFERENCES bisiklet_satislar(id) ON DELETE CASCADE,
+        urun_adi VARCHAR(255),
+        adet INTEGER DEFAULT 1,
+        maliyet DECIMAL(10, 2) DEFAULT 0,
+        satis_fiyati DECIMAL(10, 2) DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✓ Bisiklet Satış Parçaları tablosu oluşturuldu');
 
     // Varsayılan admin kullanıcısı oluştur
     const adminExists = await pool.query(
