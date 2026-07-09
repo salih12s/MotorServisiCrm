@@ -13,7 +13,6 @@ import PublicNav from '../../components/PublicNav';
 import SiteFooter from '../../components/SiteFooter';
 import motors from '../../data/motors';
 import MotorCard from './motorlar/MotorCard';
-import MotorDetailDialog from './motorlar/MotorDetailDialog';
 
 const FILTERS = [
   { key: 'hepsi', label: 'Hepsi' },
@@ -26,7 +25,6 @@ const FILTERS = [
 
 function MotorlarPage() {
   const navigate = useNavigate();
-  const [selected, setSelected] = useState(null);
   const [filter, setFilter] = useState('hepsi');
   const [brandFilter, setBrandFilter] = useState('hepsi');
 
@@ -166,11 +164,11 @@ function MotorlarPage() {
                 py: 0.8,
                 textTransform: 'none',
                 '&.Mui-selected': {
-                  background: 'linear-gradient(135deg, #ff8f00 0%, #ff5722 100%)',
+                  background: 'linear-gradient(135deg, #04A7B8 0%, #36C5D3 100%)',
                   color: '#fff',
                   borderColor: 'transparent',
                 },
-                '&:hover': { background: 'rgba(255,143,0,0.1)' },
+                '&:hover': { background: 'rgba(54,197,211,0.1)' },
               },
             }}
           >
@@ -210,18 +208,16 @@ function MotorlarPage() {
               }}
             >
               {filtered.map((motor) => (
-                <MotorCard key={motor.id} motor={motor} onClick={() => setSelected(motor)} />
+                <MotorCard
+                  key={motor.id}
+                  motor={motor}
+                  onClick={() => navigate(`/motorlar/${motor.id}`)}
+                />
               ))}
             </Box>
           )}
         </Container>
       </Box>
-
-      <MotorDetailDialog
-        motor={selected}
-        open={Boolean(selected)}
-        onClose={() => setSelected(null)}
-      />
 
       <SiteFooter />
     </Box>

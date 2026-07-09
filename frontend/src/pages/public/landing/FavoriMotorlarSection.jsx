@@ -201,7 +201,7 @@ function FavoriMotorlarSection() {
                         fullWidth
                         variant="outlined"
                         endIcon={<ArrowForwardIcon fontSize="small" />}
-                        onClick={() => navigate(`/motorlar?id=${motor.id}`)}
+                        onClick={() => navigate(`/motorlar/${motor.id}`)}
                         sx={{
                           color: '#fff',
                           borderColor: 'rgba(255,255,255,0.3)',

@@ -542,6 +542,18 @@ const initDatabase = async () => {
     `);
     console.log('✓ Bisiklet Satış Parçaları tablosu oluşturuldu');
 
+    // SMS Rehberi tablosu (toplu SMS alıcı listesi)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS sms_rehber (
+        id SERIAL PRIMARY KEY,
+        isim VARCHAR(100),
+        telefon VARCHAR(20) UNIQUE NOT NULL,
+        kaynak VARCHAR(20) DEFAULT 'manuel',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✓ SMS Rehberi tablosu oluşturuldu');
+
     // Varsayılan admin kullanıcısı oluştur
     const adminExists = await pool.query(
       'SELECT * FROM kullanicilar WHERE kullanici_adi = $1',

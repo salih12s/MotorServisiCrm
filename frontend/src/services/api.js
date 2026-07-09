@@ -188,4 +188,14 @@ export const motorSatisService = {
   deleteModel: (id) => api.delete(`/motor-satislari/modeller/${id}`),
 };
 
+// Toplu SMS
+export const smsService = {
+  getRehber: () => api.get('/sms/rehber'),
+  addKisiler: (kisiler) => api.post('/sms/rehber', { kisiler }),
+  musterilerdenAktar: () => api.post('/sms/rehber/musterilerden-aktar'),
+  deleteKisi: (id) => api.delete(`/sms/rehber/${id}`),
+  topluSil: (ids) => api.post('/sms/rehber/toplu-sil', { ids }),
+  gonder: (mesaj, ids) => api.post('/sms/gonder', { mesaj, ids }),
+};
+
 export default api;

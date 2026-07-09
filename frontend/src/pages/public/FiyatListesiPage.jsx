@@ -28,6 +28,23 @@ import {
 import { useNavigate } from 'react-router-dom';
 import PublicNav from '../../components/PublicNav';
 import SiteFooter from '../../components/SiteFooter';
+import motors from '../../data/motors';
+
+// "İron X300", "Smarda – SMD X1" gibi liste adlarını motors.js kayıtlarıyla eşleştirir
+const normalizeName = (name) =>
+  name
+    .toLocaleLowerCase('tr')
+    .replace(/i̇/g, 'i')
+    .replace(/ı/g, 'i')
+    .replace(/[^a-z0-9]/g, '');
+
+const findMotorId = (itemName) => {
+  const target = normalizeName(itemName);
+  const motor =
+    motors.find((m) => normalizeName(m.name) === target) ||
+    motors.find((m) => target.startsWith(normalizeName(m.name)));
+  return motor ? motor.id : null;
+};
 
 // Fiyatlar musattimotor.com/fiyat-listesi sayfasındaki tavsiye edilen satış fiyatlarıdır.
 const priceData = [
@@ -365,7 +382,10 @@ function CategoryTable({ items, navigate }) {
                   variant="contained"
                   size="small"
                   endIcon={<OpenInNewIcon sx={{ fontSize: '0.85rem !important' }} />}
-                  onClick={() => navigate('/motorlar')}
+                  onClick={() => {
+                    const motorId = findMotorId(item.name);
+                    navigate(motorId ? `/motorlar/${motorId}` : '/motorlar');
+                  }}
                   sx={{
                     background: 'linear-gradient(135deg, #04A7B8 0%, #36C5D3 100%)',
                     color: '#fff',

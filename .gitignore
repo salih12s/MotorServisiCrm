@@ -13,3 +13,6 @@ dist/
 *.swp
 *.swo
 *~
+.claude/
+/Demirkan.mp4
+/frontend-build.zip

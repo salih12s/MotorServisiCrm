@@ -12,6 +12,7 @@ import LandingPage from './pages/public/LandingPage';
 import HakkimizdaPage from './pages/public/HakkimizdaPage';
 import BasindaPage from './pages/public/BasindaPage';
 import MotorlarPage from './pages/public/MotorlarPage';
+import MotorDetayPage from './pages/public/motorlar/MotorDetayPage';
 import FiyatListesiPage from './pages/public/FiyatListesiPage';
 import AksesuarSatisPage from './pages/public/AksesuarSatisPage';
 import HobiGrupPage from './pages/public/HobiGrupPage';
@@ -28,6 +29,7 @@ import AksesuarStok from './pages/aksesuarlar/AksesuarStok';
 import HobiGrupStok from './pages/hobiGrup/HobiGrupStok';
 import HobiGrupSatis from './pages/hobiGrup/HobiGrupSatis';
 import MotorSatislari from './pages/motorSatislari/MotorSatislari';
+import TopluSms from './pages/sms/TopluSms';
 
 // Components
 import Layout from './components/Layout';
@@ -198,6 +200,7 @@ function AppRoutes() {
       <Route path="/hakkimizda" element={<HakkimizdaPage />} />
       <Route path="/basinda" element={<BasindaPage />} />
       <Route path="/motorlar" element={<MotorlarPage />} />
+      <Route path="/motorlar/:id" element={<MotorDetayPage />} />
       <Route path="/fiyat-listesi" element={<FiyatListesiPage />} />
       <Route path="/aksesuarlar-satis" element={<AksesuarSatisPage />} />
       <Route path="/hobi-grup" element={<HobiGrupPage />} />
@@ -216,13 +219,21 @@ function AppRoutes() {
             </AdminRoute>
           } 
         />
-        <Route 
-          path="kullanicilar" 
+        <Route
+          path="kullanicilar"
           element={
             <AdminRoute>
               <Kullanicilar />
             </AdminRoute>
-          } 
+          }
+        />
+        <Route
+          path="toplu-sms"
+          element={
+            <AdminRoute>
+              <TopluSms />
+            </AdminRoute>
+          }
         />
         <Route 
           path="motor-satislari" 

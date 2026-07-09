@@ -33,6 +33,7 @@ import {
   ExpandLess,
   ExpandMore,
   Home as HomeIcon,
+  Sms as SmsIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { useCustomTheme } from '../context/ThemeContext';
@@ -93,13 +94,19 @@ const menuItems = [
     icon: <GroupIcon />,
     roles: ['admin'],
   },
-  { 
-    title: 'Müşteriler', 
-    path: '/musteriler', 
+  {
+    title: 'Müşteriler',
+    path: '/musteriler',
     icon: <PeopleIcon />,
     roles: ['admin', 'user', 'personel'],
     hideForAksesuarOnly: true, // Aksesuar yetkisi olanlardan gizle
     hideForMotorSatisOnly: true, // Motor satış yetkisi olanlardan gizle
+  },
+  {
+    title: 'Toplu SMS',
+    path: '/toplu-sms',
+    icon: <SmsIcon />,
+    roles: ['admin'],
   },
 ];
 

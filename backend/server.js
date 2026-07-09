@@ -17,6 +17,7 @@ const aksesuarStokRoutes = require('./routes/aksesuarStok');
 const bisikletStokRoutes = require('./routes/bisikletStok');
 const bisikletSatisRoutes = require('./routes/bisikletSatislari');
 const motorSatisRoutes = require('./routes/motorSatislari');
+const smsRoutes = require('./routes/sms');
 
 const app = express();
 
@@ -254,6 +255,7 @@ app.use('/api/aksesuar-stok', authenticateToken, aksesuarStokRoutes);
 app.use('/api/bisiklet-stok', authenticateToken, bisikletStokRoutes);
 app.use('/api/bisiklet-satislari', authenticateToken, bisikletSatisRoutes);
 app.use('/api/motor-satislari', authenticateToken, motorSatisRoutes);
+app.use('/api/sms', authenticateToken, smsRoutes);
 
 // Ana sayfa
 app.get('/', (req, res) => {
