@@ -1,7 +1,7 @@
 {
-  "name": "demirkan-motorlu-arac",
+  "name": "demirkan-motorlu-araclar",
   "version": "1.0.0",
-  "description": "Demirkan Motorlu Araçlar Servis Yönetim Sistemi",
+  "description": "Demirkan Motorlu Araçlar dijital vitrin ve bayi operasyon platformu",
   "main": "backend/server.js",
   "scripts": {
     "start": "cd backend && npm install && node server.js",
@@ -12,7 +12,7 @@
     "build": "cd frontend && npm install && npm run build"
   },
   "engines": {
-    "node": ">=18.0.0",
+    "node": ">=20.0.0",
     "npm": ">=9.0.0"
   },
   "devDependencies": {

@@ -1,7 +1,7 @@
 {
-  "name": "demirkan-motorlu-arac-backend",
+  "name": "demirkan-motorlu-araclar-api",
   "version": "1.0.0",
-  "description": "Demirkan Motorlu Araçlar Servis Yönetim Sistemi - Backend",
+  "description": "Demirkan Motorlu Araçlar bayi operasyon platformu REST API",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

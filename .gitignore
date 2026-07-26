@@ -1,18 +1,25 @@
+# Bağımlılıklar ve derleme çıktıları
 node_modules/
+build/
+dist/
+*.zip
+
+# Yerel ortam ve çalışma dosyaları
 .env
 .env.*
 !.env.example
 *.backup
 *.log
+
+# İşletim sistemi ve editör dosyaları
 .DS_Store
 Thumbs.db
-build/
-dist/
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+
+# Yerel araç ve medya dosyaları
 .claude/
 /Demirkan.mp4
-*.zip

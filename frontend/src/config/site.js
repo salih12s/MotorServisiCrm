@@ -1,4 +1,5 @@
-// Firma iletişim bilgileri - tek noktadan yönetilir (footer, WhatsApp sipariş vb.)
+// Demirkan Motorlu Araçlar iletişim bilgileri tek noktadan yönetilir.
+// Footer, telefon bağlantıları ve WhatsApp sipariş akışı bu yapılandırmayı kullanır.
 // Numara değişirse yalnızca burayı güncellemek yeterlidir.
 
 // WhatsApp için uluslararası formatta, yalnızca rakamlar (0546 566 87 92 -> 905465668792)
