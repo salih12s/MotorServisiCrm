@@ -14,7 +14,7 @@ stok, satış, müşteri ve raporlama süreçlerini bir araya getiren full-stack
 
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)
 ![Material UI](https://img.shields.io/badge/Material_UI-7-007FFF?logo=mui&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=nodedotjs&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-20-339933?logo=nodedotjs&logoColor=white)
 ![Express](https://img.shields.io/badge/Express-4-000000?logo=express&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-13+-4169E1?logo=postgresql&logoColor=white)
 ![Railway](https://img.shields.io/badge/Deploy-Railway-0B0D0E?logo=railway&logoColor=white)
@@ -234,7 +234,7 @@ stok, müşteri ve denetim alanlarını ilişkilendirir.
 | **Yönlendirme** | React Router 7 | Public, korumalı, admin ve modül bazlı rotalar |
 | **İstemci durumu** | React Context | Kimlik, tema ve sepet durumları |
 | **HTTP** | Axios | Merkezi API istemcisi ve interceptor'lar |
-| **Sunucu** | Node.js 18+, Express 4 | REST API, middleware ve domain rotaları |
+| **Sunucu** | Node.js 20, Express 4 | REST API, middleware ve domain rotaları |
 | **Veri** | PostgreSQL, node-postgres | İlişkisel model, transaction ve agregasyonlar |
 | **Güvenlik** | JWT, bcryptjs, CORS | Oturum, parola hash'i ve origin kontrolü |
 | **Ürün araçları** | date-fns, react-to-print | Tarih işlemleri ve servis fişi baskısı |
