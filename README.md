@@ -23,6 +23,25 @@ stok, satış, müşteri ve raporlama süreçlerini bir araya getiren full-stack
 
 ---
 
+
+<!-- english-overview:start -->
+## English Overview
+
+Demirkan Motorlu Araçlar is a production full-stack platform that combines a public motorcycle and accessory catalog with service, sales, inventory, customer, expense, reporting, and user-management workflows.
+
+### My Contribution
+
+I developed the public storefront and protected operations panel, implemented the Node.js/Express API and PostgreSQL model, connected inventory and sales workflows, added granular permissions and activity logs, and deployed the application for real business use.
+
+### Engineering Challenges
+
+- Keeping public product availability synchronized with internal inventory and sales
+- Applying business-specific tax, cost, payment, and profitability rules consistently
+- Separating customer-facing content from protected operational and financial data
+- Supporting responsive public pages and data-heavy administration screens in one product
+- Preparing synthetic demo data and screenshots without exposing live customer information
+<!-- english-overview:end -->
+
 ## Ürün
 
 Demirkan Motorlu Araçlar, iki farklı kullanıcı deneyimini aynı uygulama ve veri modeli
