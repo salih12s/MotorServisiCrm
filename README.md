@@ -1,6 +1,6 @@
 <div align="center">
 
-# Demirkan Motorlu Araçlar
+# Demirkan Motorlu Araçlar — Automotive Service & Sales ERP
 
 ### Dijital ürün vitrini, servis operasyonu ve bayi yönetimi tek platformda
 
@@ -27,7 +27,7 @@ stok, satış, müşteri ve raporlama süreçlerini bir araya getiren full-stack
 <!-- english-overview:start -->
 ## English Overview
 
-Demirkan Motorlu Araçlar is a production full-stack platform that combines a public motorcycle and accessory catalog with service, sales, inventory, customer, expense, reporting, and user-management workflows.
+Demirkan Motorlu Araçlar is a production automotive service and sales ERP that integrates a public motorcycle and accessory catalog with service, sales, inventory, customer, expense, reporting, and user-management workflows.
 
 ### My Contribution
 
@@ -327,7 +327,7 @@ yazici_ayarlari ─ servis fişi yerleşimi
 |---|---|---|
 | `/api/public/aksesuarlar`, `/api/public/bisikletler` | Katalog, ürün detayı ve görsel | Public |
 | `/api/auth` | Kayıt, giriş, onay, kullanıcı ve aktivite | Public + JWT + admin |
-| `/api/is-emirleri`, `/api/musteriler` | Servis ve CRM | JWT |
+| `/api/is-emirleri`, `/api/musteriler` | Servis ve müşteri yönetimi | JWT |
 | `/api/aksesuarlar`, `/api/aksesuar-stok` | Aksesuar satış ve stok | JWT + modül yetkisi |
 | `/api/bisiklet-satislari`, `/api/bisiklet-stok` | Hobi grup satış ve stok | JWT + modül yetkisi |
 | `/api/motor-satislari` | Model ve motosiklet satışları | JWT + modül yetkisi |
