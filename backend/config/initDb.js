@@ -1,5 +1,6 @@
 const pool = require('./db');
 const bcrypt = require('bcryptjs');
+const addCustomerAccountsSchema = require('../migrations/addCustomerAccounts');
 
 const initDatabase = async () => {
   try {
@@ -96,6 +97,10 @@ const initDatabase = async () => {
     console.log('✓ Müşteriler tablosu oluşturuldu');
 
     // İş Emirleri tablosu
+    // Idempotent migration: existing customers stay active; operation tables are untouched.
+    await addCustomerAccountsSchema(pool);
+    console.log('✓ Müşteri soft-delete ve cari hesap şeması hazır');
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS is_emirleri (
         id SERIAL PRIMARY KEY,
@@ -118,6 +123,11 @@ const initDatabase = async () => {
         teslim_alan_ad_soyad VARCHAR(100),
         teslim_eden_teknisyen VARCHAR(100),
         teslim_tarihi DATE,
+        odeme_sekli VARCHAR(20) DEFAULT 'nakit',
+        nakit_tutar DECIMAL(12,2) DEFAULT 0,
+        kart_tutar DECIMAL(12,2) DEFAULT 0,
+        havale_tutar DECIMAL(12,2) DEFAULT 0,
+        odeme_bilgisi_girildi BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -217,6 +227,16 @@ const initDatabase = async () => {
     `);
     console.log('✓ İş emirlerine odeme_detaylari kolonu eklendi');
 
+    await pool.query(`
+      ALTER TABLE is_emirleri
+        ADD COLUMN IF NOT EXISTS odeme_sekli VARCHAR(20) DEFAULT 'nakit',
+        ADD COLUMN IF NOT EXISTS nakit_tutar DECIMAL(12,2) DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS kart_tutar DECIMAL(12,2) DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS havale_tutar DECIMAL(12,2) DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS odeme_bilgisi_girildi BOOLEAN DEFAULT FALSE
+    `);
+    console.log('✓ İş emirlerine çoklu ödeme alanları eklendi');
+
     // İş emirlerine olusturan_kisi kolonu ekle (eğer yoksa)
     await pool.query(`
       DO $$
@@ -250,6 +270,10 @@ const initDatabase = async () => {
         urun_adi VARCHAR(255),
         odeme_tutari DECIMAL(10, 2) DEFAULT 0,
         odeme_sekli VARCHAR(50),
+        nakit_tutar DECIMAL(12, 2) DEFAULT 0,
+        kart_tutar DECIMAL(12, 2) DEFAULT 0,
+        havale_tutar DECIMAL(12, 2) DEFAULT 0,
+        odeme_bilgisi_girildi BOOLEAN DEFAULT FALSE,
         aciklama TEXT,
         durum VARCHAR(50) DEFAULT 'beklemede',
         toplam_maliyet DECIMAL(10, 2) DEFAULT 0,
@@ -305,6 +329,18 @@ const initDatabase = async () => {
                        WHERE table_name='aksesuarlar' AND column_name='olusturan_kisi') THEN
           ALTER TABLE aksesuarlar ADD COLUMN olusturan_kisi VARCHAR(100);
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='aksesuarlar' AND column_name='nakit_tutar') THEN
+          ALTER TABLE aksesuarlar ADD COLUMN nakit_tutar DECIMAL(12,2) DEFAULT 0;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='aksesuarlar' AND column_name='kart_tutar') THEN
+          ALTER TABLE aksesuarlar ADD COLUMN kart_tutar DECIMAL(12,2) DEFAULT 0;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='aksesuarlar' AND column_name='havale_tutar') THEN
+          ALTER TABLE aksesuarlar ADD COLUMN havale_tutar DECIMAL(12,2) DEFAULT 0;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='aksesuarlar' AND column_name='odeme_bilgisi_girildi') THEN
+          ALTER TABLE aksesuarlar ADD COLUMN odeme_bilgisi_girildi BOOLEAN DEFAULT FALSE;
+        END IF;
       END $$;
     `);
     console.log('✓ Aksesuarlar tablosuna yeni kolonlar eklendi');
@@ -352,6 +388,7 @@ const initDatabase = async () => {
         nakit_tutar DECIMAL(12,2) DEFAULT 0,
         kart_tutar DECIMAL(12,2) DEFAULT 0,
         havale_tutar DECIMAL(12,2) DEFAULT 0,
+        odeme_bilgisi_girildi BOOLEAN DEFAULT FALSE,
         musteri_adi VARCHAR(255),
         musteri_telefon VARCHAR(50),
         tc_kimlik_no VARCHAR(20),
@@ -389,6 +426,9 @@ const initDatabase = async () => {
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='motor_satislari' AND column_name='havale_tutar') THEN
           ALTER TABLE motor_satislari ADD COLUMN havale_tutar DECIMAL(12,2) DEFAULT 0;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='motor_satislari' AND column_name='odeme_bilgisi_girildi') THEN
+          ALTER TABLE motor_satislari ADD COLUMN odeme_bilgisi_girildi BOOLEAN DEFAULT FALSE;
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='motor_satislari' AND column_name='tc_kimlik_no') THEN
           ALTER TABLE motor_satislari ADD COLUMN tc_kimlik_no VARCHAR(20);
@@ -513,6 +553,10 @@ const initDatabase = async () => {
         telefon VARCHAR(20),
         odeme_tutari DECIMAL(10, 2) DEFAULT 0,
         odeme_sekli VARCHAR(50),
+        nakit_tutar DECIMAL(12, 2) DEFAULT 0,
+        kart_tutar DECIMAL(12, 2) DEFAULT 0,
+        havale_tutar DECIMAL(12, 2) DEFAULT 0,
+        odeme_bilgisi_girildi BOOLEAN DEFAULT FALSE,
         aciklama TEXT,
         durum VARCHAR(50) DEFAULT 'beklemede',
         toplam_maliyet DECIMAL(10, 2) DEFAULT 0,
@@ -526,6 +570,13 @@ const initDatabase = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+    await pool.query(`
+      ALTER TABLE bisiklet_satislar
+        ADD COLUMN IF NOT EXISTS nakit_tutar DECIMAL(12,2) DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS kart_tutar DECIMAL(12,2) DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS havale_tutar DECIMAL(12,2) DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS odeme_bilgisi_girildi BOOLEAN DEFAULT FALSE
     `);
     console.log('✓ Bisiklet Satışları tablosu oluşturuldu');
 

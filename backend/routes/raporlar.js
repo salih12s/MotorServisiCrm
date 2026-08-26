@@ -212,8 +212,29 @@ router.get('/genel', async (req, res) => {
       WHERE durum = 'tamamlandi' AND DATE(COALESCE(tamamlama_tarihi, created_at)) = CURRENT_DATE
     `);
     
-    // Toplam müşteri
+    // Pasife almak yalnızca liste görünürlüğünü değiştirir; tarihsel toplam değişmez.
     const musteriResult = await pool.query('SELECT COUNT(*) as toplam FROM musteriler');
+
+    // Pasif müşteriler dahil tüm açık cari bakiyeler ve tahsilatlar.
+    const cariResult = await pool.query(`
+      WITH bakiyeler AS (
+        SELECT musteri_id,
+          SUM(CASE
+            WHEN hareket_tipi IN ('BORC', 'BORC_DUZELTME', 'TAHSILAT_TERS') THEN tutar
+            WHEN hareket_tipi IN ('TAHSILAT', 'ALACAK_DUZELTME', 'BORC_TERS') THEN -tutar
+            ELSE 0 END)::NUMERIC(14,2) AS bakiye
+        FROM musteri_cari_hareketleri
+        GROUP BY musteri_id
+      )
+      SELECT
+        COALESCE((SELECT SUM(GREATEST(bakiye, 0)) FROM bakiyeler), 0)::NUMERIC(14,2) AS toplam_musteri_alacagi,
+        COALESCE((SELECT SUM(tutar) FROM musteri_cari_hareketleri
+          WHERE hareket_tipi = 'TAHSILAT' AND islem_tarihi = CURRENT_DATE), 0)::NUMERIC(14,2) AS bugunku_tahsilat,
+        COALESCE((SELECT SUM(tutar) FROM musteri_cari_hareketleri
+          WHERE hareket_tipi = 'TAHSILAT'
+            AND DATE_TRUNC('month', islem_tarihi) = DATE_TRUNC('month', CURRENT_DATE)), 0)::NUMERIC(14,2) AS bu_ay_tahsilat,
+        COALESCE((SELECT COUNT(*) FROM bakiyeler WHERE bakiye > 0), 0)::INTEGER AS borclu_musteri_sayisi
+    `);
     
     // Toplam gider
     const giderResult = await pool.query('SELECT COALESCE(SUM(tutar), 0) as toplam FROM giderler');
@@ -231,7 +252,8 @@ router.get('/genel', async (req, res) => {
       },
       durum: durumResult.rows,
       bu_ay: buAyResult.rows[0],
-      bugun: bugunResult.rows[0]
+      bugun: bugunResult.rows[0],
+      cari: cariResult.rows[0]
     });
   } catch (error) {
     console.error('Genel rapor hatası:', error);

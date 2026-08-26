@@ -1,8 +1,24 @@
 const express = require('express');
 const pool = require('../config/db');
 const { logAktivite, getRequestInfo } = require('../config/activityLogger');
+const { sourcePaymentJoin, sourcePaymentColumns } = require('../domain/sourcePaymentSummary');
 
 const router = express.Router();
+
+const validatePayments = (total, values) => {
+  const parsed = values.map((value) => Number(value || 0));
+  if (parsed.some((value) => !Number.isFinite(value) || value < 0)) return { error: 'Ödeme tutarları geçersiz olamaz.' };
+  const paid = parsed.reduce((sum, value) => sum + value, 0);
+  if (paid > Number(total || 0) + 0.005) return { error: 'Girilen ödemeler satış tutarını aşamaz.' };
+  return { values: parsed, paid };
+};
+
+const ensureCustomer = async (client, name, phone) => {
+  const normalized = String(phone || '').replace(/[^0-9]/g, '');
+  if (!normalized) return;
+  const existing = await client.query("SELECT id FROM musteriler WHERE REGEXP_REPLACE(COALESCE(telefon, ''), '[^0-9]', '', 'g') = $1 ORDER BY id LIMIT 1", [normalized]);
+  if (!existing.rowCount) await client.query('INSERT INTO musteriler (ad_soyad, telefon, aktif) VALUES ($1, $2, TRUE)', [name || 'Aksesuar Müşterisi', phone]);
+};
 
 // Tüm aksesuar kayıtlarını parçalarıyla birlikte getir
 router.get('/', async (req, res) => {
@@ -11,9 +27,11 @@ router.get('/', async (req, res) => {
       `SELECT a.id, a.ad_soyad, a.telefon, a.odeme_sekli, a.aciklama, a.durum, a.odeme_detaylari,
        TO_CHAR(a.satis_tarihi, 'YYYY-MM-DD') as satis_tarihi,
        a.toplam_maliyet, a.toplam_satis, a.kar, a.odeme_tutari, a.created_at,
-       a.olusturan_kisi, k.ad_soyad as olusturan_ad_soyad, k.kullanici_adi as olusturan_kullanici_adi
+       a.olusturan_kisi, k.ad_soyad as olusturan_ad_soyad, k.kullanici_adi as olusturan_kullanici_adi,
+       ${sourcePaymentColumns('a', 'COALESCE(a.toplam_satis, 0)', "CASE WHEN a.odeme_bilgisi_girildi THEN 0 ELSE COALESCE(a.odeme_tutari, 0) END")}
        FROM aksesuarlar a
        LEFT JOIN kullanicilar k ON a.olusturan_kullanici_id = k.id
+       ${sourcePaymentJoin('AKSESUAR', 'a')}
        ORDER BY a.created_at DESC`
     );
     
@@ -44,9 +62,11 @@ router.get('/:id', async (req, res) => {
       `SELECT a.id, a.ad_soyad, a.telefon, a.odeme_sekli, a.aciklama, a.durum, a.odeme_detaylari,
        TO_CHAR(a.satis_tarihi, 'YYYY-MM-DD') as satis_tarihi,
        a.toplam_maliyet, a.toplam_satis, a.kar, a.odeme_tutari, a.created_at,
-       a.olusturan_kisi, k.ad_soyad as olusturan_ad_soyad, k.kullanici_adi as olusturan_kullanici_adi
+       a.olusturan_kisi, k.ad_soyad as olusturan_ad_soyad, k.kullanici_adi as olusturan_kullanici_adi,
+       ${sourcePaymentColumns('a', 'COALESCE(a.toplam_satis, 0)', "CASE WHEN a.odeme_bilgisi_girildi THEN 0 ELSE COALESCE(a.odeme_tutari, 0) END")}
        FROM aksesuarlar a
        LEFT JOIN kullanicilar k ON a.olusturan_kullanici_id = k.id
+       ${sourcePaymentJoin('AKSESUAR', 'a')}
        WHERE a.id = $1`,
       [id]
     );
@@ -77,8 +97,9 @@ router.post('/', async (req, res) => {
   try {
     await client.query('BEGIN');
     
-    const { ad_soyad, telefon, odeme_sekli, aciklama, durum, odeme_detaylari, satis_tarihi, olusturan_kisi, parcalar = [] } = req.body;
+    const { ad_soyad, telefon, odeme_sekli, nakit_tutar, kart_tutar, havale_tutar, aciklama, durum, odeme_detaylari, satis_tarihi, olusturan_kisi, parcalar = [] } = req.body;
     const olusturan_kullanici_id = req.user?.id || null;
+    await ensureCustomer(client, ad_soyad, telefon);
     
     // Toplamları hesapla
     let toplam_maliyet = 0;
@@ -91,13 +112,18 @@ router.post('/', async (req, res) => {
     });
     
     const kar = toplam_satis - toplam_maliyet;
+    const payment = validatePayments(toplam_satis, [nakit_tutar, kart_tutar, havale_tutar]);
+    if (payment.error) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ message: payment.error });
+    }
     
     // Ana aksesuar kaydını oluştur
     const result = await client.query(
-      `INSERT INTO aksesuarlar (ad_soyad, telefon, odeme_sekli, aciklama, durum, odeme_detaylari, satis_tarihi, toplam_maliyet, toplam_satis, kar, odeme_tutari, olusturan_kullanici_id, olusturan_kisi)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      `INSERT INTO aksesuarlar (ad_soyad, telefon, odeme_sekli, aciklama, durum, odeme_detaylari, satis_tarihi, toplam_maliyet, toplam_satis, kar, odeme_tutari, olusturan_kullanici_id, olusturan_kisi, nakit_tutar, kart_tutar, havale_tutar, odeme_bilgisi_girildi)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, TRUE)
        RETURNING *`,
-      [ad_soyad, telefon, odeme_sekli, aciklama, durum || 'beklemede', odeme_detaylari, satis_tarihi || new Date(), toplam_maliyet, toplam_satis, kar, toplam_satis, olusturan_kullanici_id, olusturan_kisi || null]
+      [ad_soyad, telefon, odeme_sekli, aciklama, durum || 'beklemede', odeme_detaylari, satis_tarihi || new Date(), toplam_maliyet, toplam_satis, kar, payment.paid, olusturan_kullanici_id, olusturan_kisi || null, ...payment.values]
     );
     
     const aksesuarId = result.rows[0].id;
@@ -172,7 +198,8 @@ router.put('/:id', async (req, res) => {
     await client.query('BEGIN');
     
     const { id } = req.params;
-    const { ad_soyad, telefon, odeme_sekli, aciklama, durum, odeme_detaylari, satis_tarihi, olusturan_kisi, parcalar = [] } = req.body;
+    const { ad_soyad, telefon, odeme_sekli, nakit_tutar, kart_tutar, havale_tutar, aciklama, durum, odeme_detaylari, satis_tarihi, olusturan_kisi, parcalar = [] } = req.body;
+    await ensureCustomer(client, ad_soyad, telefon);
     
     // Mevcut durumu al
     const mevcutDurum = await client.query('SELECT durum FROM aksesuarlar WHERE id = $1', [id]);
@@ -189,6 +216,11 @@ router.put('/:id', async (req, res) => {
     });
     
     const kar = toplam_satis - toplam_maliyet;
+    const payment = validatePayments(toplam_satis, [nakit_tutar, kart_tutar, havale_tutar]);
+    if (payment.error) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ message: payment.error });
+    }
     
     // Tamamlama tarihi mantığı
     let tamamlamaTarihiQuery = '';
@@ -207,10 +239,11 @@ router.put('/:id', async (req, res) => {
            durum = $5, odeme_detaylari = $6, satis_tarihi = $7, toplam_maliyet = $8, toplam_satis = $9, 
            kar = $10, odeme_tutari = $11, olusturan_kisi = COALESCE($12, olusturan_kisi),
            olusturan_kullanici_id = COALESCE(olusturan_kullanici_id, $13),
+           nakit_tutar = $14, kart_tutar = $15, havale_tutar = $16, odeme_bilgisi_girildi = TRUE,
            updated_at = CURRENT_TIMESTAMP${tamamlamaTarihiQuery}
-       WHERE id = $14
+       WHERE id = $17
        RETURNING *`,
-      [ad_soyad, telefon, odeme_sekli, aciklama, durum || 'beklemede', odeme_detaylari, satis_tarihi, toplam_maliyet, toplam_satis, kar, toplam_satis, olusturan_kisi || null, req.user?.id || null, id]
+      [ad_soyad, telefon, odeme_sekli, aciklama, durum || 'beklemede', odeme_detaylari, satis_tarihi, toplam_maliyet, toplam_satis, kar, payment.paid, olusturan_kisi || null, req.user?.id || null, ...payment.values, id]
     );
     
     if (result.rows.length === 0) {

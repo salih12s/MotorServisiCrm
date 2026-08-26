@@ -34,6 +34,7 @@ import {
   ExpandMore,
   Home as HomeIcon,
   Sms as SmsIcon,
+  AccountBalanceWallet as AccountBalanceWalletIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { useCustomTheme } from '../context/ThemeContext';
@@ -101,6 +102,14 @@ const menuItems = [
     roles: ['admin', 'user', 'personel'],
     hideForAksesuarOnly: true, // Aksesuar yetkisi olanlardan gizle
     hideForMotorSatisOnly: true, // Motor satış yetkisi olanlardan gizle
+  },
+  {
+    title: 'Cari Hesap',
+    path: '/cari-hesap',
+    icon: <AccountBalanceWalletIcon />,
+    roles: ['admin', 'user', 'personel'],
+    hideForAksesuarOnly: true,
+    hideForMotorSatisOnly: true,
   },
   {
     title: 'Toplu SMS',

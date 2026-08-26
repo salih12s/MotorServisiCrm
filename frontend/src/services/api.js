@@ -82,10 +82,20 @@ export const authService = {
 
 // Müşteriler
 export const musteriService = {
-  getAll: () => api.get('/musteriler'),
+  getAll: (params = {}) => api.get('/musteriler', { params }),
   getById: (id) => api.get(`/musteriler/${id}`),
+  getDetail: (id) => api.get(`/musteriler/${id}/detay`),
+  getAccount: (id) => api.get(`/musteriler/${id}/cari`),
+  getFinancialSummary: () => api.get('/musteriler/finans/ozet'),
+  getReceivables: (params = {}) => api.get('/musteriler/finans/alacaklar', { params }),
+  collectReceivable: (data) => api.post('/musteriler/finans/tahsilat', data),
   create: (data) => api.post('/musteriler', data),
   update: (id, data) => api.put(`/musteriler/${id}`, data),
+  bulkSetActive: (ids, aktif) => api.patch('/musteriler/bulk-status', { ids, aktif }),
+  addAccountTransaction: (id, data) => api.post(`/musteriler/${id}/cari`, data),
+  reverseAccountTransaction: (id, hareketId, aciklama) => (
+    api.post(`/musteriler/${id}/cari/${hareketId}/ters-kayit`, { aciklama })
+  ),
   delete: (id) => api.delete(`/musteriler/${id}`),
   search: (query) => api.get(`/musteriler/ara/${query}`),
 };

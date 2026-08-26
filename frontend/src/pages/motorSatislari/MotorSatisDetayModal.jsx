@@ -113,6 +113,13 @@ const MotorSatisDetayModal = ({
 
           // Kar = Satış Fiyatı - Vergiler Toplamı - İskontolu Alış
           const kar = satisFiyati - vergilerToplami - iskontoluAlis;
+          const currentDebt = Number(satis.kalan_bakiye ?? Math.max(
+            satisFiyati
+            - Number(satis.nakit_tutar || 0)
+            - Number(satis.kart_tutar || 0)
+            - Number(satis.havale_tutar || 0),
+            0
+          ));
 
           return (
             <Grid container spacing={2}>
@@ -260,6 +267,13 @@ const MotorSatisDetayModal = ({
                             <Chip size="small" label={`🏦 Havale: ${formatCurrency(satis.havale_tutar)}`} sx={{ fontSize: '0.7rem' }} />
                           )}
                         </Box>
+                      )}
+                      {satis.odeme_bilgisi_girildi && (
+                        <Chip
+                          size="small"
+                          label={`Güncel Borç: ${formatCurrency(currentDebt)}`}
+                          sx={{ mt: .8, bgcolor: currentDebt > 0 ? '#fee2e2' : '#dcfce7', color: currentDebt > 0 ? '#b91c1c' : '#047857', fontWeight: 800 }}
+                        />
                       )}
                     </Paper>
                   </CardContent>

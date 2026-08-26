@@ -12,8 +12,11 @@ import LandingPage from './pages/public/LandingPage';
 import HakkimizdaPage from './pages/public/HakkimizdaPage';
 import BasindaPage from './pages/public/BasindaPage';
 import MotorlarPage from './pages/public/MotorlarPage';
+import CollectionBrandsPage from './pages/public/CollectionBrandsPage';
 import MotorDetayPage from './pages/public/motorlar/MotorDetayPage';
 import FiyatListesiPage from './pages/public/FiyatListesiPage';
+import FalconFiyatListesiPage from './pages/public/FalconFiyatListesiPage';
+import PriceBrandsPage from './pages/public/PriceBrandsPage';
 import AksesuarSatisPage from './pages/public/AksesuarSatisPage';
 import HobiGrupPage from './pages/public/HobiGrupPage';
 import Dashboard from './pages/dashboard/Dashboard';
@@ -21,6 +24,7 @@ import IsEmirleri from './pages/isEmirleri/IsEmirleri';
 import IsEmriForm from './pages/isEmirleri/IsEmriForm';
 import IsEmriDetay from './pages/isEmirleri/IsEmriDetay';
 import Musteriler from './pages/musteriler/Musteriler';
+import CariHesap from './pages/cariHesap/CariHesap';
 import Raporlar from './pages/raporlar/Raporlar';
 import Giderler from './pages/giderler/Giderler';
 import Kullanicilar from './pages/kullanicilar/Kullanicilar';
@@ -200,8 +204,13 @@ function AppRoutes() {
       <Route path="/hakkimizda" element={<HakkimizdaPage />} />
       <Route path="/basinda" element={<BasindaPage />} />
       <Route path="/motorlar" element={<MotorlarPage />} />
+      <Route path="/koleksiyon" element={<CollectionBrandsPage />} />
+      <Route path="/koleksiyon/:brandSlug" element={<MotorlarPage />} />
+      <Route path="/koleksiyon/falcon/fiyat-listesi" element={<FalconFiyatListesiPage />} />
       <Route path="/motorlar/:id" element={<MotorDetayPage />} />
-      <Route path="/fiyat-listesi" element={<FiyatListesiPage />} />
+      <Route path="/fiyat-listesi" element={<PriceBrandsPage />} />
+      <Route path="/fiyat-listesi/musatti" element={<FiyatListesiPage />} />
+      <Route path="/fiyat-listesi/falcon" element={<FalconFiyatListesiPage />} />
       <Route path="/aksesuarlar-satis" element={<AksesuarSatisPage />} />
       <Route path="/hobi-grup" element={<HobiGrupPage />} />
 
@@ -211,6 +220,7 @@ function AppRoutes() {
         <Route path="is-emirleri/:id" element={<NormalRoute><IsEmriDetay /></NormalRoute>} />
         <Route path="is-emirleri/:id/duzenle" element={<NormalRoute><IsEmriForm /></NormalRoute>} />
         <Route path="musteriler" element={<NormalRoute><Musteriler /></NormalRoute>} />
+        <Route path="cari-hesap" element={<NormalRoute><CariHesap /></NormalRoute>} />
         <Route 
           path="raporlar" 
           element={

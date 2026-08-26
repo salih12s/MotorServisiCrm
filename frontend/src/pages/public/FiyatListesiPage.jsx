@@ -24,6 +24,7 @@ import {
   PriceCheck as PriceCheckIcon,
   CreditCard as CreditCardIcon,
   Search as SearchIcon,
+  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import PublicNav from '../../components/PublicNav';
@@ -51,11 +52,11 @@ const priceData = [
   {
     category: 'Chopper',
     items: [
-      { name: 'Dark Pow',         image: '/Images/Dark_pow.jpg',              fiyat: '427.499,00 ₺' },
-      { name: 'Kai-Zen',          image: '/Images/Kai_zen.webp',             fiyat: '318.100,00 ₺' },
-      { name: 'Milanio 250',      image: '/Images/Milanio_250.jpg',          fiyat: '285.449,00 ₺' },
-      { name: 'Milanio S400',     image: '/Images/Milanio_s400.webp',        fiyat: '345.500,00 ₺' },
-      { name: 'King Pow',         image: '/Images/King_pow.webp',            fiyat: '354.710,00 ₺' },
+      { name: 'Dark Pow',         image: '/Images/Dark_pow.jpg',              fiyat: '374.900,00 ₺', taksitliFiyat: '435.400,00 ₺' },
+      { name: 'Kai-Zen',          image: '/Images/Kai_zen.webp',             fiyat: '281.900,00 ₺', taksitliFiyat: '324.400,00 ₺' },
+      { name: 'Milanio 250',      image: '/Images/Milanio_250.jpg',          fiyat: '260.750,00 ₺', taksitliFiyat: '299.700,00 ₺' },
+      { name: 'Milanio S400',     image: '/Images/Milanio_s400.webp',        fiyat: null, taksitliFiyat: '379.500,00 ₺' },
+      { name: 'King Pow',         image: '/Images/King_pow.webp',            fiyat: '323.800,00 ₺', taksitliFiyat: '372.400,00 ₺' },
       { name: 'X-Pow',            image: '/Images/X_pow.webp',               fiyat: null, yakinBayilerde: true },
       { name: 'Dark Pow Pro',     image: '/Images/Dark_pow_pro.webp',        fiyat: null, yakinBayilerde: true },
     ],
@@ -63,24 +64,24 @@ const priceData = [
   {
     category: 'Racing',
     items: [
-      { name: 'M125R',      image: '/Images/M125r.webp',      fiyat: '169.499,00 ₺' },
-      { name: 'M250R',      image: '/Images/m250r.webp',      fiyat: '255.499,00 ₺' },
+      { name: 'M125R',      image: '/Images/M125r.webp',      fiyat: '154.600,00 ₺', taksitliFiyat: '177.750,00 ₺' },
+      { name: 'M250R',      image: '/Images/m250r.webp',      fiyat: '225.900,00 ₺', taksitliFiyat: '259.800,00 ₺' },
       { name: 'Vitron 250', image: '/Images/vitron250.webp',  fiyat: null, yakinBayilerde: true },
     ],
   },
   {
     category: 'Scooter',
     items: [
-      { name: 'Glamaro Max 125',            image: '/Images/Glamaro125.webp',               fiyat: '112.499,00 ₺' },
-      { name: 'Glamaro Max 125 – Kameralı', image: '/Images/Glamaro_max125_kamerali.webp',  fiyat: '117.999,00 ₺' },
-      { name: 'Lemuzin 125',                image: '/Images/Lemuzin_125.webp',              fiyat: '82.437,00 ₺' },
-      { name: 'Bella 50',                   image: '/Images/bella50.webp',                  fiyat: '63.200,00 ₺' },
-      { name: 'Rabel 50',                   image: '/Images/rabel50.webp',                  fiyat: '88.233,00 ₺' },
-      { name: 'Siena 50',                   image: '/Images/Siena50.webp',                  fiyat: '82.385,00 ₺' },
-      { name: 'Rajon 50X',                  image: '/Images/Rajon50x.webp',                 fiyat: '98.324,00 ₺' },
+      { name: 'Glamaro Max 125',            image: '/Images/Glamaro125.webp',               fiyat: '102.500,00 ₺', taksitliFiyat: '117.900,00 ₺' },
+      { name: 'Glamaro Max 125 – Kameralı', image: '/Images/Glamaro_max125_kamerali.webp',  fiyat: '107.400,00 ₺', taksitliFiyat: '123.400,00 ₺' },
+      { name: 'Lemuzin 125',                image: '/Images/Lemuzin_125.webp',              fiyat: '76.600,00 ₺', taksitliFiyat: '87.950,00 ₺' },
+      { name: 'Bella 50',                   image: '/Images/bella50.webp',                  fiyat: '57.700,00 ₺', taksitliFiyat: '65.900,00 ₺' },
+      { name: 'Rabel 50',                   image: '/Images/rabel50.webp',                  fiyat: '77.900,00 ₺', taksitliFiyat: '89.900,00 ₺' },
+      { name: 'Siena 50',                   image: '/Images/Siena50.webp',                  fiyat: '74.900,00 ₺', taksitliFiyat: '86.400,00 ₺' },
+      { name: 'Rajon 50X',                  image: '/Images/Rajon50x.webp',                 fiyat: '89.500,00 ₺', taksitliFiyat: '102.900,00 ₺' },
       { name: 'Atekon 200',                 image: '/Images/atekon200.webp',                fiyat: null, yakinBayilerde: true },
-      { name: 'Siena 110',                  image: '/Images/siena110.webp',                 fiyat: '76.942,00 ₺' },
-      { name: 'Rajon 125X',                 image: '/Images/rajox125x.webp',                fiyat: '102.983,00 ₺' },
+      { name: 'Siena 110',                  image: '/Images/siena110.webp',                 fiyat: '74.950,00 ₺', taksitliFiyat: '86.400,00 ₺' },
+      { name: 'Rajon 125X',                 image: '/Images/rajox125x.webp',                fiyat: '93.900,00 ₺', taksitliFiyat: '107.900,00 ₺' },
     ],
   },
   {
@@ -89,7 +90,7 @@ const priceData = [
       { name: 'Rage 400',  image: '/Images/rage400.webp',  fiyat: null, yakinBayilerde: true },
       { name: 'İron X300', image: '/Images/ironx300.webp', fiyat: null, yakinBayilerde: true },
       { name: 'İron X250', image: '/Images/ironx250.webp', fiyat: null, yakinBayilerde: true },
-      { name: 'İron X200', image: '/Images/ironx200.webp', fiyat: '96.800,00 ₺' },
+      { name: 'İron X200', image: '/Images/ironx200.webp', fiyat: null, taksitliFiyat: '119.900,00 ₺' },
     ],
   },
   {
@@ -101,18 +102,18 @@ const priceData = [
   {
     category: 'E-Scooter',
     items: [
-      { name: 'Sport 701 Pro',   image: '/Images/Sport701Pro.webp', fiyat: '119.700,00 ₺' },
-      { name: 'Smarda – SMD X1', image: '/Images/SmardaSMDx1.png',  fiyat: null, yakinBayilerde: true },
+      { name: 'Sport 701 Pro',   image: '/Images/Sport701Pro.webp', fiyat: '105.900,00 ₺', taksitliFiyat: '121.900,00 ₺' },
+      { name: 'Smarda – SMD X1', image: '/Images/SmardaSMDx1.png',  fiyat: '30.500,00 ₺', taksitliFiyat: '33.900,00 ₺' },
     ],
   },
   {
     category: 'E-Technology',
     items: [
-      { name: 'Smarda – Marsilya Max 1600', image: '/Images/SmardaMarsilyamax1600.webp', fiyat: '118.310,00 ₺' },
-      { name: 'Smarda – Soft Pro',          image: '/Images/SmardaSoftPro.webp',         fiyat: '76.999,00 ₺' },
-      { name: 'Smarda – Violet 1200',       image: '/Images/SmardaViolet1200.webp',      fiyat: '104.245,00 ₺' },
-      { name: 'Smarda – Tork Pro',          image: '/Images/SmardaTorkPro.webp',         fiyat: '97.710,00 ₺' },
-      { name: 'Smarda – Dora 4000',         image: '/Images/SmardaDora400.webp',         fiyat: '118.599,00 ₺' },
+      { name: 'Smarda – Marsilya Max 1600', image: '/Images/SmardaMarsilyamax1600.webp', fiyat: '107.850,00 ₺', taksitliFiyat: '123.900,00 ₺' },
+      { name: 'Smarda – Soft Pro',          image: '/Images/SmardaSoftPro.webp',         fiyat: '69.800,00 ₺', taksitliFiyat: '80.450,00 ₺' },
+      { name: 'Smarda – Violet 1200',       image: '/Images/SmardaViolet1200.webp',      fiyat: '93.850,00 ₺', taksitliFiyat: '107.900,00 ₺' },
+      { name: 'Smarda – Tork Pro',          image: '/Images/SmardaTorkPro.webp',         fiyat: '88.950,00 ₺', taksitliFiyat: '102.500,00 ₺' },
+      { name: 'Smarda – Dora 4000',         image: '/Images/SmardaDora400.webp',         fiyat: '107.950,00 ₺', taksitliFiyat: '124.400,00 ₺' },
       { name: 'Smarda – SMD X3',            image: '/Images/SmardaSMDx3.webp',           fiyat: null, yakinBayilerde: true },
     ],
   },
@@ -120,9 +121,9 @@ const priceData = [
     category: 'E-Car',
     items: [
       { name: 'Smarda – Elegolf',   image: '/Images/SmardaEleGolf.webp',   fiyat: null, yakinBayilerde: true },
-      { name: 'Doch Pro 66000',     image: '/Images/DochPro66000.webp',    fiyat: '289.750,00 ₺' },
-      { name: 'Smarda – Venedik',   image: '/Images/SmardaVenedik.webp',   fiyat: '169.200,00 ₺' },
-      { name: 'Venedik Pro',        image: '/Images/VenedikPro.webp',      fiyat: '180.918,00 ₺' },
+      { name: 'Doch Pro 66000',     image: '/Images/DochPro66000.webp',    fiyat: '264.800,00 ₺', taksitliFiyat: '303.900,00 ₺' },
+      { name: 'Smarda – Venedik',   image: '/Images/SmardaVenedik.webp',   fiyat: '170.900,00 ₺', taksitliFiyat: '194.800,00 ₺' },
+      { name: 'Venedik Pro',        image: '/Images/VenedikPro.webp',      fiyat: '177.900,00 ₺', taksitliFiyat: '204.900,00 ₺' },
       { name: 'Smarda – Golftruck', image: '/Images/SmardaGolfTruck.webp', fiyat: null, yakinBayilerde: true },
     ],
   },
@@ -190,194 +191,38 @@ function CategoryTable({ items, navigate }) {
         border: '1px solid rgba(54,197,211,0.15)',
         background: 'rgba(255,255,255,0.03)',
         overflow: 'hidden',
-        mb: 0.5,
+        mb: .5,
       }}
     >
-      <Table size="small">
+      <Table size="small" sx={{ minWidth: 760 }}>
         <TableHead>
-          <TableRow
-            sx={{
-              background:
-                'linear-gradient(135deg, rgba(4,167,184,0.18) 0%, rgba(54,197,211,0.10) 100%)',
-            }}
-          >
-            <TableCell
-              sx={{
-                color: '#36C5D3',
-                fontWeight: 700,
-                fontSize: { xs: '0.72rem', sm: '0.82rem' },
-                borderBottom: '1px solid rgba(54,197,211,0.2)',
-                py: 1.5,
-                width: { xs: 60, sm: 80 },
-              }}
-            >
-              Resim
-            </TableCell>
-            <TableCell
-              sx={{
-                color: '#36C5D3',
-                fontWeight: 700,
-                fontSize: { xs: '0.72rem', sm: '0.82rem' },
-                borderBottom: '1px solid rgba(54,197,211,0.2)',
-                py: 1.5,
-              }}
-            >
-              Model
-            </TableCell>
-            <TableCell
-              sx={{
-                color: '#36C5D3',
-                fontWeight: 700,
-                fontSize: { xs: '0.72rem', sm: '0.82rem' },
-                borderBottom: '1px solid rgba(54,197,211,0.2)',
-                py: 1.5,
-                display: { xs: 'none', sm: 'table-cell' },
-              }}
-            >
-              Tavsiye Edilen Satış Fiyatı
-            </TableCell>
-            <TableCell
-              sx={{
-                color: '#36C5D3',
-                fontWeight: 700,
-                fontSize: { xs: '0.72rem', sm: '0.82rem' },
-                borderBottom: '1px solid rgba(54,197,211,0.2)',
-                py: 1.5,
-                display: { xs: 'none', lg: 'table-cell' },
-              }}
-            >
-              Ödeme Yöntemi
-            </TableCell>
-            <TableCell
-              sx={{
-                color: '#36C5D3',
-                fontWeight: 700,
-                fontSize: { xs: '0.72rem', sm: '0.82rem' },
-                borderBottom: '1px solid rgba(54,197,211,0.2)',
-                py: 1.5,
-                textAlign: 'right',
-              }}
-            >
-              Ürünü İncele
-            </TableCell>
+          <TableRow sx={{ background: 'linear-gradient(135deg, rgba(4,167,184,.18), rgba(54,197,211,.10))' }}>
+            {['Resim', 'Model', 'Nakit Fiyat', 'Taksitli Fiyat', 'Ürünü İncele'].map((title, index) => (
+              <TableCell key={title} align={index === 4 ? 'right' : 'left'} sx={{ color: '#36C5D3', fontWeight: 700, py: 1.5, borderBottom: '1px solid rgba(54,197,211,.2)', display: { xs: index > 1 && index < 4 ? 'none' : 'table-cell', lg: 'table-cell' } }}>{title}</TableCell>
+            ))}
           </TableRow>
         </TableHead>
         <TableBody>
           {items.map((item, idx) => (
             <TableRow
-              key={idx}
+              key={item.name}
               sx={{
-                borderBottom:
-                  idx < items.length - 1
-                    ? '1px solid rgba(54,197,211,0.08)'
-                    : 'none',
-                transition: 'background 0.2s',
-                '&:hover': {
-                  background: 'rgba(54,197,211,0.06)',
-                },
+                '& td': { borderBottom: idx < items.length - 1 ? '1px solid rgba(54,197,211,.08)' : 'none' },
+                '&:hover': { background: 'rgba(54,197,211,.06)' },
               }}
             >
-              {/* Resim */}
-              <TableCell sx={{ py: 1.5, borderBottom: 'none' }}>
-                <Box
-                  sx={{
-                    width: { xs: 52, sm: 70 },
-                    height: { xs: 40, sm: 52 },
-                    borderRadius: 1.5,
-                    overflow: 'hidden',
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(54,197,211,0.12)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'contain',
-                      padding: '4px',
-                    }}
-                  />
+              <TableCell sx={{ py: 1.5 }}>
+                <Box sx={{ width: { xs: 52, sm: 70 }, height: { xs: 40, sm: 52 }, borderRadius: 1.5, bgcolor: 'rgba(255,255,255,.05)', border: '1px solid rgba(54,197,211,.12)', display: 'grid', placeItems: 'center', p: .5 }}>
+                  <Box component="img" src={item.image} alt={item.name} sx={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                 </Box>
               </TableCell>
-
-              {/* Model */}
-              <TableCell sx={{ py: 1.5, borderBottom: 'none' }}>
-                <Typography
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: { xs: '0.8rem', sm: '0.9rem', md: '0.95rem' },
-                    color: '#fff',
-                    lineHeight: 1.3,
-                  }}
-                >
-                  {item.name}
-                </Typography>
-                {/* Mobile only: show the cash/single-payment price below the name */}
-                <Box sx={{ display: { xs: 'block', sm: 'none' }, mt: 0.5 }}>
-                  {item.yakinBayilerde ? (
-                    <Chip
-                      label="Yakında Bayilerde"
-                      size="small"
-                      sx={{
-                        background: 'rgba(54,197,211,0.15)',
-                        color: '#36C5D3',
-                        fontWeight: 600,
-                        fontSize: '0.65rem',
-                        height: 20,
-                        border: '1px solid rgba(54,197,211,0.3)',
-                      }}
-                    />
-                  ) : (
-                    item.fiyat && (
-                      <Typography sx={{ fontSize: '0.7rem', color: '#fff', fontWeight: 600 }}>
-                        {item.fiyat}
-                      </Typography>
-                    )
-                  )}
-                </Box>
+              <TableCell sx={{ py: 1.5 }}>
+                <Typography sx={{ fontWeight: 700, color: '#fff' }}>{item.name}</Typography>
+                <Stack sx={{ display: { xs: 'flex', lg: 'none' }, mt: .5 }}><Typography variant="caption" color="#fff">Nakit: {item.fiyat || '——'}</Typography><Typography variant="caption" color="rgba(255,255,255,.6)">Taksitli: {item.taksitliFiyat || '——'}</Typography></Stack>
               </TableCell>
-
-              {/* Nakit */}
-              <TableCell sx={{ py: 1.5, borderBottom: 'none', display: { xs: 'none', sm: 'table-cell' } }}>
-                {item.yakinBayilerde ? (
-                  <Chip
-                    label="Yakında Bayilerde"
-                    size="small"
-                    sx={{
-                      background: 'rgba(54,197,211,0.15)',
-                      color: '#36C5D3',
-                      fontWeight: 600,
-                      fontSize: '0.72rem',
-                      border: '1px solid rgba(54,197,211,0.3)',
-                    }}
-                  />
-                ) : (
-                  <Typography
-                    sx={{
-                      fontWeight: item.fiyat ? 600 : 400,
-                      fontSize: '0.9rem',
-                      color: item.fiyat ? '#fff' : 'rgba(255,255,255,0.3)',
-                    }}
-                  >
-                    {item.fiyat || '——'}
-                  </Typography>
-                )}
-              </TableCell>
-
-              {/* Ödeme */}
-              <TableCell sx={{ py: 1.5, borderBottom: 'none', display: { xs: 'none', lg: 'table-cell' } }}>
-                <Typography sx={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.6)' }}>
-                  Nakit & Kredi Kartı
-                </Typography>
-              </TableCell>
-
-              {/* İncele */}
-              <TableCell sx={{ py: 1.5, borderBottom: 'none', textAlign: 'right' }}>
+              <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>{item.yakinBayilerde ? <Chip label="Yakında Bayilerde" size="small" sx={{ color: '#36C5D3', border: '1px solid rgba(54,197,211,.3)' }} /> : <Typography sx={{ color: '#fff', fontWeight: 600 }}>{item.fiyat || '——'}</Typography>}</TableCell>
+              <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}><Typography sx={{ color: item.taksitliFiyat ? '#fff' : 'rgba(255,255,255,.35)', fontWeight: item.taksitliFiyat ? 600 : 400 }}>{item.taksitliFiyat || '——'}</Typography></TableCell>
+              <TableCell align="right" sx={{ py: 1.5 }}>
                 <Button
                   variant="contained"
                   size="small"
@@ -387,21 +232,16 @@ function CategoryTable({ items, navigate }) {
                     navigate(motorId ? `/motorlar/${motorId}` : '/motorlar');
                   }}
                   sx={{
-                    background: 'linear-gradient(135deg, #04A7B8 0%, #36C5D3 100%)',
+                    background: 'linear-gradient(135deg, #04A7B8, #36C5D3)',
                     color: '#fff',
                     fontWeight: 700,
                     textTransform: 'none',
-                    fontSize: { xs: '0.7rem', sm: '0.78rem' },
                     px: { xs: 1.2, sm: 2 },
-                    py: 0.6,
+                    py: .6,
                     borderRadius: 2,
-                    boxShadow: '0 4px 14px rgba(54,197,211,0.35)',
+                    boxShadow: '0 4px 14px rgba(54,197,211,.35)',
                     whiteSpace: 'nowrap',
-                    '&:hover': {
-                      boxShadow: '0 6px 20px rgba(54,197,211,0.6)',
-                      transform: 'translateY(-1px)',
-                    },
-                    transition: 'all 0.2s ease',
+                    '&:hover': { boxShadow: '0 6px 20px rgba(54,197,211,.6)', transform: 'translateY(-1px)' },
                   }}
                 >
                   Ürünü İncele
@@ -440,13 +280,15 @@ function FiyatListesiPage() {
       <Box
         sx={{
           pt: { xs: '72px', sm: '80px', md: '88px' },
-          background:
-            'linear-gradient(180deg, rgba(4,167,184,0.18) 0%, rgba(2,8,15,0.0) 100%)',
-          borderBottom: '1px solid rgba(54,197,211,0.12)',
+          background: 'linear-gradient(180deg, rgba(4,167,184,0.18) 0%, rgba(2,8,15,0) 100%)',
+          borderBottom: '1px solid rgba(54,197,211,.12)',
           pb: { xs: 4, md: 5 },
         }}
       >
         <Container maxWidth="lg" sx={{ pt: { xs: 4, md: 5 } }}>
+          <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/fiyat-listesi')} sx={{ color: 'rgba(255,255,255,.65)', mb: 2, textTransform: 'none', fontWeight: 700 }}>
+            Marka Seçimine Dön
+          </Button>
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
             alignItems={{ xs: 'flex-start', sm: 'center' }}
@@ -480,13 +322,13 @@ function FiyatListesiPage() {
                   lineHeight: 1.1,
                 }}
               >
-                Fiyat Listesi
+                Musatti Fiyat Listesi
               </Typography>
               <Typography
                 sx={{
                   mt: 0.5,
                   fontSize: { xs: '0.9rem', md: '1rem' },
-                  color: 'rgba(255,255,255,0.6)',
+                  color: 'rgba(255,255,255,.6)',
                   fontWeight: 400,
                 }}
               >
@@ -500,7 +342,7 @@ function FiyatListesiPage() {
               mt: 2,
               p: { xs: 1.5, sm: 2 },
               borderRadius: 2,
-              background: 'rgba(54,197,211,0.08)',
+                background: 'rgba(54,197,211,.08)',
               border: '1px solid rgba(54,197,211,0.2)',
               display: 'inline-flex',
               alignItems: 'center',
@@ -521,7 +363,7 @@ function FiyatListesiPage() {
                 },
               }}
             />
-            <Typography sx={{ fontSize: { xs: '0.78rem', sm: '0.85rem' }, color: 'rgba(255,255,255,0.75)' }}>
+              <Typography sx={{ fontSize: { xs: '0.78rem', sm: '0.85rem' }, color: 'rgba(255,255,255,.75)' }}>
               Fiyatlar bilgi amaçlıdır, güncel fiyat için bizimle iletişime geçiniz.
             </Typography>
           </Box>
@@ -531,7 +373,6 @@ function FiyatListesiPage() {
       {/* Main Content */}
       <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
 
-        {/* Taksit Seçenekleri */}
         <TaksitSection />
 
         {/* Arama & Kategori Filtreleme */}
@@ -553,13 +394,13 @@ function FiyatListesiPage() {
               mb: 2.5,
               '& .MuiOutlinedInput-root': {
                 borderRadius: 3,
-                background: 'rgba(255,255,255,0.04)',
+                background: 'rgba(255,255,255,.04)',
                 color: '#fff',
                 '& fieldset': { borderColor: 'rgba(54,197,211,0.25)' },
                 '&:hover fieldset': { borderColor: 'rgba(54,197,211,0.5)' },
                 '&.Mui-focused fieldset': { borderColor: '#36C5D3' },
               },
-              '& .MuiInputBase-input::placeholder': { color: 'rgba(255,255,255,0.35)', opacity: 1 },
+              '& .MuiInputBase-input::placeholder': { color: 'rgba(255,255,255,.35)', opacity: 1 },
             }}
           />
 
@@ -568,7 +409,7 @@ function FiyatListesiPage() {
             sx={{
               borderRadius: 2.5,
               border: '1px solid rgba(54,197,211,0.15)',
-              background: 'rgba(255,255,255,0.02)',
+              background: 'rgba(255,255,255,.02)',
               overflow: 'hidden',
             }}
           >
@@ -582,7 +423,7 @@ function FiyatListesiPage() {
               sx={{
                 minHeight: 44,
                 '& .MuiTab-root': {
-                  color: 'rgba(255,255,255,0.5)',
+                  color: 'rgba(255,255,255,.5)',
                   fontWeight: 600,
                   fontSize: { xs: '0.72rem', sm: '0.78rem' },
                   textTransform: 'none',
@@ -592,7 +433,7 @@ function FiyatListesiPage() {
                   '&:hover': { color: '#36C5D3' },
                 },
                 '& .Mui-selected': { color: '#36C5D3 !important', fontWeight: 700 },
-                '& .MuiTabs-scrollButtons': { color: 'rgba(255,255,255,0.4)' },
+                '& .MuiTabs-scrollButtons': { color: 'rgba(255,255,255,.4)' },
               }}
             >
               {categories.map((cat, idx) => (
@@ -606,7 +447,7 @@ function FiyatListesiPage() {
         {filteredData.length === 0 && (
           <Box sx={{ py: 8, textAlign: 'center' }}>
             <SearchIcon sx={{ fontSize: 48, color: 'rgba(54,197,211,0.3)', mb: 2 }} />
-            <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: '1rem' }}>
+            <Typography sx={{ color: 'rgba(255,255,255,.4)', fontSize: '1rem' }}>
               "<strong style={{ color: '#36C5D3' }}>{searchTerm}</strong>" için sonuç bulunamadı.
             </Typography>
           </Box>
@@ -614,20 +455,12 @@ function FiyatListesiPage() {
 
         {filteredData.map((group, gIdx) => (
           <Box key={gIdx} sx={{ mb: { xs: 5, md: 7 } }}>
-            {/* Kategori başlığı — sadece Tümü tabında veya arama varsa göster */}
-            {(activeTab === 0 || searchTerm) && (
-              <Stack direction="row" alignItems="center" spacing={2} mb={2.5}>
-                <Box sx={{ width: 4, height: 32, borderRadius: 2, background: 'linear-gradient(180deg, #04A7B8, #36C5D3)', boxShadow: '0 0 12px rgba(54,197,211,0.6)', flexShrink: 0 }} />
-                <Typography variant="h5" sx={{ fontWeight: 800, fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' }, color: '#fff', letterSpacing: 0.5 }}>
-                  {group.category}
-                </Typography>
-                <Divider sx={{ flex: 1, borderColor: 'rgba(54,197,211,0.15)' }} />
-                <Typography sx={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.35)', whiteSpace: 'nowrap' }}>
-                  {group.items.length} model
-                </Typography>
-              </Stack>
-            )}
-
+            {(activeTab === 0 || searchTerm) && <Stack direction="row" alignItems="center" spacing={2} mb={2.5}>
+              <Box sx={{ width: 4, height: 32, borderRadius: 2, background: 'linear-gradient(180deg,#04A7B8,#36C5D3)' }} />
+              <Typography variant="h5" sx={{ fontWeight: 800, color: '#fff' }}>{group.category}</Typography>
+              <Divider sx={{ flex: 1, borderColor: 'rgba(54,197,211,.15)' }} />
+              <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: '.78rem' }}>{group.items.length} model</Typography>
+            </Stack>}
             <CategoryTable items={group.items} navigate={navigate} />
           </Box>
         ))}
@@ -652,7 +485,7 @@ function FiyatListesiPage() {
           >
             Önemli Bilgi
           </Typography>
-          <Typography sx={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.7 }}>
+          <Typography sx={{ fontSize: '0.82rem', color: 'rgba(255,255,255,.55)', lineHeight: 1.7 }}>
             Listelenen fiyatlar Musatti Motor tarafından belirlenen tavsiye edilen perakende satış fiyatlarıdır.
             Gerçek satış fiyatı bayi politikasına göre farklılık gösterebilir. KDV dahildir.
             "Yakında Bayilerde" olarak işaretlenmiş ürünler henüz stoğa girmemiş olup fiyat bilgisi için

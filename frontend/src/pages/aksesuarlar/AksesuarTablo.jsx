@@ -22,6 +22,22 @@ import {
 } from '@mui/icons-material';
 import { formatDate, durumConfig, formatCurrency } from './aksesuarlarUtils';
 
+const PAYMENT_LABELS = { nakit: 'Nakit', kart: 'Kart', kredi_karti: 'Kart', havale: 'Havale / EFT', karisik: 'Karışık' };
+const getPaidAmount = (record) => Number(
+  record.toplam_odenen
+  ?? (Number(record.nakit_tutar || 0) + Number(record.kart_tutar || 0) + Number(record.havale_tutar || 0))
+);
+const getRemainingAmount = (record) => Number(record.kalan_bakiye || 0);
+const getPaymentLabel = (record) => {
+  const usedMethods = [
+    Number(record.nakit_tutar || 0) > 0 && 'Nakit',
+    Number(record.kart_tutar || 0) > 0 && 'Kart',
+    Number(record.havale_tutar || 0) > 0 && 'Havale / EFT',
+  ].filter(Boolean);
+  if (usedMethods.length > 1) return 'Karışık';
+  return usedMethods[0] || PAYMENT_LABELS[record.odeme_sekli] || 'Ödeme yok';
+};
+
 const AksesuarTablo = ({
   loading,
   filteredAksesuarlar,
@@ -69,11 +85,15 @@ const AksesuarTablo = ({
               <Typography variant="body2" sx={{ mb: 0.5 }}>
                 {aksesuar.parcalar?.length || 0} ürün
               </Typography>
-              {aksesuar.odeme_sekli && (
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                  Ödeme: {aksesuar.odeme_sekli}
-                </Typography>
-              )}
+              <Box sx={{ mb: 0.5 }}>
+                <Typography variant="body2" fontWeight={700}>Ödeme: {getPaymentLabel(aksesuar)}</Typography>
+                <Typography variant="body2" color="success.main">Ödenen: {formatCurrency(getPaidAmount(aksesuar))}</Typography>
+                {getRemainingAmount(aksesuar) > 0 && (
+                  <Typography variant="body2" sx={{ color: '#c62828' }} fontWeight={800}>
+                    Kalan: {formatCurrency(getRemainingAmount(aksesuar))}
+                  </Typography>
+                )}
+              </Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
                 <Chip
                   label={durumConfig[aksesuar.durum]?.label || 'Beklemede'}
@@ -103,7 +123,7 @@ const AksesuarTablo = ({
                 <TableCell sx={{ fontWeight: 700 }}>Ad Soyad</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Telefon</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Ürün Sayısı</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Ödeme Şekli</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Ödeme</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Durum</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 700 }}>Tutar</TableCell>
                 {isAdmin && <TableCell align="right" sx={{ fontWeight: 700 }}>Maliyet</TableCell>}
@@ -129,7 +149,17 @@ const AksesuarTablo = ({
                       variant="outlined"
                     />
                   </TableCell>
-                  <TableCell>{aksesuar.odeme_sekli || '-'}</TableCell>
+                  <TableCell>
+                    <Typography fontSize="0.8rem" fontWeight={700}>{getPaymentLabel(aksesuar)}</Typography>
+                    <Typography fontSize="0.76rem" color="success.main" fontWeight={700}>
+                      Ödenen: {formatCurrency(getPaidAmount(aksesuar))}
+                    </Typography>
+                    {getRemainingAmount(aksesuar) > 0 && (
+                      <Typography fontSize="0.76rem" sx={{ color: '#c62828' }} fontWeight={800}>
+                        Kalan: {formatCurrency(getRemainingAmount(aksesuar))}
+                      </Typography>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Chip
                       label={durumConfig[aksesuar.durum]?.label || 'Beklemede'}

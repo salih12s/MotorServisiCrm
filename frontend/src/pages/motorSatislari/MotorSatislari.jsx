@@ -76,6 +76,9 @@ const MotorSatislari = () => {
     nakit_tutar: '',
     kart_tutar: '',
     havale_tutar: '',
+    cari_nakit_tutar: 0,
+    cari_kart_tutar: 0,
+    cari_havale_tutar: 0,
     musteri_adi: '',
     musteri_telefon: '',
     tc_kimlik_no: '',
@@ -149,6 +152,9 @@ const MotorSatislari = () => {
         nakit_tutar: satis.nakit_tutar || '',
         kart_tutar: satis.kart_tutar || '',
         havale_tutar: satis.havale_tutar || '',
+        cari_nakit_tutar: Number(satis.cari_nakit_tutar || 0),
+        cari_kart_tutar: Number(satis.cari_kart_tutar || 0),
+        cari_havale_tutar: Number(satis.cari_havale_tutar || 0),
         musteri_adi: satis.musteri_adi || '',
         musteri_telefon: satis.musteri_telefon || '',
         tc_kimlik_no: satis.tc_kimlik_no || '',
@@ -171,6 +177,9 @@ const MotorSatislari = () => {
         nakit_tutar: '',
         kart_tutar: '',
         havale_tutar: '',
+        cari_nakit_tutar: 0,
+        cari_kart_tutar: 0,
+        cari_havale_tutar: 0,
         musteri_adi: '',
         musteri_telefon: '',
         tc_kimlik_no: '',
@@ -200,9 +209,27 @@ const MotorSatislari = () => {
       const otvOrani = parseFloat(model?.otv_orani || 0);
       
       const alisFiyati = parseFloat(satisForm.alis_fiyati || 0);
-      const satisFiyati = parseFloat(satisForm.satis_fiyati || 0);
+      const satisFiyati = parseFloat(parseFormattedNumber(satisForm.satis_fiyati) || 0);
       const faturaFiyati = parseFloat(satisForm.fatura_fiyati || 0);
       const iskontoOrani = parseFloat(satisForm.iskonto || 0);
+      const paymentParts = satisForm.odeme_sekli === 'karisik'
+        ? {
+            nakit_tutar: Math.max(parseFloat(parseFormattedNumber(satisForm.nakit_tutar) || 0) - Number(satisForm.cari_nakit_tutar || 0), 0),
+            kart_tutar: Math.max(parseFloat(parseFormattedNumber(satisForm.kart_tutar) || 0) - Number(satisForm.cari_kart_tutar || 0), 0),
+            havale_tutar: Math.max(parseFloat(parseFormattedNumber(satisForm.havale_tutar) || 0) - Number(satisForm.cari_havale_tutar || 0), 0),
+          }
+        : {
+            nakit_tutar: satisForm.odeme_sekli === 'nakit' ? satisFiyati : 0,
+            kart_tutar: satisForm.odeme_sekli === 'kart' ? satisFiyati : 0,
+            havale_tutar: satisForm.odeme_sekli === 'havale' ? satisFiyati : 0,
+          };
+      const laterPaid = satisForm.odeme_sekli === 'karisik'
+        ? Number(satisForm.cari_nakit_tutar || 0) + Number(satisForm.cari_kart_tutar || 0) + Number(satisForm.cari_havale_tutar || 0)
+        : 0;
+      if (paymentParts.nakit_tutar + paymentParts.kart_tutar + paymentParts.havale_tutar + laterPaid > satisFiyati + 0.005) {
+        setError('Girilen ödemeler satış tutarını aşamaz.');
+        return;
+      }
       
       // Hesaplamalar
       // İskonto hesabı: Doğrudan alış fiyatı üzerinden hesaplanır
@@ -232,6 +259,7 @@ const MotorSatislari = () => {
       // Form data ile hesaplanan değerleri birleştir
       const saveData = {
         ...satisForm,
+        ...paymentParts,
         iskonto_tutari: iskontoTutari,
         iskontolu_alis_fiyati: iskontoluAlisFiyati,
         matrah_satis: matrahSatis,
@@ -354,6 +382,7 @@ const MotorSatislari = () => {
   const tamamlananSatis = satislar.filter(s => s.durum === 'tamamlandi').length;
   const toplamKar = satislar.reduce((sum, s) => sum + parseFloat(s.kar || 0), 0);
   const toplamSatisFiyati = satislar.reduce((sum, s) => sum + parseFloat(s.satis_fiyati || 0), 0);
+  const toplamBorc = satislar.reduce((sum, s) => sum + parseFloat(s.kalan_bakiye || 0), 0);
 
   // Input için görüntüleme değeri (yazarken ham değer, değilse formatlı)
   const [activeInput, setActiveInput] = useState(null);
@@ -463,6 +492,17 @@ const MotorSatislari = () => {
               cursor: 'pointer',
               '&:hover': { bgcolor: '#2e7d32', color: 'white' }
             }} 
+          />
+          <Chip
+            label={`Borç: ${formatCurrency(toplamBorc)}`}
+            size="small"
+            sx={{
+              bgcolor: toplamBorc > 0 ? '#fee2e2' : '#e8f5e9',
+              color: toplamBorc > 0 ? '#b91c1c' : '#2e7d32',
+              border: '1px solid',
+              borderColor: toplamBorc > 0 ? '#fecaca' : '#c8e6c9',
+              fontWeight: 800,
+            }}
           />
           {isAdmin && (
             <>
@@ -636,9 +676,17 @@ const MotorSatislari = () => {
                       <Typography variant="body2" fontWeight={500} noWrap sx={{ flex: 1 }}>
                         {satis.musteri_adi || 'Müşteri belirtilmemiş'}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {satis.musteri_telefon || '-'}
-                      </Typography>
+                      <Chip
+                        size="small"
+                        label={`Borç: ${formatCurrency(satis.kalan_bakiye)}`}
+                        sx={{
+                          height: 22,
+                          bgcolor: Number(satis.kalan_bakiye || 0) > 0 ? '#fee2e2' : '#dcfce7',
+                          color: Number(satis.kalan_bakiye || 0) > 0 ? '#b91c1c' : '#047857',
+                          fontWeight: 800,
+                          fontSize: '0.65rem',
+                        }}
+                      />
                     </Box>
 
                     <Divider sx={{ my: 1 }} />
@@ -715,7 +763,7 @@ const MotorSatislari = () => {
               <TableCell sx={{ color: 'white', fontWeight: 'bold', width: 75 }}>Tarih</TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold', width: 130 }}>Motor Modeli</TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold', width: 100 }}>Müşteri</TableCell>
-              <TableCell sx={{ color: 'white', fontWeight: 'bold', width: 85 }}>Telefon</TableCell>
+              <TableCell align="right" sx={{ color: 'white', fontWeight: 'bold', width: 90 }}>Borç</TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold', width: 50 }}>İsk.</TableCell>
               {isAdmin && <TableCell sx={{ color: 'white', fontWeight: 'bold', width: 85 }}>Alış</TableCell>}
               <TableCell sx={{ color: 'white', fontWeight: 'bold', width: 85 }}>Satış</TableCell>
@@ -780,8 +828,15 @@ const MotorSatislari = () => {
                       </Typography>
                     </Tooltip>
                   </TableCell>
-                  <TableCell>
-                    <Typography fontSize="0.7rem" noWrap>{satis.musteri_telefon || '-'}</Typography>
+                  <TableCell align="right">
+                    <Typography
+                      fontSize="0.68rem"
+                      fontWeight={800}
+                      noWrap
+                      sx={{ color: Number(satis.kalan_bakiye || 0) > 0 ? '#b91c1c' : '#2e7d32' }}
+                    >
+                      {formatCurrency(satis.kalan_bakiye)}
+                    </Typography>
                   </TableCell>
                   <TableCell>
                     <Chip label={`%${satis.iskonto || 0}`} size="small" sx={{ height: 18, fontSize: '0.6rem', '& .MuiChip-label': { px: 0.5 } }} />

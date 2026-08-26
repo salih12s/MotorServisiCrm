@@ -20,24 +20,25 @@ import {
 import PublicNav from '../../../components/PublicNav';
 import SiteFooter from '../../../components/SiteFooter';
 import motors from '../../../data/motors';
-import { BRAND_COLORS, FALLBACK_IMAGE } from './motorlarConstants';
+import { BRAND_COLORS, FALLBACK_IMAGE, getMotorImage } from './motorlarConstants';
 
 function MotorDetayPage() {
   const { id } = useParams();
   const navigate = useNavigate();
 
   const motor = useMemo(() => motors.find((m) => m.id === id), [id]);
+  const defaultImage = useMemo(() => getMotorImage(motor), [motor]);
 
   // Ana görsel + galeri + renk görselleri tek listede toplanır
   const images = useMemo(() => {
     if (!motor) return [];
     const list = [];
-    if (motor.coverImage) list.push(motor.coverImage);
+    if (defaultImage) list.push(defaultImage);
     (motor.gallery || []).forEach((g) => {
       if (!list.includes(g)) list.push(g);
     });
     return list;
-  }, [motor]);
+  }, [motor, defaultImage]);
 
   const [activeImage, setActiveImage] = useState(null);
   const [activeColor, setActiveColor] = useState(null);
@@ -70,7 +71,7 @@ function MotorDetayPage() {
           <Button
             variant="contained"
             startIcon={<ArrowBackIcon />}
-            onClick={() => navigate('/motorlar')}
+            onClick={() => navigate('/koleksiyon')}
             sx={{
               background: 'linear-gradient(135deg, #04A7B8 0%, #36C5D3 100%)',
               fontWeight: 700,
@@ -87,7 +88,12 @@ function MotorDetayPage() {
 
   const colors = BRAND_COLORS[motor.brand] || BRAND_COLORS.Musatti;
   const shownImage =
-    activeColor?.image || activeImage || motor.coverImage || FALLBACK_IMAGE;
+    activeColor?.image || activeImage || defaultImage || FALLBACK_IMAGE;
+  const collectionPath = motor.brand === 'Falcon'
+    ? '/koleksiyon/falcon'
+    : motor.brand === 'Musatti'
+      ? '/koleksiyon/musatti'
+      : '/motorlar';
 
   const specEntries = Object.entries(motor.specs || {});
 
@@ -104,10 +110,10 @@ function MotorDetayPage() {
             'radial-gradient(ellipse at top, rgba(4,167,184,0.28) 0%, transparent 55%), linear-gradient(180deg, #024E54 0%, #0a1929 100%)',
         }}
       >
-        <Container maxWidth="xl">
+        <Container maxWidth="lg">
           <Button
             startIcon={<ArrowBackIcon />}
-            onClick={() => navigate('/motorlar')}
+            onClick={() => navigate(collectionPath)}
             sx={{
               color: 'rgba(255,255,255,0.75)',
               fontWeight: 700,
@@ -123,8 +129,8 @@ function MotorDetayPage() {
             key={motor.id}
             sx={{
               display: 'grid',
-              gridTemplateColumns: { xs: '1fr', md: '7fr 5fr' },
-              gap: { xs: 3, md: 5 },
+              gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 1.15fr) minmax(320px, .85fr)' },
+              gap: { xs: 3, md: 3.5 },
               alignItems: 'start',
               // Giriş animasyonları: görsel soldan, bilgiler sağdan süzülerek gelir
               '@keyframes heroLeft': {
@@ -152,15 +158,15 @@ function MotorDetayPage() {
             }}
           >
             {/* Sol: görsel + galeri */}
-            <Box className="hero-left">
+            <Box className="hero-left" sx={{ minWidth: 0 }}>
               <Box
                 sx={{
                   position: 'relative',
                   borderRadius: 4,
-                  background: 'linear-gradient(180deg, #ffffff 0%, #e9edf1 100%)',
+                  background: `radial-gradient(circle at center, ${colors.from}20, transparent 58%), linear-gradient(145deg, #d9e0e3 0%, #f0f2f3 100%)`,
                   border: '1px solid rgba(54,197,211,0.25)',
                   overflow: 'hidden',
-                  aspectRatio: '4 / 3',
+                  height: { xs: 330, sm: 410, md: 500 },
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -230,8 +236,8 @@ function MotorDetayPage() {
                           setActiveImage(img);
                         }}
                         sx={{
-                          width: 92,
-                          height: 68,
+                          width: 78,
+                          height: 58,
                           flexShrink: 0,
                           borderRadius: 2.5,
                           overflow: 'hidden',
@@ -263,16 +269,17 @@ function MotorDetayPage() {
             </Box>
 
             {/* Sağ: bilgiler */}
-            <Box className="hero-right">
+            <Box className="hero-right" sx={{ minWidth: 0 }}>
               <Typography
                 sx={{
-                  fontSize: { xs: '2rem', md: '2.8rem' },
+                  fontSize: { xs: '2rem', md: 'clamp(2.15rem, 3vw, 3rem)' },
                   fontWeight: 900,
                   lineHeight: 1.05,
                   mb: 1,
                   background: 'linear-gradient(90deg, #fff 0%, #36C5D3 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
+                  overflowWrap: 'anywhere',
                 }}
               >
                 {motor.name}
@@ -308,7 +315,7 @@ function MotorDetayPage() {
               {/* Fiyat */}
               <Box
                 sx={{
-                  p: 2.5,
+                  p: 2,
                   borderRadius: 3,
                   background: 'rgba(255,255,255,0.045)',
                   border: '1px solid rgba(54,197,211,0.25)',
@@ -329,7 +336,7 @@ function MotorDetayPage() {
                     >
                       Tavsiye Edilen Satış Fiyatı
                     </Typography>
-                    <Typography sx={{ fontSize: '2rem', fontWeight: 900, color: '#fff' }}>
+                    <Typography sx={{ fontSize: { xs: '1.65rem', md: '1.85rem' }, fontWeight: 900, color: '#fff' }}>
                       {motor.price.replace('TL', '₺')}
                     </Typography>
                   </>
@@ -433,7 +440,7 @@ function MotorDetayPage() {
                 <Button
                   fullWidth
                   variant="outlined"
-                  onClick={() => navigate('/fiyat-listesi')}
+                  onClick={() => navigate(motor.brand === 'Falcon' ? '/fiyat-listesi/falcon' : '/fiyat-listesi/musatti')}
                   sx={{
                     color: '#fff',
                     borderColor: 'rgba(255,255,255,0.3)',
@@ -457,7 +464,7 @@ function MotorDetayPage() {
 
       {/* Teknik özellikler */}
       {specEntries.length > 0 && (
-        <Container maxWidth="xl" sx={{ py: { xs: 4, md: 6 } }}>
+        <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
           <Stack direction="row" alignItems="center" spacing={1.2} sx={{ mb: 3 }}>
             <SpeedIcon sx={{ color: colors.from, fontSize: 26 }} />
             <Typography sx={{ fontSize: { xs: '1.4rem', md: '1.8rem' }, fontWeight: 900 }}>
@@ -515,7 +522,7 @@ function MotorDetayPage() {
 
       {/* Hakkında */}
       {motor.about && (
-        <Container maxWidth="xl" sx={{ pb: { xs: 4, md: 6 } }}>
+        <Container maxWidth="lg" sx={{ pb: { xs: 4, md: 6 } }}>
           <Divider sx={{ borderColor: 'rgba(54,197,211,0.15)', mb: 4 }} />
           <Stack direction="row" alignItems="center" spacing={1.2} sx={{ mb: 2 }}>
             <InfoIcon sx={{ color: colors.from, fontSize: 26 }} />
@@ -538,7 +545,7 @@ function MotorDetayPage() {
 
       {/* Galeri */}
       {motor.gallery && motor.gallery.length > 0 && (
-        <Container maxWidth="xl" sx={{ pb: { xs: 6, md: 10 } }}>
+        <Container maxWidth="lg" sx={{ pb: { xs: 6, md: 10 } }}>
           <Divider sx={{ borderColor: 'rgba(54,197,211,0.15)', mb: 4 }} />
           <Stack direction="row" alignItems="center" spacing={1.2} sx={{ mb: 3 }}>
             <CollectionsIcon sx={{ color: colors.from, fontSize: 26 }} />
@@ -564,8 +571,8 @@ function MotorDetayPage() {
                   borderRadius: 3,
                   overflow: 'hidden',
                   border: '1px solid rgba(54,197,211,0.18)',
-                  background: '#071827',
-                  aspectRatio: '4 / 3',
+                  background: 'linear-gradient(145deg, #d9e0e3, #f0f2f3)',
+                  aspectRatio: '16 / 10',
                   '&:hover img': { transform: 'scale(1.04)' },
                 }}
               >
@@ -577,7 +584,8 @@ function MotorDetayPage() {
                   sx={{
                     width: '100%',
                     height: '100%',
-                    objectFit: 'cover',
+                    objectFit: 'contain',
+                    mixBlendMode: motor.brand === 'Falcon' ? 'multiply' : 'normal',
                     display: 'block',
                     transition: 'transform 0.45s ease',
                   }}
@@ -589,7 +597,7 @@ function MotorDetayPage() {
       )}
 
       {/* Diğer modeller */}
-      <Container maxWidth="xl" sx={{ pb: { xs: 8, md: 12 } }}>
+      <Container maxWidth="lg" sx={{ pb: { xs: 8, md: 12 } }}>
         <Divider sx={{ borderColor: 'rgba(54,197,211,0.15)', mb: 4 }} />
         <Stack
           direction="row"
@@ -641,8 +649,8 @@ function MotorDetayPage() {
               >
                 <Box
                   sx={{
-                    background: 'linear-gradient(180deg, #ffffff 0%, #eef1f4 100%)',
-                    aspectRatio: '4 / 3',
+                    background: 'linear-gradient(145deg, #d9e0e3 0%, #eef1f2 100%)',
+                    aspectRatio: '16 / 11',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -654,7 +662,7 @@ function MotorDetayPage() {
                     src={m.coverImage || FALLBACK_IMAGE}
                     alt={m.name}
                     loading="lazy"
-                    sx={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                    sx={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', mixBlendMode: m.brand === 'Falcon' ? 'multiply' : 'normal' }}
                   />
                 </Box>
                 <Box sx={{ p: 1.8 }}>

@@ -29,6 +29,13 @@ import {
   useMediaQuery,
   useTheme,
   Pagination,
+  Checkbox,
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Snackbar,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -42,12 +49,30 @@ import {
   Person as PersonIcon,
   // Print as PrintIcon, // Geçici olarak kaldırıldı
   CheckCircle as CheckCircleIcon,
+  Archive as ArchiveIcon,
+  Restore as RestoreIcon,
 } from '@mui/icons-material';
-import { isEmriService } from '../../services/api';
+import { isEmriService, musteriService } from '../../services/api';
 import IsEmriModal from '../../components/IsEmriModal';
 import IsEmriDetayModal from './IsEmriDetayModal';
 import IsEmriTamamlaModal from './IsEmriTamamlaModal';
 import { formatDate, formatCurrency } from './isEmirleriUtils';
+
+const PAYMENT_LABELS = { nakit: 'Nakit', kart: 'Kart', kredi_karti: 'Kart', havale: 'Havale / EFT', karisik: 'Karışık' };
+const getPaidAmount = (isEmri) => Number(
+  isEmri.toplam_odenen
+  ?? (Number(isEmri.nakit_tutar || 0) + Number(isEmri.kart_tutar || 0) + Number(isEmri.havale_tutar || 0))
+);
+const getRemainingAmount = (isEmri) => Number(isEmri.kalan_bakiye || 0);
+const getPaymentLabel = (isEmri) => {
+  const usedMethods = [
+    Number(isEmri.nakit_tutar || 0) > 0 && 'Nakit',
+    Number(isEmri.kart_tutar || 0) > 0 && 'Kart',
+    Number(isEmri.havale_tutar || 0) > 0 && 'Havale / EFT',
+  ].filter(Boolean);
+  if (usedMethods.length > 1) return 'Karışık';
+  return usedMethods[0] || PAYMENT_LABELS[isEmri.odeme_sekli] || 'Ödeme yok';
+};
 
 function IsEmirleri() {
   const [isEmirleri, setIsEmirleri] = useState([]);
@@ -67,6 +92,10 @@ function IsEmirleri() {
   const [selectedIsEmri, setSelectedIsEmri] = useState(null);
   const [completeModalOpen, setCompleteModalOpen] = useState(false);
   const [workOrderToComplete, setWorkOrderToComplete] = useState(null);
+  const [selectedServiceIds, setSelectedServiceIds] = useState([]);
+  const [bulkConfirm, setBulkConfirm] = useState(null);
+  const [bulkSaving, setBulkSaving] = useState(false);
+  const [notice, setNotice] = useState(null);
   // const navigate = useNavigate(); // Geçici olarak kaldırıldı (yazdırma için)
   const [searchParams, setSearchParams] = useSearchParams();
   const theme = useTheme();
@@ -102,6 +131,7 @@ function IsEmirleri() {
       });
       if (requestId !== requestIdRef.current) return;
       setIsEmirleri(response.data?.data || []);
+      setSelectedServiceIds([]);
       setTotalPages(response.data?.pagination?.totalPages || 1);
       setStats(response.data?.stats || {});
     } catch (error) {
@@ -189,6 +219,53 @@ function IsEmirleri() {
   const hasActiveFilters = searchQuery || filterDurum || baslangicTarihi || bitisTarihi || filterBugun;
 
   const filteredIsEmirleri = isEmirleri;
+  const selectableIsEmirleri = filteredIsEmirleri.filter((item) => item.musteri_id);
+  const selectedServices = filteredIsEmirleri.filter((item) => selectedServiceIds.includes(item.id));
+  const allServicesSelected = selectableIsEmirleri.length > 0
+    && selectableIsEmirleri.every((item) => selectedServiceIds.includes(item.id));
+  const someServicesSelected = selectableIsEmirleri.some((item) => selectedServiceIds.includes(item.id));
+  const selectedActiveCustomerIds = [...new Set(selectedServices
+    .filter((item) => item.musteri_aktif !== false)
+    .map((item) => item.musteri_id))];
+  const selectedPassiveCustomerIds = [...new Set(selectedServices
+    .filter((item) => item.musteri_aktif === false)
+    .map((item) => item.musteri_id))];
+
+  const toggleService = (id) => {
+    setSelectedServiceIds((current) => current.includes(id)
+      ? current.filter((item) => item !== id)
+      : [...current, id]);
+  };
+
+  const toggleAllServices = () => {
+    if (allServicesSelected) {
+      setSelectedServiceIds([]);
+    } else {
+      setSelectedServiceIds(selectableIsEmirleri.map((item) => item.id));
+    }
+  };
+
+  const requestCustomerStatusChange = (aktif) => {
+    const ids = aktif ? selectedPassiveCustomerIds : selectedActiveCustomerIds;
+    if (!ids.length) return;
+    setBulkConfirm({ aktif, ids, serviceCount: selectedServices.length });
+  };
+
+  const runCustomerStatusChange = async () => {
+    if (!bulkConfirm) return;
+    setBulkSaving(true);
+    try {
+      const response = await musteriService.bulkSetActive(bulkConfirm.ids, bulkConfirm.aktif);
+      setNotice({ severity: 'success', text: response.data.message });
+      setBulkConfirm(null);
+      setSelectedServiceIds([]);
+      await loadIsEmirleri();
+    } catch (error) {
+      setNotice({ severity: 'error', text: error.response?.data?.message || 'Toplu müşteri işlemi tamamlanamadı.' });
+    } finally {
+      setBulkSaving(false);
+    }
+  };
   const toplamIsEmri = Number(stats.toplam || 0);
   const bugunkuIsEmri = Number(stats.bugun || 0);
   const beklemedekiIsEmri = Number(stats.beklemede || 0);
@@ -410,6 +487,43 @@ function IsEmirleri() {
         </CardContent>
       </Card>
 
+      {isAdmin && isMobile && selectableIsEmirleri.length > 0 && (
+        <Card variant="outlined" sx={{ mb: 1.5 }}>
+          <CardContent sx={{ py: 0.75, '&:last-child': { pb: 0.75 }, display: 'flex', alignItems: 'center' }}>
+            <Checkbox
+              checked={allServicesSelected}
+              indeterminate={!allServicesSelected && someServicesSelected}
+              onChange={toggleAllServices}
+              inputProps={{ 'aria-label': 'Bu sayfadaki servis kayıtlarının tümünü seç' }}
+            />
+            <Typography variant="body2" fontWeight={700}>Bu sayfadaki servis kayıtlarını seç</Typography>
+          </CardContent>
+        </Card>
+      )}
+
+      {isAdmin && selectedServiceIds.length > 0 && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: { xs: 'stretch', sm: 'center' }, justifyContent: 'space-between', flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
+            <Typography variant="body2">
+              {selectedServiceIds.length} servis kaydı seçildi; {new Set(selectedServices.map((item) => item.musteri_id)).size} bağlı müşteri bulundu.
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <Button size="small" color="inherit" onClick={() => setSelectedServiceIds([])}>Seçimi Kaldır</Button>
+              {selectedActiveCustomerIds.length > 0 && (
+                <Button size="small" variant="contained" color="warning" startIcon={<ArchiveIcon />} onClick={() => requestCustomerStatusChange(false)}>
+                  Müşterileri Pasife Al ({selectedActiveCustomerIds.length})
+                </Button>
+              )}
+              {selectedPassiveCustomerIds.length > 0 && (
+                <Button size="small" variant="contained" color="success" startIcon={<RestoreIcon />} onClick={() => requestCustomerStatusChange(true)}>
+                  Müşterileri Aktif Et ({selectedPassiveCustomerIds.length})
+                </Button>
+              )}
+            </Box>
+          </Box>
+        </Alert>
+      )}
+
       {/* Table / Mobile Cards */}
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}>
@@ -444,6 +558,15 @@ function IsEmirleri() {
                   {/* Header */}
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5, gap: 1 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, flex: 1 }}>
+                      {isAdmin && (
+                        <Checkbox
+                          size="small"
+                          disabled={!isEmri.musteri_id}
+                          checked={selectedServiceIds.includes(isEmri.id)}
+                          onChange={() => toggleService(isEmri.id)}
+                          inputProps={{ 'aria-label': `${isEmri.fis_no} servis kaydını seç` }}
+                        />
+                      )}
                       <Avatar sx={{ bgcolor: 'primary.main', width: 36, height: 36 }}>
                         <ReceiptIcon fontSize="small" />
                       </Avatar>
@@ -497,6 +620,7 @@ function IsEmirleri() {
                         <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.875rem' }} noWrap>
                           {isEmri.musteri_ad_soyad}
                         </Typography>
+                        {isEmri.musteri_aktif === false && <Chip label="Pasif müşteri" size="small" sx={{ mt: 0.5, height: 18, fontSize: '0.62rem' }} />}
                       </Box>
                     </Box>
                     
@@ -509,12 +633,6 @@ function IsEmirleri() {
                         </Typography>
                       </Box>
                     </Box>
-                    
-                    {isEmri.telefon && (
-                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', display: 'block', mb: 0.5 }}>
-                        📞 {isEmri.telefon}
-                      </Typography>
-                    )}
                     
                     {isEmri.aciklama && (
                       <Box>
@@ -540,12 +658,24 @@ function IsEmirleri() {
                   <Divider sx={{ my: 1 }} />
 
                   {/* Footer */}
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5, gap: 2 }}>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${isAdmin ? 3 : 2}, minmax(0, 1fr))`, alignItems: 'center', mb: 1.5, gap: 1 }}>
                     <Box sx={{ minWidth: 0, flex: 1 }}>
                       <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>Toplam</Typography>
                       <Typography variant="subtitle1" fontWeight={700} sx={{ fontSize: '1rem' }} noWrap>
                         {formatCurrency(isEmri.gercek_toplam_ucret)}
                       </Typography>
+                    </Box>
+                    <Box sx={{ textAlign: 'center', minWidth: 0 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>Ödeme</Typography>
+                      <Typography variant="body2" fontWeight={700} noWrap>{getPaymentLabel(isEmri)}</Typography>
+                      <Typography variant="subtitle1" fontWeight={800} color="success.main" sx={{ fontSize: '0.92rem' }} noWrap>
+                        {formatCurrency(getPaidAmount(isEmri))}
+                      </Typography>
+                      {getRemainingAmount(isEmri) > 0 && (
+                        <Typography variant="caption" fontWeight={800} sx={{ color: '#c62828' }} noWrap>
+                          Kalan: {formatCurrency(getRemainingAmount(isEmri))}
+                        </Typography>
+                      )}
                     </Box>
                     {isAdmin && (
                       <Box sx={{ textAlign: 'right', minWidth: 0, flex: 1 }}>
@@ -619,13 +749,24 @@ function IsEmirleri() {
         /* Desktop Table View */
         <Card>
         <TableContainer sx={{ overflowX: 'auto' }}>
-            <Table size="small" sx={{ minWidth: 850, tableLayout: 'fixed' }}>
+            <Table size="small" sx={{ minWidth: 900, tableLayout: 'fixed' }}>
               <TableHead>
                 <TableRow sx={{ '& th': { py: 0.75, px: 0.5, fontSize: '0.7rem', fontWeight: 600 } }}>
+                  {isAdmin && (
+                    <TableCell padding="checkbox" sx={{ width: 34 }}>
+                      <Checkbox
+                        size="small"
+                        checked={allServicesSelected}
+                        indeterminate={!allServicesSelected && someServicesSelected}
+                        onChange={toggleAllServices}
+                        inputProps={{ 'aria-label': 'Tüm servis kayıtlarını seç' }}
+                      />
+                    </TableCell>
+                  )}
                   <TableCell sx={{ width: 45 }}>Fiş No</TableCell>
                   <TableCell sx={{ width: 100 }}>Müşteri</TableCell>
                   <TableCell sx={{ width: 90 }}>Araç</TableCell>
-                  <TableCell sx={{ width: 40 }}>Telefon</TableCell>
+                  <TableCell align="center" sx={{ width: 90 }}>Ödeme</TableCell>
                   <TableCell sx={{ width: 95 }}>Tarih/Durum</TableCell>
                   <TableCell sx={{ width: 85 }}>Arıza</TableCell>
                   <TableCell sx={{ width: 55 }}>Açıklama</TableCell>
@@ -638,7 +779,7 @@ function IsEmirleri() {
               <TableBody>
                 {filteredIsEmirleri.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={isAdmin ? 11 : 9} align="center" sx={{ py: 6 }}>
+                    <TableCell colSpan={isAdmin ? 12 : 9} align="center" sx={{ py: 6 }}>
                       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
                         <ReceiptIcon sx={{ fontSize: 48, color: 'text.disabled' }} />
                         <Typography variant="body1" color="text.secondary">
@@ -661,9 +802,21 @@ function IsEmirleri() {
                     <TableRow
                       key={isEmri.id}
                       hover
+                      selected={selectedServiceIds.includes(isEmri.id)}
                       onDoubleClick={() => isAdmin && handleViewDetail(isEmri)}
                       sx={{ '&:hover': { bgcolor: 'action.hover', cursor: isAdmin ? 'pointer' : 'default' }, '& td': { py: 0.5, px: 0.5 } }}
                     >
+                      {isAdmin && (
+                        <TableCell padding="checkbox">
+                          <Checkbox
+                            size="small"
+                            disabled={!isEmri.musteri_id}
+                            checked={selectedServiceIds.includes(isEmri.id)}
+                            onChange={() => toggleService(isEmri.id)}
+                            inputProps={{ 'aria-label': `${isEmri.fis_no} servis kaydını seç` }}
+                          />
+                        </TableCell>
+                      )}
                       <TableCell>
                         <Tooltip title={`Fiş: ${isEmri.fis_no}`}>
                           <Typography fontWeight={700} color="primary.main" fontSize="0.7rem" noWrap>
@@ -677,6 +830,7 @@ function IsEmirleri() {
                             {isEmri.musteri_ad_soyad}
                           </Typography>
                         </Tooltip>
+                        {isEmri.musteri_aktif === false && <Typography variant="caption" color="text.secondary" fontSize="0.58rem">Pasif müşteri</Typography>}
                       </TableCell>
                       <TableCell>
                         <Tooltip title={`${isEmri.marka} ${isEmri.model_tip}`}>
@@ -685,9 +839,19 @@ function IsEmirleri() {
                           </Typography>
                         </Tooltip>
                       </TableCell>
-                      <TableCell>
-                        <Tooltip title={isEmri.telefon || 'Telefon yok'}>
-                          <Typography variant="body2" fontSize="0.7rem" noWrap>{isEmri.telefon || '-'}</Typography>
+                      <TableCell align="center">
+                        <Tooltip title={`${getPaymentLabel(isEmri)}: ${formatCurrency(getPaidAmount(isEmri))}`}>
+                          <Box>
+                            <Typography fontSize="0.62rem" fontWeight={700} noWrap>{getPaymentLabel(isEmri)}</Typography>
+                            <Typography fontSize="0.66rem" fontWeight={800} color="success.main" noWrap>
+                              {formatCurrency(getPaidAmount(isEmri))}
+                            </Typography>
+                            {getRemainingAmount(isEmri) > 0 && (
+                              <Typography fontSize="0.62rem" fontWeight={800} sx={{ color: '#c62828' }} noWrap>
+                                Kalan: {formatCurrency(getRemainingAmount(isEmri))}
+                              </Typography>
+                            )}
+                          </Box>
                         </Tooltip>
                       </TableCell>
                       <TableCell>
@@ -898,6 +1062,27 @@ function IsEmirleri() {
         workOrder={workOrderToComplete}
         onConfirm={confirmComplete}
       />
+
+      <Dialog open={Boolean(bulkConfirm)} onClose={() => !bulkSaving && setBulkConfirm(null)} maxWidth="sm" fullWidth>
+        <DialogTitle>{bulkConfirm?.aktif ? 'Müşterileri Yeniden Aktif Et' : 'Müşterileri Pasife Al'}</DialogTitle>
+        <DialogContent>
+          <Alert severity={bulkConfirm?.aktif ? 'info' : 'warning'} sx={{ mt: 1 }}>
+            Seçilen {bulkConfirm?.serviceCount || 0} servis kaydına bağlı {bulkConfirm?.ids.length || 0} müşteri {bulkConfirm?.aktif ? 'yeniden aktif edilecek' : 'pasife alınacak'}.
+            <br /><br />
+            Servis kayıtları, satışlar, maliyet, kâr, tahsilat ve cari hareketler silinmeyecek veya raporlardan çıkarılmayacaktır.
+          </Alert>
+        </DialogContent>
+        <DialogActions>
+          <Button disabled={bulkSaving} onClick={() => setBulkConfirm(null)}>İptal</Button>
+          <Button variant="contained" color={bulkConfirm?.aktif ? 'success' : 'warning'} disabled={bulkSaving} onClick={runCustomerStatusChange}>
+            {bulkSaving ? <CircularProgress size={22} /> : (bulkConfirm?.aktif ? 'Aktif Et' : 'Pasife Al')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar open={Boolean(notice)} autoHideDuration={4500} onClose={() => setNotice(null)}>
+        <Alert severity={notice?.severity || 'info'} onClose={() => setNotice(null)}>{notice?.text}</Alert>
+      </Snackbar>
     </Box>
   );
 }

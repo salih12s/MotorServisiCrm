@@ -1,10 +1,11 @@
 import React from 'react';
 import { Box, Typography, Stack, Card, CardActionArea, Chip } from '@mui/material';
 import { ArrowForward as ArrowForwardIcon } from '@mui/icons-material';
-import { BRAND_COLORS, FALLBACK_IMAGE } from './motorlarConstants';
+import { BRAND_COLORS, FALLBACK_IMAGE, getMotorImage } from './motorlarConstants';
 
 function MotorCard({ motor, onClick }) {
   const colors = BRAND_COLORS[motor.brand] || BRAND_COLORS.Musatti;
+  const cardImage = getMotorImage(motor);
 
   return (
     <Card
@@ -44,16 +45,15 @@ function MotorCard({ motor, onClick }) {
           alignItems: 'stretch',
         }}
       >
-        {/* Görsel alanı: beyaz zemin + contain = net görüntü */}
         <Box
           sx={{
             position: 'relative',
             width: '100%',
-            aspectRatio: '4 / 3',
-            background: 'linear-gradient(180deg, #ffffff 0%, #eef1f4 100%)',
+            aspectRatio: '16 / 11',
+            background: `radial-gradient(circle at 50% 45%, ${colors.from}22 0%, transparent 58%), linear-gradient(145deg, #d8dfe3 0%, #eef1f2 100%)`,
             overflow: 'hidden',
             flexShrink: 0,
-            p: 2.5,
+            p: 2,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -93,7 +93,7 @@ function MotorCard({ motor, onClick }) {
           <Box
             className="motor-image"
             component="img"
-            src={motor.coverImage || FALLBACK_IMAGE}
+            src={cardImage}
             alt={motor.name}
             loading="lazy"
             decoding="async"

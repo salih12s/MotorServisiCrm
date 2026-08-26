@@ -33,6 +33,7 @@ const SatisFormModal = ({
   formatCurrency,
   onSave,
 }) => {
+  const hasCariCollection = Number(satisForm.cari_nakit_tutar || 0) + Number(satisForm.cari_kart_tutar || 0) + Number(satisForm.cari_havale_tutar || 0) > 0;
   return (
     <Dialog
       open={open}
@@ -164,14 +165,14 @@ const SatisFormModal = ({
                   <FormControl size="small" sx={{ flex: 1, mt: 1 }}>
                     <InputLabel>Ödeme Şekli</InputLabel>
                     <Select
+                      disabled={hasCariCollection}
                       value={satisForm.odeme_sekli}
-                      onChange={(e) => setSatisForm({ ...satisForm, odeme_sekli: e.target.value })}
+                      onChange={(e) => setSatisForm({ ...satisForm, odeme_sekli: e.target.value, nakit_tutar: '', kart_tutar: '', havale_tutar: '' })}
                       label="Ödeme Şekli"
                     >
                       <MenuItem value="nakit">Nakit</MenuItem>
                       <MenuItem value="kart">Kart</MenuItem>
                       <MenuItem value="havale">Havale/EFT</MenuItem>
-                      <MenuItem value="kredi">Kredi</MenuItem>
                       <MenuItem value="karisik">Karışık (Çoklu Ödeme)</MenuItem>
                     </Select>
                   </FormControl>
@@ -181,6 +182,7 @@ const SatisFormModal = ({
                 {satisForm.odeme_sekli === 'karisik' && (
                   <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1.5, mt: 1.5 }}>
                     <TextField
+                      disabled={hasCariCollection}
                       sx={{ flex: 1 }}
                       size="small"
                       label="Nakit Tutar"
@@ -194,6 +196,7 @@ const SatisFormModal = ({
                       placeholder="0"
                     />
                     <TextField
+                      disabled={hasCariCollection}
                       sx={{ flex: 1 }}
                       size="small"
                       label="Kart Tutar"
@@ -207,6 +210,7 @@ const SatisFormModal = ({
                       placeholder="0"
                     />
                     <TextField
+                      disabled={hasCariCollection}
                       sx={{ flex: 1 }}
                       size="small"
                       label="Havale Tutar"

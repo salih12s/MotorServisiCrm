@@ -239,7 +239,7 @@ function HeroSection() {
             variant="contained"
             size="large"
             endIcon={<ArrowForwardIcon />}
-            onClick={() => navigate('/motorlar')}
+            onClick={() => navigate('/koleksiyon')}
             sx={{
               background: 'linear-gradient(135deg, #04A7B8 0%, #36C5D3 100%)',
               color: '#fff',

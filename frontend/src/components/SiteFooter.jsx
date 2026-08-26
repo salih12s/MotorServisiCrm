@@ -10,7 +10,7 @@ import {
 } from '@mui/icons-material';
 
 const QUICK_LINKS = [
-  { label: 'Motorlarımız', path: '/motorlar' },
+  { label: 'Motorlarımız', path: '/koleksiyon' },
   { label: 'Hakkımızda', path: '/hakkimizda' },
   { label: 'Basında Biz', path: '/basinda' },
   { label: 'Giriş', path: '/login' },

@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useMemo } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -13,6 +13,7 @@ import PublicNav from '../../components/PublicNav';
 import SiteFooter from '../../components/SiteFooter';
 import motors from '../../data/motors';
 import MotorCard from './motorlar/MotorCard';
+import { getBrandBySlug } from '../../data/brands';
 
 const FILTERS = [
   { key: 'hepsi', label: 'Hepsi' },
@@ -23,23 +24,41 @@ const FILTERS = [
   { key: 'fiyat-listesi', label: 'Fiyat Listesi' },
 ];
 
+const FALCON_CATEGORY_ORDER = [
+  'Cub', 'Classic', 'Scooter', 'Sport', 'Naked', 'Cruiser', 'Cross', 'Off-Road',
+  'Elektrikli Bisiklet', 'Elektrikli Scooter', 'Üç Tekerli', 'Dört Tekerli',
+];
+
 function MotorlarPage() {
   const navigate = useNavigate();
+  const { brandSlug } = useParams();
+  const routeBrand = getBrandBySlug(brandSlug);
   const [filter, setFilter] = useState('hepsi');
-  const [brandFilter, setBrandFilter] = useState('hepsi');
+  const brandFilter = routeBrand?.name || (brandSlug ? '__invalid__' : 'Musatti');
+  useEffect(() => setFilter('hepsi'), [brandSlug]);
+  const filters = useMemo(() => {
+    if (routeBrand?.slug !== 'falcon') return FILTERS;
+    const available = new Set(motors.filter((motor) => motor.brand === 'Falcon').map((motor) => motor.category));
+    return [
+      { key: 'hepsi', label: 'Tümü' },
+      ...FALCON_CATEGORY_ORDER.filter((category) => available.has(category)).map((category) => ({ key: category, label: category })),
+      { key: 'fiyat-listesi', label: 'Fiyat Listesi' },
+    ];
+  }, [routeBrand?.slug]);
 
   const filtered = useMemo(() => {
     return motors.filter((motor) => {
-      const typeOk =
-        filter === 'hepsi' ||
-        (filter === 'atv' && (motor.type === 'atv' || motor.type === 'utv')) ||
-        motor.type === filter;
+      const typeOk = routeBrand?.slug === 'falcon'
+        ? filter === 'hepsi' || motor.category === filter
+        : filter === 'hepsi' ||
+          (filter === 'atv' && (motor.type === 'atv' || motor.type === 'utv')) ||
+          motor.type === filter;
 
       const brandOk = brandFilter === 'hepsi' || motor.brand === brandFilter;
 
       return typeOk && brandOk;
     });
-  }, [filter, brandFilter]);
+  }, [filter, brandFilter, routeBrand?.slug]);
 
   return (
     <Box
@@ -96,8 +115,9 @@ function MotorlarPage() {
                 lineHeight: 1.6,
               }}
             >
-              Musatti & Smarda motor modellerini keşfedin, güncel fiyat listesine kolayca ulaşın.
-              Ayrıntıları görmek için kartlara tıklayın.
+              {routeBrand
+                ? `${routeBrand.name} koleksiyonundaki mevcut modelleri inceleyin ve ayrıntılar için kartlara tıklayın.`
+                : 'Marka ve kategori filtreleriyle mevcut motor koleksiyonunu keşfedin.'}
             </Typography>
           </Stack>
         </Container>
@@ -115,7 +135,7 @@ function MotorlarPage() {
             exclusive
             onChange={(_, value) => {
               if (value === 'fiyat-listesi') {
-                navigate('/fiyat-listesi');
+                navigate(routeBrand?.slug === 'falcon' ? '/fiyat-listesi/falcon' : '/fiyat-listesi/musatti');
               } else if (value) {
                 setFilter(value);
               }
@@ -142,40 +162,13 @@ function MotorlarPage() {
               },
             }}
           >
-            {FILTERS.map((item) => (
+            {filters.map((item) => (
               <ToggleButton key={item.key} value={item.key}>
                 {item.label}
               </ToggleButton>
             ))}
           </ToggleButtonGroup>
 
-          <ToggleButtonGroup
-            value={brandFilter}
-            exclusive
-            onChange={(_, value) => value && setBrandFilter(value)}
-            sx={{
-              flexWrap: 'wrap',
-              justifyContent: 'center',
-              '& .MuiToggleButton-root': {
-                color: 'rgba(255,255,255,0.7)',
-                borderColor: 'rgba(54,197,211,0.3)',
-                fontWeight: 700,
-                px: 2.5,
-                py: 0.8,
-                textTransform: 'none',
-                '&.Mui-selected': {
-                  background: 'linear-gradient(135deg, #04A7B8 0%, #36C5D3 100%)',
-                  color: '#fff',
-                  borderColor: 'transparent',
-                },
-                '&:hover': { background: 'rgba(54,197,211,0.1)' },
-              },
-            }}
-          >
-            <ToggleButton value="hepsi">Tüm Markalar</ToggleButton>
-            <ToggleButton value="Musatti">Musatti</ToggleButton>
-            <ToggleButton value="Smarda">Smarda</ToggleButton>
-          </ToggleButtonGroup>
         </Stack>
       </Container>
 
@@ -191,7 +184,9 @@ function MotorlarPage() {
                 }}
               />
               <Typography sx={{ color: 'rgba(255,255,255,0.6)' }}>
-                Bu filtreye uygun model bulunamadı.
+                {routeBrand?.slug === 'falcon'
+                  ? 'Falcon ürün görselleri, modelleri, fiyatları ve teknik özellikleri henüz sağlanmadı.'
+                  : 'Bu filtreye uygun model bulunamadı.'}
               </Typography>
             </Stack>
           ) : (

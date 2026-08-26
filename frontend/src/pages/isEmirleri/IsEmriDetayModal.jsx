@@ -12,7 +12,6 @@ import {
   Button,
   IconButton,
   Chip,
-  Grid,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -30,7 +29,81 @@ import {
 } from '@mui/icons-material';
 import { formatDate, formatCurrency } from './isEmirleriUtils';
 
+const DURUM_MAP = {
+  beklemede: { label: 'Beklemede', bg: '#fff3e0', color: '#e65100' },
+  islemde: { label: 'İşlemde', bg: '#e3f2fd', color: '#0277bd' },
+  odeme_bekleniyor: { label: 'Ödeme Bekleniyor', bg: '#f3e5f5', color: '#7b1fa2' },
+  iptal_edildi: { label: 'İptal Edildi', bg: '#ffebee', color: '#c62828' },
+};
+const durumInfo = (durum) => DURUM_MAP[durum] || { label: 'Tamamlandı', bg: '#e8f5e9', color: '#2e7d32' };
+
+const PAYMENT_LABELS = {
+  nakit: 'Nakit',
+  kart: 'Kart',
+  kredi_karti: 'Kart',
+  havale: 'Havale / EFT',
+  karisik: 'Karışık',
+};
+
+const getPaymentLabel = (isEmri) => {
+  const usedMethods = [
+    Number(isEmri?.nakit_tutar || 0) > 0 && 'Nakit',
+    Number(isEmri?.kart_tutar || 0) > 0 && 'Kart',
+    Number(isEmri?.havale_tutar || 0) > 0 && 'Havale / EFT',
+  ].filter(Boolean);
+
+  if (usedMethods.length > 1) return 'Karışık';
+  return usedMethods[0] || PAYMENT_LABELS[isEmri?.odeme_sekli] || 'Ödeme yok';
+};
+
+// Tek satır etiket - değer gösterimi (ör. "Ad Soyad: maraba")
+function InfoRow({ label, value, color }) {
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'baseline',
+        gap: 2,
+        py: 0.6,
+        '&:not(:last-of-type)': { borderBottom: '1px solid', borderColor: 'divider' },
+      }}
+    >
+      <Typography variant="body2" color="text.secondary" sx={{ flexShrink: 0 }}>{label}</Typography>
+      <Typography variant="body2" fontWeight={600} sx={{ color, textAlign: 'right' }}>{value}</Typography>
+    </Box>
+  );
+}
+
+// Uzun metinler için etiket üstte, metin altta (büyük boş kutu yaratmadan)
+function InfoBlock({ label, value }) {
+  return (
+    <Box sx={{ py: 0.6, '&:not(:last-of-type)': { borderBottom: '1px solid', borderColor: 'divider' } }}>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 0.25 }}>{label}</Typography>
+      <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{value || '-'}</Typography>
+    </Box>
+  );
+}
+
+function SectionCard({ icon, title, action, children, sx }) {
+  return (
+    <Card variant="outlined" sx={{ p: 2, ...sx }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.25, pb: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
+        {icon}
+        <Typography variant="subtitle1" fontWeight={700}>{title}</Typography>
+        {action && <Box sx={{ ml: 'auto' }}>{action}</Box>}
+      </Box>
+      {children}
+    </Card>
+  );
+}
+
 function IsEmriDetayModal({ open, onClose, isEmri, isMobile, isAdmin, onEdit }) {
+  const durum = isEmri ? durumInfo(isEmri.durum) : null;
+  const initialPaid = Number(isEmri?.nakit_tutar || 0) + Number(isEmri?.kart_tutar || 0) + Number(isEmri?.havale_tutar || 0);
+  const totalPaid = Number(isEmri?.toplam_odenen ?? initialPaid);
+  const paymentLabel = getPaymentLabel(isEmri);
+
   return (
     <Dialog
       open={open}
@@ -42,15 +115,16 @@ function IsEmriDetayModal({ open, onClose, isEmri, isMobile, isAdmin, onEdit }) 
         sx: {
           m: { xs: 0, sm: 2 },
           borderRadius: { xs: 0, sm: 2 },
+          maxHeight: { sm: 'calc(100vh - 32px)' },
         }
       }}
     >
-      <DialogTitle sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        pb: 1, 
-        bgcolor: 'primary.main', 
+      <DialogTitle sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        pb: 1,
+        bgcolor: 'primary.main',
         color: 'white',
         p: { xs: 2, sm: 2.5 },
       }}>
@@ -70,248 +144,187 @@ function IsEmriDetayModal({ open, onClose, isEmri, isMobile, isAdmin, onEdit }) 
       </DialogTitle>
       <DialogContent sx={{ p: { xs: 2, sm: 3 } }}>
         {isEmri && (
-          <Grid container spacing={{ xs: 1.5, sm: 2 }}>
-            {/* Müşteri ve Araç Bilgileri Yan Yana */}
-            <Grid item xs={12} md={6}>
-              <Card variant="outlined" sx={{ p: 2, height: '100%' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, pb: 1, borderBottom: '2px solid', borderColor: 'primary.main' }}>
-                  <PersonIcon color="primary" />
-                  <Typography variant="subtitle1" fontWeight={700}>Müşteri Bilgileri</Typography>
-                </Box>
-                <Grid container spacing={1}>
-                  <Grid item xs={4}><Typography variant="body2" color="text.secondary">Ad Soyad:</Typography></Grid>
-                  <Grid item xs={8}><Typography variant="body2" fontWeight={600}>{isEmri.musteri_ad_soyad}</Typography></Grid>
-                  <Grid item xs={4}><Typography variant="body2" color="text.secondary">Telefon:</Typography></Grid>
-                  <Grid item xs={8}><Typography variant="body2" fontWeight={600}>{isEmri.telefon || '-'}</Typography></Grid>
-                </Grid>
-              </Card>
-            </Grid>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+              gap: 2,
+              alignItems: 'start',
+            }}
+          >
+            {/* Müşteri Bilgileri */}
+            <SectionCard icon={<PersonIcon color="primary" />} title="Müşteri Bilgileri">
+              <InfoRow label="Ad Soyad" value={isEmri.musteri_ad_soyad} />
+              <InfoRow label="Telefon" value={isEmri.telefon || '-'} />
+            </SectionCard>
 
-            <Grid item xs={12} md={6}>
-              <Card variant="outlined" sx={{ p: 2, height: '100%' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, pb: 1, borderBottom: '2px solid', borderColor: 'primary.main' }}>
-                  <DirectionsCarIcon color="primary" />
-                  <Typography variant="subtitle1" fontWeight={700}>Araç Bilgileri</Typography>
-                </Box>
-                <Grid container spacing={1}>
-                  <Grid item xs={4}><Typography variant="body2" color="text.secondary">Marka:</Typography></Grid>
-                  <Grid item xs={8}><Typography variant="body2" fontWeight={600}>{isEmri.marka}</Typography></Grid>
-                  <Grid item xs={4}><Typography variant="body2" color="text.secondary">Model/Tip:</Typography></Grid>
-                  <Grid item xs={8}><Typography variant="body2" fontWeight={600}>{isEmri.model_tip || '-'}</Typography></Grid>
-                  <Grid item xs={4}><Typography variant="body2" color="text.secondary">KM:</Typography></Grid>
-                  <Grid item xs={8}><Typography variant="body2" fontWeight={600}>{isEmri.km ? `${isEmri.km} km` : '-'}</Typography></Grid>
-                </Grid>
-              </Card>
-            </Grid>
+            {/* Araç Bilgileri */}
+            <SectionCard icon={<DirectionsCarIcon color="primary" />} title="Araç Bilgileri">
+              <InfoRow label="Marka" value={isEmri.marka} />
+              <InfoRow label="Model/Tip" value={isEmri.model_tip || '-'} />
+              <InfoRow label="KM" value={isEmri.km ? `${isEmri.km} km` : '-'} />
+            </SectionCard>
 
             {/* İş Detayları */}
-            <Grid item xs={12}>
-              <Card variant="outlined" sx={{ p: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, pb: 1, borderBottom: '2px solid', borderColor: 'primary.main' }}>
-                  <ReceiptIcon color="primary" />
-                  <Typography variant="subtitle1" fontWeight={700}>İş Detayları</Typography>
-                  <Box sx={{ ml: 'auto' }}>
-                    <Chip 
-                      size="small" 
-                      label={
-                        isEmri.durum === 'beklemede' ? 'Beklemede' :
-                        isEmri.durum === 'islemde' ? 'İşlemde' :
-                        isEmri.durum === 'odeme_bekleniyor' ? 'Ödeme Bekleniyor' :
-                        isEmri.durum === 'iptal_edildi' ? 'İptal Edildi' :
-                        'Tamamlandı'
-                      }
-                      sx={{ 
-                        bgcolor: 
-                          isEmri.durum === 'beklemede' ? '#fff3e0' :
-                          isEmri.durum === 'islemde' ? '#e3f2fd' :
-                          isEmri.durum === 'odeme_bekleniyor' ? '#f3e5f5' :
-                          isEmri.durum === 'iptal_edildi' ? '#ffebee' :
-                          '#e8f5e9',
-                        color: 
-                          isEmri.durum === 'beklemede' ? '#e65100' :
-                          isEmri.durum === 'islemde' ? '#0277bd' :
-                          isEmri.durum === 'odeme_bekleniyor' ? '#7b1fa2' :
-                          isEmri.durum === 'iptal_edildi' ? '#c62828' :
-                          '#2e7d32',
-                        fontWeight: 600,
-                      }}
-                    />
-                  </Box>
-                </Box>
-                <Grid container spacing={2}>
-                  <Grid item xs={36} md={18}>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>Açıklama:</Typography>
-                    <Typography variant="body2" sx={{ bgcolor: '#f5f5f5', p: 1, borderRadius: 1, minHeight: 40 }}>
-                      {isEmri.aciklama || '-'}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>Arıza/Şikayetler:</Typography>
-                    <Typography variant="body2" sx={{ bgcolor: '#f5f5f5', p: 1, borderRadius: 1, minHeight: 40 }}>
-                      {isEmri.ariza_sikayetler || '-'}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6} md={3}>
-                    <Typography variant="body2" color="text.secondary">Oluşturma Tarihi:</Typography>
-                    <Typography variant="body2" fontWeight={600}>{formatDate(isEmri.created_at, 'dd.MM.yyyy HH:mm')}</Typography>
-                  </Grid>
-                  <Grid item xs={6} md={3}>
-                    <Typography variant="body2" color="text.secondary">Tahmini Teslim:</Typography>
-                    <Typography variant="body2" fontWeight={600}>{formatDate(isEmri.tahmini_teslim_tarihi, 'dd.MM.yyyy')}</Typography>
-                  </Grid>
-                  <Grid item xs={6} md={3}>
-                    <Typography variant="body2" color="text.secondary">Tahmini Ücret:</Typography>
-                    <Typography variant="body2" fontWeight={600} color="primary.main">
-                      {isEmri.tahmini_toplam_ucret ? formatCurrency(isEmri.tahmini_toplam_ucret) : '-'}
-                    </Typography>
-                  </Grid>
-                </Grid>
-              </Card>
-            </Grid>
+            <SectionCard
+              icon={<ReceiptIcon color="primary" />}
+              title="İş Detayları"
+              sx={{ gridColumn: { md: '1 / -1' } }}
+              action={
+                <Chip
+                  size="small"
+                  label={durum.label}
+                  sx={{ bgcolor: durum.bg, color: durum.color, fontWeight: 600 }}
+                />
+              }
+            >
+              <InfoBlock label="Açıklama" value={isEmri.aciklama} />
+              <InfoBlock label="Arıza/Şikayetler" value={isEmri.ariza_sikayetler} />
+              <InfoRow label="Oluşturma Tarihi" value={formatDate(isEmri.created_at, 'dd.MM.yyyy HH:mm')} />
+              <InfoRow label="Tahmini Teslim" value={formatDate(isEmri.tahmini_teslim_tarihi, 'dd.MM.yyyy')} />
+              <InfoRow
+                label="Tahmini Ücret"
+                value={isEmri.tahmini_toplam_ucret ? formatCurrency(isEmri.tahmini_toplam_ucret) : '-'}
+                color="primary.main"
+              />
+            </SectionCard>
 
             {/* Parçalar */}
             {isEmri.parcalar && isEmri.parcalar.length > 0 && (
-              <Grid item xs={12}>
-                <Card variant="outlined" sx={{ p: 2 }}>
-                  <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2, pb: 1, borderBottom: '2px solid', borderColor: 'primary.main' }}>
-                    Parçalar ({isEmri.parcalar.length})
-                  </Typography>
-                  
-                  {/* Mobile Card View */}
-                  {isMobile ? (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                      {isEmri.parcalar.map((parca, index) => (
-                        <Paper key={index} variant="outlined" sx={{ p: 1.5 }}>
-                          <Typography variant="body2" fontWeight={600} sx={{ mb: 0.5 }}>
-                            {parca.takilan_parca}
+              <SectionCard
+                icon={<ReceiptIcon color="primary" />}
+                title={`Parçalar (${isEmri.parcalar.length})`}
+                sx={{ gridColumn: { md: '1 / -1' } }}
+              >
+                {isMobile ? (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                    {isEmri.parcalar.map((parca, index) => (
+                      <Paper key={index} variant="outlined" sx={{ p: 1.5 }}>
+                        <Typography variant="body2" fontWeight={600} sx={{ mb: 0.5 }}>
+                          {parca.takilan_parca}
+                        </Typography>
+                        {parca.parca_kodu && (
+                          <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+                            Kod: {parca.parca_kodu}
                           </Typography>
-                          {parca.parca_kodu && (
-                            <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
-                              Kod: {parca.parca_kodu}
-                            </Typography>
-                          )}
-                          <Grid container spacing={1}>
-                            <Grid item xs={isAdmin ? 3 : 4}>
-                              <Typography variant="caption" color="text.secondary">Adet</Typography>
-                              <Typography variant="body2" fontWeight={600}>{parca.adet}</Typography>
-                            </Grid>
-                            <Grid item xs={isAdmin ? 3 : 4}>
-                              <Typography variant="caption" color="text.secondary">Birim Fiyat</Typography>
-                              <Typography variant="body2" fontWeight={600}>{formatCurrency(parca.birim_fiyat)}</Typography>
-                            </Grid>
-                            {isAdmin && (
-                              <Grid item xs={3}>
-                                <Typography variant="caption" color="text.secondary">Maliyet</Typography>
-                                <Typography variant="body2" fontWeight={600} color="error.main">
-                                  {formatCurrency(parca.maliyet)}
-                                </Typography>
-                              </Grid>
-                            )}
-                            <Grid item xs={isAdmin ? 3 : 4}>
-                              <Typography variant="caption" color="text.secondary">Toplam</Typography>
-                              <Typography variant="body2" fontWeight={600} color="primary.main">
-                                {formatCurrency(parca.adet * parca.birim_fiyat)}
+                        )}
+                        <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${isAdmin ? 4 : 3}, 1fr)`, gap: 1 }}>
+                          <Box>
+                            <Typography variant="caption" color="text.secondary">Adet</Typography>
+                            <Typography variant="body2" fontWeight={600}>{parca.adet}</Typography>
+                          </Box>
+                          <Box>
+                            <Typography variant="caption" color="text.secondary">Birim Fiyat</Typography>
+                            <Typography variant="body2" fontWeight={600}>{formatCurrency(parca.birim_fiyat)}</Typography>
+                          </Box>
+                          {isAdmin && (
+                            <Box>
+                              <Typography variant="caption" color="text.secondary">Maliyet</Typography>
+                              <Typography variant="body2" fontWeight={600} color="error.main">
+                                {formatCurrency(parca.maliyet)}
                               </Typography>
-                            </Grid>
-                          </Grid>
-                        </Paper>
-                      ))}
-                    </Box>
-                  ) : (
-                    /* Desktop Table View */
-                    <TableContainer>
-                      <Table size="small">
-                        <TableHead>
-                          <TableRow sx={{ bgcolor: '#f5f5f5' }}>
-                            <TableCell sx={{ fontWeight: 700 }}>Parça Kodu</TableCell>
-                            <TableCell sx={{ fontWeight: 700 }}>Parça Adı</TableCell>
-                            <TableCell align="center" sx={{ fontWeight: 700 }}>Adet</TableCell>
-                            <TableCell align="right" sx={{ fontWeight: 700 }}>Birim Fiyat</TableCell>
-                            {isAdmin && <TableCell align="right" sx={{ fontWeight: 700 }}>Maliyet</TableCell>}
-                            <TableCell align="right" sx={{ fontWeight: 700 }}>Toplam</TableCell>
+                            </Box>
+                          )}
+                          <Box>
+                            <Typography variant="caption" color="text.secondary">Toplam</Typography>
+                            <Typography variant="body2" fontWeight={600} color="primary.main">
+                              {formatCurrency(parca.adet * parca.birim_fiyat)}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Paper>
+                    ))}
+                  </Box>
+                ) : (
+                  <TableContainer>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow sx={{ bgcolor: '#f5f5f5' }}>
+                          <TableCell sx={{ fontWeight: 700 }}>Parça Kodu</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>Parça Adı</TableCell>
+                          <TableCell align="center" sx={{ fontWeight: 700 }}>Adet</TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 700 }}>Birim Fiyat</TableCell>
+                          {isAdmin && <TableCell align="right" sx={{ fontWeight: 700 }}>Maliyet</TableCell>}
+                          <TableCell align="right" sx={{ fontWeight: 700 }}>Toplam</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {isEmri.parcalar.map((parca, index) => (
+                          <TableRow key={index} hover>
+                            <TableCell>{parca.parca_kodu || '-'}</TableCell>
+                            <TableCell>{parca.takilan_parca}</TableCell>
+                            <TableCell align="center">{parca.adet}</TableCell>
+                            <TableCell align="right">{formatCurrency(parca.birim_fiyat)}</TableCell>
+                            {isAdmin && <TableCell align="right">{formatCurrency(parca.maliyet)}</TableCell>}
+                            <TableCell align="right">{formatCurrency(parca.adet * parca.birim_fiyat)}</TableCell>
                           </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {isEmri.parcalar.map((parca, index) => (
-                            <TableRow key={index} hover>
-                              <TableCell>{parca.parca_kodu || '-'}</TableCell>
-                              <TableCell>{parca.takilan_parca}</TableCell>
-                              <TableCell align="center">{parca.adet}</TableCell>
-                              <TableCell align="right">{formatCurrency(parca.birim_fiyat)}</TableCell>
-                              {isAdmin && <TableCell align="right">{formatCurrency(parca.maliyet)}</TableCell>}
-                              <TableCell align="right">{formatCurrency(parca.adet * parca.birim_fiyat)}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  )}
-                </Card>
-              </Grid>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
+              </SectionCard>
             )}
 
             {/* Ödeme Detayları */}
-            {isEmri.odeme_detaylari && (
-              <Grid item xs={12}>
-                <Card variant="outlined" sx={{ p: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, pb: 1, borderBottom: '2px solid', borderColor: 'success.main' }}>
-                    <ReceiptIcon color="success" />
-                    <Typography variant="subtitle1" fontWeight={700}>Ödeme Detayları</Typography>
-                  </Box>
-                  <Typography variant="body2" sx={{ bgcolor: '#f5f5f5', p: 1.5, borderRadius: 1, whiteSpace: 'pre-wrap' }}>
-                    {isEmri.odeme_detaylari}
-                  </Typography>
-                </Card>
-              </Grid>
+            {(isEmri.odeme_bilgisi_girildi || isEmri.odeme_detaylari) && (
+              <SectionCard
+                icon={<ReceiptIcon color="success" />}
+                title="Ödeme Detayları"
+                sx={{ gridColumn: { md: isAdmin ? 'auto' : '1 / -1' } }}
+              >
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: isEmri.odeme_detaylari ? 1.2 : 0 }}>
+                  {Number(isEmri.nakit_tutar) > 0 && <Chip label={`🟢 Nakit: ${formatCurrency(isEmri.nakit_tutar)}`} />}
+                  {Number(isEmri.kart_tutar) > 0 && <Chip label={`🔵 Kart: ${formatCurrency(isEmri.kart_tutar)}`} />}
+                  {Number(isEmri.havale_tutar) > 0 && <Chip label={`🟣 Havale: ${formatCurrency(isEmri.havale_tutar)}`} />}
+                  <Chip label={`Ödenen: ${formatCurrency(totalPaid)}`} sx={{ bgcolor: '#dcfce7', color: '#047857', fontWeight: 800 }} />
+                  <Chip label={`Ödeme Türü: ${paymentLabel}`} sx={{ bgcolor: '#eef2ff', color: '#4338ca', fontWeight: 800 }} />
+                </Box>
+                {isEmri.odeme_detaylari && <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{isEmri.odeme_detaylari}</Typography>}
+              </SectionCard>
             )}
 
-            {/* Finansal Bilgiler - Sadece Admin Görebilir */}
+            {/* Finansal Özet - Sadece Admin */}
             {isAdmin && (
-              <Grid item xs={12}>
-                <Card variant="outlined" sx={{ p: 2, bgcolor: '#f8f9fa' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, pb: 1, borderBottom: '2px solid', borderColor: 'primary.main' }}>
-                    <AttachMoneyIcon color="primary" />
-                    <Typography variant="subtitle1" fontWeight={700}>Finansal Özet</Typography>
-                  </Box>
-                  <Grid container spacing={2}>
-                    <Grid item xs={6} sm={3}>
-                      <Card sx={{ p: 2, textAlign: 'center', bgcolor: '#e3f2fd' }}>
-                        <Typography variant="body2" color="text.secondary">Toplam Ücret</Typography>
-                        <Typography variant="h5" fontWeight={700} color="primary.main">{formatCurrency(isEmri.gercek_toplam_ucret)}</Typography>
-                      </Card>
-                    </Grid>
-                    <Grid item xs={6} sm={3}>
-                      <Card sx={{ p: 2, textAlign: 'center', bgcolor: '#ffebee' }}>
-                        <Typography variant="body2" color="text.secondary">Toplam Maliyet</Typography>
-                        <Typography variant="h5" fontWeight={700} color="error.main">{formatCurrency(isEmri.toplam_maliyet)}</Typography>
-                      </Card>
-                    </Grid>
-                    <Grid item xs={6} sm={3}>
-                      <Card sx={{ p: 2, textAlign: 'center', bgcolor: parseFloat(isEmri.kar) >= 0 ? '#e8f5e9' : '#ffebee' }}>
-                        <Typography variant="body2" color="text.secondary">Kar</Typography>
-                        <Typography variant="h5" fontWeight={700} sx={{ color: parseFloat(isEmri.kar) >= 0 ? '#2e7d32' : '#c62828' }}>
-                          {formatCurrency(isEmri.kar)}
-                        </Typography>
-                      </Card>
-                    </Grid>
-                    <Grid item xs={6} sm={3}>
-                      <Card sx={{ p: 2, textAlign: 'center', bgcolor: '#fff3e0' }}>
-                        <Typography variant="body2" color="text.secondary">Kar Oranı</Typography>
-                        <Typography variant="h5" fontWeight={700} color="warning.dark">
-                          %{isEmri.gercek_toplam_ucret > 0 ? ((isEmri.kar / isEmri.gercek_toplam_ucret) * 100).toFixed(1) : 0}
-                        </Typography>
-                      </Card>
-                    </Grid>
-                  </Grid>
-                </Card>
-              </Grid>
+              <SectionCard icon={<AttachMoneyIcon color="primary" />} title="Finansal Özet" sx={{ bgcolor: '#f8f9fa' }}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' }, gap: 1 }}>
+                  <Card sx={{ p: 1.5, textAlign: 'center', bgcolor: '#e3f2fd' }}>
+                    <Typography variant="body2" color="text.secondary">Toplam Ücret</Typography>
+                    <Typography variant="h6" fontWeight={700} color="primary.main">{formatCurrency(isEmri.gercek_toplam_ucret)}</Typography>
+                  </Card>
+                  <Card sx={{ p: 1.5, textAlign: 'center', bgcolor: '#e8f5e9' }}>
+                    <Typography variant="body2" color="text.secondary">Ödenen</Typography>
+                    <Typography variant="h6" fontWeight={700} color="success.main">{formatCurrency(totalPaid)}</Typography>
+                  </Card>
+                  <Card sx={{ p: 1.5, textAlign: 'center', bgcolor: '#eef2ff' }}>
+                    <Typography variant="body2" color="text.secondary">Ödeme Türü</Typography>
+                    <Typography variant="h6" fontWeight={800} sx={{ color: '#4338ca' }}>{paymentLabel}</Typography>
+                  </Card>
+                  <Card sx={{ p: 1.5, textAlign: 'center', bgcolor: '#ffebee' }}>
+                    <Typography variant="body2" color="text.secondary">Toplam Maliyet</Typography>
+                    <Typography variant="h6" fontWeight={700} color="error.main">{formatCurrency(isEmri.toplam_maliyet)}</Typography>
+                  </Card>
+                  <Card sx={{ p: 1.5, textAlign: 'center', bgcolor: parseFloat(isEmri.kar) >= 0 ? '#e8f5e9' : '#ffebee' }}>
+                    <Typography variant="body2" color="text.secondary">Kar</Typography>
+                    <Typography variant="h6" fontWeight={700} sx={{ color: parseFloat(isEmri.kar) >= 0 ? '#2e7d32' : '#c62828' }}>
+                      {formatCurrency(isEmri.kar)}
+                    </Typography>
+                  </Card>
+                  <Card sx={{ p: 1.5, textAlign: 'center', bgcolor: '#fff3e0' }}>
+                    <Typography variant="body2" color="text.secondary">Kar Oranı</Typography>
+                    <Typography variant="h6" fontWeight={700} color="warning.dark">
+                      %{isEmri.gercek_toplam_ucret > 0 ? ((isEmri.kar / isEmri.gercek_toplam_ucret) * 100).toFixed(1) : 0}
+                    </Typography>
+                  </Card>
+                </Box>
+              </SectionCard>
             )}
-          </Grid>
+          </Box>
         )}
       </DialogContent>
       <Divider />
       <DialogActions sx={{ p: 2 }}>
-        <Button 
+        <Button
           variant="outlined"
           startIcon={<EditIcon />}
           onClick={onEdit}

@@ -198,6 +198,14 @@ const AksesuarDetayDialog = ({
                 {formatCurrency(selectedAksesuar.toplam_satis || selectedAksesuar.odeme_tutari)}
               </Typography>
             </Paper>
+            <Paper sx={{ p: 2, flex: 1, minWidth: 150, bgcolor: 'success.lighter' }}>
+              <Typography variant="caption" color="text.secondary">Toplam Ödenen</Typography>
+              <Typography variant="h6" color="success.main" fontWeight={700}>{formatCurrency(selectedAksesuar.toplam_odenen)}</Typography>
+            </Paper>
+            <Paper sx={{ p: 2, flex: 1, minWidth: 150, bgcolor: Number(selectedAksesuar.kalan_bakiye) > 0 ? 'warning.lighter' : 'grey.100' }}>
+              <Typography variant="caption" color="text.secondary">Kalan Borç</Typography>
+              <Typography variant="h6" color={Number(selectedAksesuar.kalan_bakiye) > 0 ? 'warning.dark' : 'text.primary'} fontWeight={700}>{formatCurrency(selectedAksesuar.kalan_bakiye)}</Typography>
+            </Paper>
             {isAdmin && (
               <Paper sx={{ p: 2, flex: 1, minWidth: 150, bgcolor: 'success.lighter' }}>
                 <Typography variant="caption" color="text.secondary">Net Kar</Typography>

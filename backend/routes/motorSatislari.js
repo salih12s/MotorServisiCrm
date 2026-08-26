@@ -1,7 +1,28 @@
 const express = require('express');
 const pool = require('../config/db');
+const { sourcePaymentJoin, sourcePaymentColumns } = require('../domain/sourcePaymentSummary');
 
 const router = express.Router();
+
+const parsePayment = (value) => {
+  const amount = Number(value || 0);
+  return Number.isFinite(amount) && amount >= 0 ? amount : null;
+};
+
+const validatePayments = (total, values) => {
+  const parsed = values.map(parsePayment);
+  if (parsed.includes(null)) return { error: 'Ödeme tutarları negatif veya geçersiz olamaz.' };
+  const paid = parsed.reduce((sum, value) => sum + value, 0);
+  if (paid > Number(total || 0) + 0.005) return { error: 'Girilen ödemeler satış tutarını aşamaz.' };
+  return { values: parsed };
+};
+
+const ensureCustomer = async (name, phone, address) => {
+  const normalized = String(phone || '').replace(/[^0-9]/g, '');
+  if (!normalized) return;
+  const existing = await pool.query("SELECT id FROM musteriler WHERE REGEXP_REPLACE(COALESCE(telefon, ''), '[^0-9]', '', 'g') = $1 ORDER BY id LIMIT 1", [normalized]);
+  if (!existing.rowCount) await pool.query('INSERT INTO musteriler (ad_soyad, telefon, adres, aktif) VALUES ($1, $2, $3, TRUE)', [name || 'Motosiklet Müşterisi', phone, address || null]);
+};
 
 // ==================== MOTOR MODELLERİ ====================
 
@@ -94,10 +115,12 @@ router.get('/', async (req, res) => {
       `SELECT ms.*, 
        TO_CHAR(ms.tarih, 'YYYY-MM-DD') as tarih,
        mm.model_adi, mm.cc, mm.otv_orani,
-       k.ad_soyad as olusturan_ad_soyad, k.kullanici_adi as olusturan_kullanici_adi
+       k.ad_soyad as olusturan_ad_soyad, k.kullanici_adi as olusturan_kullanici_adi,
+       ${sourcePaymentColumns('ms', 'COALESCE(ms.satis_fiyati, ms.fatura_fiyati, 0)')}
        FROM motor_satislari ms
        LEFT JOIN motor_modelleri mm ON ms.motor_modeli_id = mm.id
        LEFT JOIN kullanicilar k ON ms.olusturan_kullanici_id = k.id
+       ${sourcePaymentJoin('MOTOR_SATISI', 'ms')}
        ORDER BY ms.created_at DESC`
     );
     res.json(result.rows);
@@ -114,10 +137,12 @@ router.get('/:id', async (req, res) => {
     
     const result = await pool.query(
       `SELECT ms.*, mm.model_adi, mm.cc, mm.otv_orani,
-       k.ad_soyad as olusturan_ad_soyad, k.kullanici_adi as olusturan_kullanici_adi
+       k.ad_soyad as olusturan_ad_soyad, k.kullanici_adi as olusturan_kullanici_adi,
+       ${sourcePaymentColumns('ms', 'COALESCE(ms.satis_fiyati, ms.fatura_fiyati, 0)')}
        FROM motor_satislari ms
        LEFT JOIN motor_modelleri mm ON ms.motor_modeli_id = mm.id
        LEFT JOIN kullanicilar k ON ms.olusturan_kullanici_id = k.id
+       ${sourcePaymentJoin('MOTOR_SATISI', 'ms')}
        WHERE ms.id = $1`,
       [id]
     );
@@ -171,14 +196,17 @@ router.post('/', async (req, res) => {
     if (!sase_no || !motor_modeli_id) {
       return res.status(400).json({ message: 'Şase no ve motor modeli gerekli' });
     }
+    const payment = validatePayments(satis_fiyati, [nakit_tutar, kart_tutar, havale_tutar]);
+    if (payment.error) return res.status(400).json({ message: payment.error });
+    await ensureCustomer(musteri_adi, musteri_telefon, adres);
     
     const result = await pool.query(
       `INSERT INTO motor_satislari 
         (tarih, sase_no, motor_modeli_id, iskonto, alis_fiyati, satis_fiyati, fatura_fiyati,
-         odeme_sekli, nakit_tutar, kart_tutar, havale_tutar, musteri_adi, musteri_telefon, tc_kimlik_no, adres, aciklama, durum,
+         odeme_sekli, nakit_tutar, kart_tutar, havale_tutar, odeme_bilgisi_girildi, musteri_adi, musteri_telefon, tc_kimlik_no, adres, aciklama, durum,
          iskonto_tutari, iskontolu_alis_fiyati, matrah_satis, kdv_tutari, kdvsiz_tutar,
          otv_tutari, damga_vergisi, vergiler_toplami, kar, olusturan_kullanici_id, olusturan_kisi)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, TRUE, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28)
        RETURNING *`,
       [
         tarih || new Date().toISOString().split('T')[0], 
@@ -189,9 +217,9 @@ router.post('/', async (req, res) => {
         satis_fiyati || 0,
         fatura_fiyati || 0,
         odeme_sekli || 'nakit',
-        nakit_tutar || 0,
-        kart_tutar || 0,
-        havale_tutar || 0,
+        payment.values[0],
+        payment.values[1],
+        payment.values[2],
         musteri_adi || null,
         musteri_telefon || null,
         tc_kimlik_no || null,
@@ -252,12 +280,15 @@ router.put('/:id', async (req, res) => {
       vergiler_toplami,
       kar
     } = req.body;
+    const payment = validatePayments(satis_fiyati, [nakit_tutar, kart_tutar, havale_tutar]);
+    if (payment.error) return res.status(400).json({ message: payment.error });
+    await ensureCustomer(musteri_adi, musteri_telefon, adres);
     
     const result = await pool.query(
       `UPDATE motor_satislari 
        SET tarih = $1, sase_no = $2, motor_modeli_id = $3, iskonto = $4, 
            alis_fiyati = $5, satis_fiyati = $6, fatura_fiyati = $7, odeme_sekli = $8,
-           nakit_tutar = $9, kart_tutar = $10, havale_tutar = $11,
+           nakit_tutar = $9, kart_tutar = $10, havale_tutar = $11, odeme_bilgisi_girildi = TRUE,
            musteri_adi = $12, musteri_telefon = $13, tc_kimlik_no = $14, adres = $15, aciklama = $16, durum = $17,
            iskonto_tutari = $18, iskontolu_alis_fiyati = $19, matrah_satis = $20,
            kdv_tutari = $21, kdvsiz_tutar = $22, otv_tutari = $23, damga_vergisi = $24,
@@ -266,7 +297,7 @@ router.put('/:id', async (req, res) => {
            updated_at = CURRENT_TIMESTAMP
        WHERE id = $29 RETURNING *`,
       [tarih, sase_no, motor_modeli_id, iskonto, alis_fiyati, satis_fiyati, fatura_fiyati, odeme_sekli, 
-       nakit_tutar || 0, kart_tutar || 0, havale_tutar || 0,
+       payment.values[0], payment.values[1], payment.values[2],
        musteri_adi, musteri_telefon, tc_kimlik_no, adres, aciklama, durum || 'beklemede',
        iskonto_tutari || 0, iskontolu_alis_fiyati || 0, matrah_satis || 0,
        kdv_tutari || 0, kdvsiz_tutar || 0, otv_tutari || 0, damga_vergisi || 791,

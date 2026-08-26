@@ -339,6 +339,31 @@ function Dashboard() {
       <Typography variant="h6" fontWeight={700} sx={{ mb: 2, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
         Hızlı İşlemler
       </Typography>
+      {isAdmin && (
+        <>
+          <Typography variant="h6" fontWeight={700} sx={{ mb: 2, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+            Cari Hesap Özeti
+          </Typography>
+          <Grid container spacing={{ xs: 1.5, sm: 2 }} sx={{ mb: { xs: 3, sm: 4 } }}>
+            {[
+              { label: 'Toplam Müşteri Alacağı', value: formatCurrency(stats?.cari?.toplam_musteri_alacagi), color: '#9a3412' },
+              { label: 'Bugünkü Tahsilat', value: formatCurrency(stats?.cari?.bugunku_tahsilat), color: '#047857' },
+              { label: 'Bu Ay Tahsilat', value: formatCurrency(stats?.cari?.bu_ay_tahsilat), color: '#0369a1' },
+              { label: 'Borçlu Müşteri', value: stats?.cari?.borclu_musteri_sayisi || 0, color: '#6d28d9' },
+            ].map((item) => (
+              <Grid item xs={12} sm={6} md={3} key={item.label}>
+                <Card variant="outlined" sx={{ borderLeft: `4px solid ${item.color}`, height: '100%' }}>
+                  <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                    <Typography variant="caption" color="text.secondary">{item.label}</Typography>
+                    <Typography variant="h6" fontWeight={800} sx={{ color: item.color }}>{item.value}</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </>
+      )}
+
       <Grid container spacing={{ xs: 1.5, sm: 2 }} sx={{ mb: { xs: 3, sm: 4 } }}>
         <Grid item xs={6} sm={3}>
           <QuickActionCard

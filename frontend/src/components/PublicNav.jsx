@@ -50,7 +50,7 @@ const MENU = [
   { path: '/', label: 'Anasayfa' },
   { path: '/hakkimizda', label: 'Hakkımızda' },
   { path: '/hobi-grup', label: 'Hobi Grup • Bisiklet & E-Bike' },
-  { path: '/motorlar', label: 'Motorlarımız' },
+  { path: '/koleksiyon', label: 'Motorlarımız' },
   { path: '/fiyat-listesi', label: 'Fiyat Listesi' },
   { path: '/aksesuarlar-satis', label: 'Aksesuarlar' },
 ];

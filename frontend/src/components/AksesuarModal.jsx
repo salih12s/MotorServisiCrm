@@ -5,19 +5,11 @@ import {
   DialogContent,
   DialogActions,
   Box,
-  Card,
-  CardContent,
-  Grid,
-  TextField,
   Button,
   Typography,
   IconButton,
   Alert,
   CircularProgress,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Avatar,
   useTheme,
   useMediaQuery,
@@ -25,15 +17,16 @@ import {
 import {
   Save as SaveIcon,
   Close as CloseIcon,
-  Person as PersonIcon,
   ShoppingBag as ShoppingBagIcon,
-  Receipt as ReceiptIcon,
 } from '@mui/icons-material';
 import { aksesuarService, aksesuarStokService } from '../services/api';
 import { useCustomTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { calculateTotals } from './aksesuarModalUtils';
-import AksesuarUrunlerSection from './AksesuarUrunlerSection';
+import CustomerInfoSection from './aksesuarModal/CustomerInfoSection';
+import PaymentDetailsSection from './aksesuarModal/PaymentDetailsSection';
+import ProductAddSection from './aksesuarModal/ProductAddSection';
+import ProductsTableSection from './aksesuarModal/ProductsTableSection';
 
 // service / stokService / baslik propları ile farklı satış türlerine (örn. hobi grup bisiklet)
 // uyarlanabilir; varsayılanlar aksesuar satışı davranışını korur.
@@ -59,7 +52,13 @@ function AksesuarModal({
   const [formData, setFormData] = useState({
     ad_soyad: '',
     telefon: '',
-    odeme_sekli: '',
+    odeme_sekli: 'nakit',
+    nakit_tutar: '',
+    kart_tutar: '',
+    havale_tutar: '',
+    cari_nakit_tutar: 0,
+    cari_kart_tutar: 0,
+    cari_havale_tutar: 0,
     aciklama: '',
     durum: 'beklemede',
     odeme_detaylari: '',
@@ -123,7 +122,13 @@ function AksesuarModal({
           setFormData({
             ad_soyad: data.ad_soyad || '',
             telefon: data.telefon || '',
-            odeme_sekli: data.odeme_sekli || '',
+            odeme_sekli: data.odeme_sekli || 'nakit',
+            nakit_tutar: data.nakit_tutar || '',
+            kart_tutar: data.kart_tutar || '',
+            havale_tutar: data.havale_tutar || '',
+            cari_nakit_tutar: Number(data.cari_nakit_tutar || 0),
+            cari_kart_tutar: Number(data.cari_kart_tutar || 0),
+            cari_havale_tutar: Number(data.cari_havale_tutar || 0),
             aciklama: data.aciklama || '',
             durum: data.durum || 'beklemede',
             odeme_detaylari: data.odeme_detaylari || '',
@@ -149,7 +154,13 @@ function AksesuarModal({
       setFormData({
         ad_soyad: '',
         telefon: '',
-        odeme_sekli: '',
+        odeme_sekli: 'nakit',
+        nakit_tutar: '',
+        kart_tutar: '',
+        havale_tutar: '',
+        cari_nakit_tutar: 0,
+        cari_kart_tutar: 0,
+        cari_havale_tutar: 0,
         aciklama: '',
         durum: 'beklemede',
         odeme_detaylari: '',
@@ -215,8 +226,26 @@ function AksesuarModal({
     setSaving(true);
 
     try {
+      const selectedPaymentField = `${formData.odeme_sekli}_tutar`;
+      const enteredPayments = formData.odeme_sekli === 'karisik'
+        ? [Number(formData.nakit_tutar || 0), Number(formData.kart_tutar || 0), Number(formData.havale_tutar || 0)]
+        : [
+            formData.odeme_sekli === 'nakit' ? Number(formData[selectedPaymentField] || 0) : 0,
+            formData.odeme_sekli === 'kart' ? Number(formData[selectedPaymentField] || 0) : 0,
+            formData.odeme_sekli === 'havale' ? Number(formData[selectedPaymentField] || 0) : 0,
+          ];
+      const laterPayments = [Number(formData.cari_nakit_tutar || 0), Number(formData.cari_kart_tutar || 0), Number(formData.cari_havale_tutar || 0)];
+      const initialPayments = enteredPayments.map((amount, index) => Math.max(amount - laterPayments[index], 0));
+      if (enteredPayments.some((amount) => !Number.isFinite(amount) || amount < 0) || enteredPayments.reduce((sum, amount) => sum + amount, 0) > toplamFiyat + .005) {
+        setError('Girilen ödemeler satış toplamını aşamaz.');
+        setSaving(false);
+        return;
+      }
       const data = {
         ...formData,
+        nakit_tutar: initialPayments[0],
+        kart_tutar: initialPayments[1],
+        havale_tutar: initialPayments[2],
         parcalar: parcalar.map((p) => ({
           urun_adi: p.urun_adi,
           adet: parseInt(p.adet) || 1,
@@ -303,144 +332,54 @@ function AksesuarModal({
         ) : (
           <form onSubmit={handleSubmit} id="aksesuar-form">
             {error && (
-              <Alert severity="error" sx={{ mb: 3 }}>
+              <Alert severity="error" sx={{ mb: 2 }}>
                 {error}
               </Alert>
             )}
 
-            <Grid container spacing={{ xs: 1.5, sm: 2 }}>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+                gap: 2,
+                alignItems: 'start',
+              }}
+            >
               {/* Sol Kolon */}
-              <Grid item xs={12} sm={6}>
-                {/* Müşteri Bilgileri */}
-                <Card sx={{ mb: 1.5 }}>
-                  <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
-                      <Avatar sx={{ bgcolor: `${themeColors.primary}20`, color: themeColors.primary, width: 24, height: 24 }}>
-                        <PersonIcon sx={{ fontSize: 14 }} />
-                      </Avatar>
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        Müşteri Bilgileri
-                      </Typography> 
-                    </Box>
-                    <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-                      <TextField
-                        sx={{ flex: 1 , mt: 1.1 }}
-                        size="small"
-                        label="Ad Soyad"
-                        name="ad_soyad"
-                        value={formData.ad_soyad}
-                        onChange={handleChange}
-                        required
-                      />
-                      <TextField
-                        sx={{ flex: 1 , mt: 1.1 }}
-                        size="small"
-                        label="Telefon"
-                        name="telefon"
-                        value={formData.telefon}
-                        onChange={handleChange}
-                      />
-                    </Box>
-                    <Box sx={{ width: 180, mb: 1 }}>
-                      <FormControl fullWidth size="small" sx={{ mt: 1.1 }}>
-                        <InputLabel>Oluşturan Kişi</InputLabel>
-                        <Select
-                          name="olusturan_kisi"
-                          value={formData.olusturan_kisi}
-                          label="Oluşturan Kişi"
-                          onChange={handleChange}
-                        >
-                          <MenuItem value={user?.name || user?.ad_soyad || ''}>
-                            {user?.name || user?.ad_soyad || 'Ben'}
-                          </MenuItem>
-                          <MenuItem value="Ortak">Ortak</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </Box>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      multiline
-                      rows={2}
-                      label="Açıklama / Not"
-                      name="aciklama"
-                      value={formData.aciklama}
-                      onChange={handleChange}
-                      placeholder="Ek notlar..."
-                    />
-                  </CardContent>
-                </Card>
-
-                {/* Ödeme Detayları */}
-                <Card>
-                  <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
-                      <Avatar sx={{ bgcolor: 'success.lighter', color: 'success.main', width: 24, height: 24 }}>
-                        <ReceiptIcon sx={{ fontSize: 14 }} />
-                      </Avatar>
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        Ödeme Detayları
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-                      <TextField
-                        sx={{ flex: 1 , mt: 1.1 }}
-                        size="small"
-                        label="Ödeme Şekli"
-                        name="odeme_sekli"
-                        value={formData.odeme_sekli}
-                        onChange={handleChange}
-                        placeholder="Nakit, Kart, Havale..."
-                        InputLabelProps={{ shrink: true }}
-                      />
-                      <TextField
-                        sx={{ flex: 1 , mt: 1.1}}
-                        size="small"
-                        label="Satış Tarihi"
-                        name="satis_tarihi"
-                        type="date"
-                        value={formData.satis_tarihi}
-                        onChange={handleChange}
-                        InputLabelProps={{ shrink: true }}
-                      />
-                    </Box>
-                    <TextField
-                      fullWidth
-                      multiline
-                      rows={2}
-                      size="small"
-                      name="odeme_detaylari"
-                      value={formData.odeme_detaylari}
-                      onChange={handleChange}
-                      placeholder="Ödeme detayları..."
-                    />
-                  </CardContent>
-                </Card>
-              </Grid>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <CustomerInfoSection formData={formData} handleChange={handleChange} user={user} themeColors={themeColors} />
+                <PaymentDetailsSection formData={formData} setFormData={setFormData} handleChange={handleChange} />
+              </Box>
 
               {/* Sağ Kolon - Ürünler */}
-              <AksesuarUrunlerSection
-                parcalar={parcalar}
-                newParca={newParca}
-                setNewParca={setNewParca}
-                handleParcaChange={handleParcaChange}
-                addParca={addParca}
-                removeParca={removeParca}
-                updateParca={updateParca}
-                isEdit={isEdit}
-                isMobile={isMobile}
-                isAdmin={isAdmin}
-                formData={formData}
-                handleChange={handleChange}
-                toplamFiyat={toplamFiyat}
-                themeColors={themeColors}
-                stokOptions={stokOptions}
-                stokSearchLoading={stokSearchLoading}
-                selectedStok={selectedStok}
-                setSelectedStok={setSelectedStok}
-                searchStok={searchStok}
-              />
-            </Grid>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <ProductAddSection
+                  newParca={newParca}
+                  setNewParca={setNewParca}
+                  handleParcaChange={handleParcaChange}
+                  addParca={addParca}
+                  isEdit={isEdit}
+                  parcaCount={parcalar.length}
+                  themeColors={themeColors}
+                  stokOptions={stokOptions}
+                  stokSearchLoading={stokSearchLoading}
+                  selectedStok={selectedStok}
+                  setSelectedStok={setSelectedStok}
+                  searchStok={searchStok}
+                />
+                <ProductsTableSection
+                  parcalar={parcalar}
+                  removeParca={removeParca}
+                  updateParca={updateParca}
+                  isEdit={isEdit}
+                  isMobile={isMobile}
+                  isAdmin={isAdmin}
+                  toplamFiyat={toplamFiyat}
+                  formData={formData}
+                  handleChange={handleChange}
+                />
+              </Box>
+            </Box>
           </form>
         )}
       </DialogContent>
