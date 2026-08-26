@@ -1525,6 +1525,45 @@ const motors = [
   },
 ];
 
-const allMotors = [...motors, ...falconMotors];
+const musattiInstallmentPrices = {
+  'dark-pow': '435.400,00 TL',
+  'kai-zen': '324.400,00 TL',
+  'milanio-250': '299.700,00 TL',
+  'milanio-s400': '379.500,00 TL',
+  'king-pow': '372.400,00 TL',
+  m125r: '177.750,00 TL',
+  m250r: '259.800,00 TL',
+  'glamaro-max-125': '117.900,00 TL',
+  'lemuzin-125': '87.950,00 TL',
+  'bella-50': '65.900,00 TL',
+  'rabel-50': '89.900,00 TL',
+  'siena-50': '86.400,00 TL',
+  'rajon-50x': '102.900,00 TL',
+  'siena-110': '86.400,00 TL',
+  'rajon-125x': '107.900,00 TL',
+  'iron-x200': '119.900,00 TL',
+  'sport-701-pro': '121.900,00 TL',
+  'smarda-smd-x1': '33.900,00 TL',
+  'smarda-marsilya-max-1600': '123.900,00 TL',
+  'smarda-soft-pro': '80.450,00 TL',
+  'smarda-violet-1200': '107.900,00 TL',
+  'smarda-tork-pro': '102.500,00 TL',
+  'smarda-dora-4000': '124.400,00 TL',
+  'doch-pro-66000': '303.900,00 TL',
+  'smarda-venedik': '194.800,00 TL',
+  'venedik-pro': '204.900,00 TL',
+};
+
+const pricedMusattiMotors = motors.map((motor) => ({
+  ...motor,
+  price: musattiInstallmentPrices[motor.id] ?? motor.price,
+}));
+
+const pricedFalconMotors = falconMotors.map((motor) => ({
+  ...motor,
+  price: motor.installmentPrice ?? motor.price,
+}));
+
+const allMotors = [...pricedMusattiMotors, ...pricedFalconMotors];
 
 export default allMotors;

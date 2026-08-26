@@ -16,6 +16,7 @@ import {
   ShoppingBag as ShoppingBagIcon,
   TwoWheeler as TwoWheelerIcon,
   PedalBike as PedalBikeIcon,
+  AccountBalanceWallet as AccountBalanceWalletIcon,
 } from '@mui/icons-material';
 import { raporService, authService, motorSatisService } from '../../services/api';
 import { useCustomTheme } from '../../context/ThemeContext';
@@ -28,6 +29,7 @@ import AksesuarRaporTab from './AksesuarRaporTab';
 import FisKarRaporTab from './FisKarRaporTab';
 import MotorSatisRaporTab from './MotorSatisRaporTab';
 import GunlukRaporTab from './GunlukRaporTab';
+import BorcRaporTab from './BorcRaporTab';
 
 function Raporlar() {
   const theme = useTheme();
@@ -500,7 +502,8 @@ function Raporlar() {
         <Tabs
           value={activeTab}
           onChange={(e, newValue) => setActiveTab(newValue)}
-          variant="fullWidth"
+          variant={isMobile ? 'scrollable' : 'fullWidth'}
+          scrollButtons="auto"
           sx={{ 
             borderBottom: 1, 
             borderColor: 'divider',
@@ -532,6 +535,11 @@ function Raporlar() {
           <Tab
             label="Fiş Kar Analizi"
             icon={<ReceiptIcon />}
+            iconPosition="start"
+          />
+          <Tab
+            label="Borç"
+            icon={<AccountBalanceWalletIcon />}
             iconPosition="start"
           />
         </Tabs>
@@ -637,6 +645,9 @@ function Raporlar() {
           handleViewMotorSatisDetail={handleViewMotorSatisDetail}
           handleViewBisikletDetail={handleViewBisikletDetail}
         />
+      )}
+      {activeTab === 5 && (
+        <BorcRaporTab user={user} navigate={navigate} />
       )}
 
       {/* İş Emri Detay Modal */}

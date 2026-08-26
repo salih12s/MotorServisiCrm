@@ -31,7 +31,10 @@ const sourcePaymentColumns = (sourceAlias, totalExpression, otherInitialExpressi
   (COALESCE(${sourceAlias}.havale_tutar, 0) + COALESCE(cari_odeme.havale_tutar, 0))::NUMERIC(14,2) AS havale_tutar,
   COALESCE(cari_odeme.toplam, 0)::NUMERIC(14,2) AS sonradan_tahsilat,
   LEAST((${totalExpression}), COALESCE(${sourceAlias}.nakit_tutar, 0) + COALESCE(${sourceAlias}.kart_tutar, 0) + COALESCE(${sourceAlias}.havale_tutar, 0) + (${otherInitialExpression}) + COALESCE(cari_odeme.toplam, 0))::NUMERIC(14,2) AS toplam_odenen,
-  GREATEST((${totalExpression}) - COALESCE(${sourceAlias}.nakit_tutar, 0) - COALESCE(${sourceAlias}.kart_tutar, 0) - COALESCE(${sourceAlias}.havale_tutar, 0) - (${otherInitialExpression}) - COALESCE(cari_odeme.toplam, 0), 0)::NUMERIC(14,2) AS kalan_bakiye
+  CASE
+    WHEN LOWER(COALESCE(${sourceAlias}.durum, '')) IN ('tamamlandi', 'iptal', 'iptal_edildi') THEN 0
+    ELSE GREATEST((${totalExpression}) - COALESCE(${sourceAlias}.nakit_tutar, 0) - COALESCE(${sourceAlias}.kart_tutar, 0) - COALESCE(${sourceAlias}.havale_tutar, 0) - (${otherInitialExpression}) - COALESCE(cari_odeme.toplam, 0), 0)
+  END::NUMERIC(14,2) AS kalan_bakiye
 `;
 
 module.exports = { sourcePaymentJoin, sourcePaymentColumns };

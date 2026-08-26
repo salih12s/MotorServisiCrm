@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCustomTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
-import { Box, useMediaQuery, useTheme } from '@mui/material';
+import { Alert, Box, Button, useMediaQuery, useTheme } from '@mui/material';
 import { aksesuarService } from '../../services/api';
 import { parseISO, isToday, startOfDay, endOfDay, isAfter, isBefore } from 'date-fns';
 import AksesuarModal from '../../components/AksesuarModal';
@@ -23,6 +23,9 @@ function Aksesuarlar() {
   const [editingId, setEditingId] = useState(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedAksesuar, setSelectedAksesuar] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkSaving, setBulkSaving] = useState(false);
+  const [bulkNotice, setBulkNotice] = useState(null);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -49,6 +52,7 @@ function Aksesuarlar() {
       // ID'ye göre azalan sıralama (en yeni en üstte)
       const sorted = (response.data || []).sort((a, b) => b.id - a.id);
       setAksesuarlar(sorted);
+      setSelectedIds([]);
     } catch (error) {
       console.error('Aksesuar listesi hatası:', error);
     } finally {
@@ -139,6 +143,37 @@ function Aksesuarlar() {
 
   // Aktif filtre kontrolü
   const hasActiveFilters = searchQuery || filterDurum || filterBugun || baslangicTarihi || bitisTarihi;
+  const selectableAksesuarlar = filteredAksesuarlar.filter(
+    (item) => !['tamamlandi', 'iptal_edildi'].includes(item.durum)
+  );
+  const allSelected = selectableAksesuarlar.length > 0
+    && selectableAksesuarlar.every((item) => selectedIds.includes(item.id));
+  const someSelected = selectableAksesuarlar.some((item) => selectedIds.includes(item.id));
+
+  const toggleSelected = (id) => {
+    setSelectedIds((current) => current.includes(id)
+      ? current.filter((item) => item !== id)
+      : [...current, id]);
+  };
+
+  const toggleAll = () => {
+    setSelectedIds(allSelected ? [] : selectableAksesuarlar.map((item) => item.id));
+  };
+
+  const handleBulkComplete = async () => {
+    if (!selectedIds.length || !window.confirm(`${selectedIds.length} aksesuar satışını tamamlandı olarak işaretlemek istiyor musunuz?`)) return;
+    setBulkSaving(true);
+    setBulkNotice(null);
+    try {
+      const response = await aksesuarService.bulkComplete(selectedIds);
+      setBulkNotice({ severity: 'success', text: response.data.message });
+      await loadAksesuarlar();
+    } catch (error) {
+      setBulkNotice({ severity: 'error', text: error.response?.data?.message || 'Satışlar toplu olarak tamamlanamadı.' });
+    } finally {
+      setBulkSaving(false);
+    }
+  };
 
   // Filtreleri temizle
   const clearFilters = () => {
@@ -219,6 +254,20 @@ function Aksesuarlar() {
         clearFilters={clearFilters}
       />
 
+      {isAdmin && (selectedIds.length > 0 || bulkNotice) && (
+        <Alert severity={bulkNotice?.severity || 'info'} sx={{ mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: { xs: 'stretch', sm: 'center' }, justifyContent: 'space-between', flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
+            <span>{bulkNotice?.text || `${selectedIds.length} aksesuar satışı seçildi.`}</span>
+            {selectedIds.length > 0 && (
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button size="small" color="inherit" disabled={bulkSaving} onClick={() => setSelectedIds([])}>Seçimi Kaldır</Button>
+                <Button size="small" variant="contained" color="success" disabled={bulkSaving} onClick={handleBulkComplete}>Seçilenleri Tamamla</Button>
+              </Box>
+            )}
+          </Box>
+        </Alert>
+      )}
+
       <AksesuarTablo
         loading={loading}
         filteredAksesuarlar={filteredAksesuarlar}
@@ -228,6 +277,11 @@ function Aksesuarlar() {
         handleViewDetails={handleViewDetails}
         handleOpenModal={handleOpenModal}
         handleDelete={handleDelete}
+        selectedIds={selectedIds}
+        toggleSelected={toggleSelected}
+        toggleAll={toggleAll}
+        allSelected={allSelected}
+        someSelected={someSelected}
       />
 
       {/* Yeni/Düzenle Modal */}

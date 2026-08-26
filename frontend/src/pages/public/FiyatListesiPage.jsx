@@ -47,7 +47,7 @@ const findMotorId = (itemName) => {
   return motor ? motor.id : null;
 };
 
-// Fiyatlar musattimotor.com/fiyat-listesi sayfasındaki tavsiye edilen satış fiyatlarıdır.
+// Taksitli fiyatlar musattimotor.com/fiyat-listesi sayfasındaki güncel resmi tutarlardır.
 const priceData = [
   {
     category: 'Chopper',
@@ -165,7 +165,7 @@ function TaksitSection() {
         </Box>
         <Box>
           <Typography sx={{ fontWeight: 800, fontSize: { xs: '1rem', sm: '1.1rem' }, color: '#fff' }}>Taksit Seçenekleri</Typography>
-          <Typography sx={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>Nakit & Kredi Kartı ile ödeme · Vade farksız taksit imkânı</Typography>
+          <Typography sx={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>Kredi kartı ile ödeme · Vade farksız taksit imkânı</Typography>
         </Box>
       </Box>
 
@@ -194,11 +194,11 @@ function CategoryTable({ items, navigate }) {
         mb: .5,
       }}
     >
-      <Table size="small" sx={{ minWidth: 760 }}>
+      <Table size="small" sx={{ minWidth: 620 }}>
         <TableHead>
           <TableRow sx={{ background: 'linear-gradient(135deg, rgba(4,167,184,.18), rgba(54,197,211,.10))' }}>
-            {['Resim', 'Model', 'Nakit Fiyat', 'Taksitli Fiyat', 'Ürünü İncele'].map((title, index) => (
-              <TableCell key={title} align={index === 4 ? 'right' : 'left'} sx={{ color: '#36C5D3', fontWeight: 700, py: 1.5, borderBottom: '1px solid rgba(54,197,211,.2)', display: { xs: index > 1 && index < 4 ? 'none' : 'table-cell', lg: 'table-cell' } }}>{title}</TableCell>
+            {['Resim', 'Model', 'Fiyat', 'Ürünü İncele'].map((title, index) => (
+              <TableCell key={title} align={index === 3 ? 'right' : 'left'} sx={{ color: '#36C5D3', fontWeight: 700, py: 1.5, borderBottom: '1px solid rgba(54,197,211,.2)', display: { xs: index === 2 ? 'none' : 'table-cell', lg: 'table-cell' } }}>{title}</TableCell>
             ))}
           </TableRow>
         </TableHead>
@@ -218,10 +218,9 @@ function CategoryTable({ items, navigate }) {
               </TableCell>
               <TableCell sx={{ py: 1.5 }}>
                 <Typography sx={{ fontWeight: 700, color: '#fff' }}>{item.name}</Typography>
-                <Stack sx={{ display: { xs: 'flex', lg: 'none' }, mt: .5 }}><Typography variant="caption" color="#fff">Nakit: {item.fiyat || '——'}</Typography><Typography variant="caption" color="rgba(255,255,255,.6)">Taksitli: {item.taksitliFiyat || '——'}</Typography></Stack>
+                <Typography variant="caption" color="rgba(255,255,255,.65)" sx={{ display: { xs: 'block', lg: 'none' }, mt: .5 }}>Fiyat: {item.taksitliFiyat || (item.yakinBayilerde ? 'Yakında Bayilerde' : '——')}</Typography>
               </TableCell>
-              <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>{item.yakinBayilerde ? <Chip label="Yakında Bayilerde" size="small" sx={{ color: '#36C5D3', border: '1px solid rgba(54,197,211,.3)' }} /> : <Typography sx={{ color: '#fff', fontWeight: 600 }}>{item.fiyat || '——'}</Typography>}</TableCell>
-              <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}><Typography sx={{ color: item.taksitliFiyat ? '#fff' : 'rgba(255,255,255,.35)', fontWeight: item.taksitliFiyat ? 600 : 400 }}>{item.taksitliFiyat || '——'}</Typography></TableCell>
+              <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>{item.yakinBayilerde ? <Chip label="Yakında Bayilerde" size="small" sx={{ color: '#36C5D3', border: '1px solid rgba(54,197,211,.3)' }} /> : <Typography sx={{ color: item.taksitliFiyat ? '#fff' : 'rgba(255,255,255,.35)', fontWeight: item.taksitliFiyat ? 600 : 400 }}>{item.taksitliFiyat || '——'}</Typography>}</TableCell>
               <TableCell align="right" sx={{ py: 1.5 }}>
                 <Button
                   variant="contained"
@@ -486,7 +485,7 @@ function FiyatListesiPage() {
             Önemli Bilgi
           </Typography>
           <Typography sx={{ fontSize: '0.82rem', color: 'rgba(255,255,255,.55)', lineHeight: 1.7 }}>
-            Listelenen fiyatlar Musatti Motor tarafından belirlenen tavsiye edilen perakende satış fiyatlarıdır.
+            Listelenen tutarlar Musatti Motor tarafından yayımlanan güncel taksitli satış fiyatlarıdır.
             Gerçek satış fiyatı bayi politikasına göre farklılık gösterebilir. KDV dahildir.
             "Yakında Bayilerde" olarak işaretlenmiş ürünler henüz stoğa girmemiş olup fiyat bilgisi için
             mağazamızla iletişime geçiniz. Fiyatlar önceden haber verilmeksizin değiştirilebilir.

@@ -113,7 +113,8 @@ const MotorSatisDetayModal = ({
 
           // Kar = Satış Fiyatı - Vergiler Toplamı - İskontolu Alış
           const kar = satisFiyati - vergilerToplami - iskontoluAlis;
-          const currentDebt = Number(satis.kalan_bakiye ?? Math.max(
+          const isClosed = ['tamamlandi', 'iptal', 'iptal_edildi'].includes(satis.durum);
+          const currentDebt = isClosed ? 0 : Number(satis.kalan_bakiye ?? Math.max(
             satisFiyati
             - Number(satis.nakit_tutar || 0)
             - Number(satis.kart_tutar || 0)
@@ -268,7 +269,7 @@ const MotorSatisDetayModal = ({
                           )}
                         </Box>
                       )}
-                      {satis.odeme_bilgisi_girildi && (
+                      {satis.odeme_bilgisi_girildi && !isClosed && (
                         <Chip
                           size="small"
                           label={`Güncel Borç: ${formatCurrency(currentDebt)}`}

@@ -108,6 +108,7 @@ export const isEmriService = {
   update: (id, data) => api.put(`/is-emirleri/${id}`, data),
   delete: (id) => api.delete(`/is-emirleri/${id}`),
   tamamla: (id) => api.patch(`/is-emirleri/${id}/tamamla`),
+  bulkComplete: (ids) => api.patch('/is-emirleri/bulk/complete', { ids }),
   addParca: (id, data) => api.post(`/is-emirleri/${id}/parcalar`, data),
   deleteParca: (id, parcaId) => api.delete(`/is-emirleri/${id}/parcalar/${parcaId}`),
 };
@@ -142,6 +143,7 @@ export const aksesuarService = {
   create: (data) => api.post('/aksesuarlar', data),
   update: (id, data) => api.put(`/aksesuarlar/${id}`, data),
   delete: (id) => api.delete(`/aksesuarlar/${id}`),
+  bulkComplete: (ids) => api.patch('/aksesuarlar/bulk/complete', { ids }),
   getStats: () => api.get('/aksesuarlar/stats/genel'),
 };
 
@@ -166,6 +168,7 @@ export const bisikletSatisService = {
   create: (data) => api.post('/bisiklet-satislari', data),
   update: (id, data) => api.put(`/bisiklet-satislari/${id}`, data),
   delete: (id) => api.delete(`/bisiklet-satislari/${id}`),
+  bulkComplete: (ids) => api.patch('/bisiklet-satislari/bulk/complete', { ids }),
 };
 
 // Bisiklet / E-Bike Stok (Hobi Grup)
@@ -189,6 +192,7 @@ export const motorSatisService = {
   create: (data) => api.post('/motor-satislari', data),
   update: (id, data) => api.put(`/motor-satislari/${id}`, data),
   delete: (id) => api.delete(`/motor-satislari/${id}`),
+  bulkComplete: (ids) => api.patch('/motor-satislari/bulk/complete', { ids }),
   getStats: () => api.get('/motor-satislari/stats/ozet'),
   
   // Motor Modelleri

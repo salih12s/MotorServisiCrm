@@ -21,36 +21,30 @@ const automaticReceivablesSelect = (customerAlias) => {
     COALESCE(ie.tamamlama_tarihi, ie.created_at, CURRENT_TIMESTAMP) AS islem_tarihi,
     CONCAT_WS(' ', 'Servis', NULLIF(ie.marka, ''), NULLIF(ie.model_tip, ''))::TEXT AS aciklama,
     COALESCE(NULLIF(ie.gercek_toplam_ucret, 0), ie.tahmini_toplam_ucret, 0)::NUMERIC(14,2) AS tutar,
-    CASE WHEN ie.odeme_bilgisi_girildi THEN COALESCE(ie.nakit_tutar, 0)
-      WHEN LOWER(COALESCE(ie.odeme_sekli, 'nakit')) = 'nakit' THEN COALESCE(NULLIF(ie.gercek_toplam_ucret, 0), ie.tahmini_toplam_ucret, 0) ELSE 0 END::NUMERIC(14,2) AS nakit_tutar,
-    CASE WHEN ie.odeme_bilgisi_girildi THEN COALESCE(ie.kart_tutar, 0)
-      WHEN LOWER(COALESCE(ie.odeme_sekli, '')) IN ('kart', 'kredi_karti') THEN COALESCE(NULLIF(ie.gercek_toplam_ucret, 0), ie.tahmini_toplam_ucret, 0) ELSE 0 END::NUMERIC(14,2) AS kart_tutar,
-    CASE WHEN ie.odeme_bilgisi_girildi THEN COALESCE(ie.havale_tutar, 0)
-      WHEN LOWER(COALESCE(ie.odeme_sekli, '')) = 'havale' THEN COALESCE(NULLIF(ie.gercek_toplam_ucret, 0), ie.tahmini_toplam_ucret, 0) ELSE 0 END::NUMERIC(14,2) AS havale_tutar,
+    COALESCE(ie.nakit_tutar, 0)::NUMERIC(14,2) AS nakit_tutar,
+    COALESCE(ie.kart_tutar, 0)::NUMERIC(14,2) AS kart_tutar,
+    COALESCE(ie.havale_tutar, 0)::NUMERIC(14,2) AS havale_tutar,
     0::NUMERIC(14,2) AS diger_tutar
   FROM is_emirleri ie${customerSource}
   WHERE (ie.musteri_id = ${customerAlias}.id OR (
       REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g') <> '' AND
       REGEXP_REPLACE(COALESCE(ie.telefon, ''), '[^0-9]', '', 'g') = REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g')
     ))
-    AND LOWER(COALESCE(ie.durum, '')) NOT IN ('iptal', 'iptal_edildi')
+    AND LOWER(COALESCE(ie.durum, '')) NOT IN ('tamamlandi', 'iptal', 'iptal_edildi')
     AND COALESCE(NULLIF(ie.gercek_toplam_ucret, 0), ie.tahmini_toplam_ucret, 0) > 0
   UNION ALL
   SELECT 'MOTOR_SATISI', ms.id::TEXT, COALESCE(ms.tarih::timestamp, ms.created_at),
     CONCAT_WS(' ', 'Motosiklet satışı', NULLIF(mm.model_adi, '')),
     COALESCE(ms.satis_fiyati, ms.fatura_fiyati, 0)::NUMERIC(14,2),
-    CASE WHEN ms.odeme_bilgisi_girildi THEN COALESCE(ms.nakit_tutar, 0)
-      WHEN LOWER(COALESCE(ms.odeme_sekli, 'nakit')) = 'nakit' THEN COALESCE(ms.satis_fiyati, ms.fatura_fiyati, 0) ELSE 0 END::NUMERIC(14,2),
-    CASE WHEN ms.odeme_bilgisi_girildi THEN COALESCE(ms.kart_tutar, 0)
-      WHEN LOWER(COALESCE(ms.odeme_sekli, '')) IN ('kart', 'kredi_karti', 'kredi') THEN COALESCE(ms.satis_fiyati, ms.fatura_fiyati, 0) ELSE 0 END::NUMERIC(14,2),
-    CASE WHEN ms.odeme_bilgisi_girildi THEN COALESCE(ms.havale_tutar, 0)
-      WHEN LOWER(COALESCE(ms.odeme_sekli, '')) = 'havale' THEN COALESCE(ms.satis_fiyati, ms.fatura_fiyati, 0) ELSE 0 END::NUMERIC(14,2),
+    COALESCE(ms.nakit_tutar, 0)::NUMERIC(14,2),
+    COALESCE(ms.kart_tutar, 0)::NUMERIC(14,2),
+    COALESCE(ms.havale_tutar, 0)::NUMERIC(14,2),
     0::NUMERIC(14,2)
   FROM motor_satislari ms
   LEFT JOIN motor_modelleri mm ON mm.id = ms.motor_modeli_id${customerSource}
   WHERE REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g') <> ''
     AND REGEXP_REPLACE(COALESCE(ms.musteri_telefon, ''), '[^0-9]', '', 'g') = REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g')
-    AND LOWER(COALESCE(ms.durum, '')) NOT IN ('iptal', 'iptal_edildi')
+    AND LOWER(COALESCE(ms.durum, '')) NOT IN ('tamamlandi', 'iptal', 'iptal_edildi')
     AND COALESCE(ms.satis_fiyati, ms.fatura_fiyati, 0) > 0
   UNION ALL
   SELECT 'AKSESUAR', a.id::TEXT, COALESCE(a.satis_tarihi::timestamp, a.created_at),
@@ -62,7 +56,7 @@ const automaticReceivablesSelect = (customerAlias) => {
   FROM aksesuarlar a${customerSource}
   WHERE REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g') <> ''
     AND REGEXP_REPLACE(COALESCE(a.telefon, ''), '[^0-9]', '', 'g') = REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g')
-    AND LOWER(COALESCE(a.durum, '')) NOT IN ('iptal', 'iptal_edildi')
+    AND LOWER(COALESCE(a.durum, '')) NOT IN ('tamamlandi', 'iptal', 'iptal_edildi')
     AND COALESCE(a.toplam_satis, 0) > 0
   UNION ALL
   SELECT 'HOBI_GRUP', b.id::TEXT, COALESCE(b.satis_tarihi::timestamp, b.created_at),
@@ -74,7 +68,7 @@ const automaticReceivablesSelect = (customerAlias) => {
   FROM bisiklet_satislar b${customerSource}
   WHERE REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g') <> ''
     AND REGEXP_REPLACE(COALESCE(b.telefon, ''), '[^0-9]', '', 'g') = REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g')
-    AND LOWER(COALESCE(b.durum, '')) NOT IN ('iptal', 'iptal_edildi')
+    AND LOWER(COALESCE(b.durum, '')) NOT IN ('tamamlandi', 'iptal', 'iptal_edildi')
     AND COALESCE(b.toplam_satis, 0) > 0
 `;
 };
@@ -305,10 +299,22 @@ router.post('/finans/tahsilat', async (req, res) => {
   const customerId = parsePositiveId(req.body.musteri_id);
   const referenceId = parsePositiveId(req.body.referans_id);
   const source = String(req.body.kaynak || '').toUpperCase();
-  const amount = Number(req.body.tutar);
-  const method = String(req.body.odeme_yontemi || '').toUpperCase();
+  const requestedPayments = Array.isArray(req.body.odemeler)
+    ? req.body.odemeler
+    : [{ odeme_yontemi: req.body.odeme_yontemi, tutar: req.body.tutar }];
+  const parsedPayments = requestedPayments.map((payment) => ({
+    method: String(payment?.odeme_yontemi || '').toUpperCase(),
+    amount: Number(payment?.tutar),
+  }));
+  const hasInvalidPayment = parsedPayments.some(
+    (payment) => !Number.isFinite(payment.amount) || payment.amount < 0 || !['NAKIT', 'KART', 'HAVALE_EFT'].includes(payment.method)
+  );
+  const payments = parsedPayments.filter((payment) => payment.amount > 0);
+  const amount = payments.reduce((sum, payment) => sum + payment.amount, 0);
   const sourceTables = { MOTOR_SATISI: 'motor_satislari', SERVIS: 'is_emirleri', AKSESUAR: 'aksesuarlar', HOBI_GRUP: 'bisiklet_satislar' };
-  if (!customerId || !referenceId || !sourceTables[source] || !Number.isFinite(amount) || amount <= 0 || !['NAKIT', 'KART', 'HAVALE_EFT'].includes(method)) {
+  if (!customerId || !referenceId || !sourceTables[source] || payments.length < 1 || payments.length > 3
+    || hasInvalidPayment || !Number.isFinite(amount) || amount <= 0
+    || new Set(payments.map((payment) => payment.method)).size !== payments.length) {
     return res.status(400).json({ message: 'Müşteri, kaynak, pozitif tutar ve ödeme yöntemi gereklidir.' });
   }
   const client = await pool.connect();
@@ -333,17 +339,21 @@ router.post('/finans/tahsilat', async (req, res) => {
       await client.query('ROLLBACK');
       return res.status(409).json({ message: `Tahsilat kalan bakiyeyi aşamaz. Güncel kalan: ${row.kalan} TL` });
     }
-    const inserted = await client.query(`
-      INSERT INTO musteri_cari_hareketleri
-        (musteri_id, hareket_tipi, tutar, islem_tarihi, aciklama, odeme_yontemi, referans_tipi, referans_id, olusturan_kullanici_id)
-      VALUES ($1, 'TAHSILAT', $2::NUMERIC, CURRENT_DATE, $3, $4, $5, $6, $7)
-      RETURNING *
-    `, [customerId, amount.toFixed(2), `${row.aciklama} için tahsilat`, method, source, String(referenceId), req.user.id]);
+    const inserted = [];
+    for (const payment of payments) {
+      const result = await client.query(`
+        INSERT INTO musteri_cari_hareketleri
+          (musteri_id, hareket_tipi, tutar, islem_tarihi, aciklama, odeme_yontemi, referans_tipi, referans_id, olusturan_kullanici_id)
+        VALUES ($1, 'TAHSILAT', $2::NUMERIC, CURRENT_DATE, $3, $4, $5, $6, $7)
+        RETURNING *
+      `, [customerId, payment.amount.toFixed(2), `${row.aciklama} için tahsilat`, payment.method, source, String(referenceId), req.user.id]);
+      inserted.push(result.rows[0]);
+    }
     await client.query('COMMIT');
     await logAktivite(req.user.id, ISLEM_TIPLERI.CARI_HAREKET_EKLE,
       `${row.musteri} için ${amount.toFixed(2)} TL tahsilat kaydedildi.`,
-      { musteriId: customerId, kaynak: source, referansId: referenceId, hareketId: inserted.rows[0].id }, getRequestInfo(req));
-    res.status(201).json({ hareket: inserted.rows[0], kalan: Math.max(Number(row.kalan) - amount, 0).toFixed(2) });
+      { musteriId: customerId, kaynak: source, referansId: referenceId, hareketIds: inserted.map((item) => item.id) }, getRequestInfo(req));
+    res.status(201).json({ hareketler: inserted, kalan: Math.max(Number(row.kalan) - amount, 0).toFixed(2) });
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Kaynak tahsilatı hatası:', error);

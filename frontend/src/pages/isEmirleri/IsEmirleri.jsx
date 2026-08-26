@@ -63,7 +63,11 @@ const getPaidAmount = (isEmri) => Number(
   isEmri.toplam_odenen
   ?? (Number(isEmri.nakit_tutar || 0) + Number(isEmri.kart_tutar || 0) + Number(isEmri.havale_tutar || 0))
 );
-const getRemainingAmount = (isEmri) => Number(isEmri.kalan_bakiye || 0);
+const getRemainingAmount = (isEmri) => (
+  ['tamamlandi', 'iptal', 'iptal_edildi'].includes(isEmri.durum)
+    ? 0
+    : Number(isEmri.kalan_bakiye || 0)
+);
 const getPaymentLabel = (isEmri) => {
   const usedMethods = [
     Number(isEmri.nakit_tutar || 0) > 0 && 'Nakit',
@@ -219,17 +223,21 @@ function IsEmirleri() {
   const hasActiveFilters = searchQuery || filterDurum || baslangicTarihi || bitisTarihi || filterBugun;
 
   const filteredIsEmirleri = isEmirleri;
-  const selectableIsEmirleri = filteredIsEmirleri.filter((item) => item.musteri_id);
+  const selectableIsEmirleri = filteredIsEmirleri.filter(
+    (item) => !['tamamlandi', 'iptal_edildi'].includes(item.durum)
+  );
   const selectedServices = filteredIsEmirleri.filter((item) => selectedServiceIds.includes(item.id));
   const allServicesSelected = selectableIsEmirleri.length > 0
     && selectableIsEmirleri.every((item) => selectedServiceIds.includes(item.id));
   const someServicesSelected = selectableIsEmirleri.some((item) => selectedServiceIds.includes(item.id));
   const selectedActiveCustomerIds = [...new Set(selectedServices
     .filter((item) => item.musteri_aktif !== false)
-    .map((item) => item.musteri_id))];
+    .map((item) => item.musteri_id)
+    .filter(Boolean))];
   const selectedPassiveCustomerIds = [...new Set(selectedServices
     .filter((item) => item.musteri_aktif === false)
-    .map((item) => item.musteri_id))];
+    .map((item) => item.musteri_id)
+    .filter(Boolean))];
 
   const toggleService = (id) => {
     setSelectedServiceIds((current) => current.includes(id)
@@ -262,6 +270,25 @@ function IsEmirleri() {
       await loadIsEmirleri();
     } catch (error) {
       setNotice({ severity: 'error', text: error.response?.data?.message || 'Toplu müşteri işlemi tamamlanamadı.' });
+    } finally {
+      setBulkSaving(false);
+    }
+  };
+
+  const runBulkServiceComplete = async () => {
+    const ids = selectedServices
+      .filter((item) => !['tamamlandi', 'iptal_edildi'].includes(item.durum))
+      .map((item) => item.id);
+    if (!ids.length || !window.confirm(`${ids.length} servis kaydını tamamlandı olarak işaretlemek istiyor musunuz?`)) return;
+
+    setBulkSaving(true);
+    try {
+      const response = await isEmriService.bulkComplete(ids);
+      setNotice({ severity: 'success', text: response.data.message });
+      setSelectedServiceIds([]);
+      await loadIsEmirleri();
+    } catch (error) {
+      setNotice({ severity: 'error', text: error.response?.data?.message || 'Servis kayıtları toplu olarak tamamlanamadı.' });
     } finally {
       setBulkSaving(false);
     }
@@ -505,10 +532,13 @@ function IsEmirleri() {
         <Alert severity="info" sx={{ mb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: { xs: 'stretch', sm: 'center' }, justifyContent: 'space-between', flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
             <Typography variant="body2">
-              {selectedServiceIds.length} servis kaydı seçildi; {new Set(selectedServices.map((item) => item.musteri_id)).size} bağlı müşteri bulundu.
+              {selectedServiceIds.length} servis kaydı seçildi; {new Set(selectedServices.map((item) => item.musteri_id).filter(Boolean)).size} bağlı müşteri bulundu.
             </Typography>
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              <Button size="small" color="inherit" onClick={() => setSelectedServiceIds([])}>Seçimi Kaldır</Button>
+              <Button size="small" color="inherit" disabled={bulkSaving} onClick={() => setSelectedServiceIds([])}>Seçimi Kaldır</Button>
+              <Button size="small" variant="contained" color="success" disabled={bulkSaving} startIcon={<CheckCircleIcon />} onClick={runBulkServiceComplete}>
+                Seçilenleri Tamamla ({selectedServiceIds.length})
+              </Button>
               {selectedActiveCustomerIds.length > 0 && (
                 <Button size="small" variant="contained" color="warning" startIcon={<ArchiveIcon />} onClick={() => requestCustomerStatusChange(false)}>
                   Müşterileri Pasife Al ({selectedActiveCustomerIds.length})
@@ -561,7 +591,7 @@ function IsEmirleri() {
                       {isAdmin && (
                         <Checkbox
                           size="small"
-                          disabled={!isEmri.musteri_id}
+                          disabled={['tamamlandi', 'iptal_edildi'].includes(isEmri.durum)}
                           checked={selectedServiceIds.includes(isEmri.id)}
                           onChange={() => toggleService(isEmri.id)}
                           inputProps={{ 'aria-label': `${isEmri.fis_no} servis kaydını seç` }}
@@ -810,7 +840,7 @@ function IsEmirleri() {
                         <TableCell padding="checkbox">
                           <Checkbox
                             size="small"
-                            disabled={!isEmri.musteri_id}
+                            disabled={['tamamlandi', 'iptal_edildi'].includes(isEmri.durum)}
                             checked={selectedServiceIds.includes(isEmri.id)}
                             onChange={() => toggleService(isEmri.id)}
                             inputProps={{ 'aria-label': `${isEmri.fis_no} servis kaydını seç` }}

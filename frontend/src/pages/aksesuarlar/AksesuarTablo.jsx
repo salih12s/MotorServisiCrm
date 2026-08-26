@@ -14,6 +14,7 @@ import {
   Chip,
   CircularProgress,
   Paper,
+  Checkbox,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -27,7 +28,11 @@ const getPaidAmount = (record) => Number(
   record.toplam_odenen
   ?? (Number(record.nakit_tutar || 0) + Number(record.kart_tutar || 0) + Number(record.havale_tutar || 0))
 );
-const getRemainingAmount = (record) => Number(record.kalan_bakiye || 0);
+const getRemainingAmount = (record) => (
+  ['tamamlandi', 'iptal', 'iptal_edildi'].includes(record.durum)
+    ? 0
+    : Number(record.kalan_bakiye || 0)
+);
 const getPaymentLabel = (record) => {
   const usedMethods = [
     Number(record.nakit_tutar || 0) > 0 && 'Nakit',
@@ -47,6 +52,11 @@ const AksesuarTablo = ({
   handleViewDetails,
   handleOpenModal,
   handleDelete,
+  selectedIds,
+  toggleSelected,
+  toggleAll,
+  allSelected,
+  someSelected,
 }) => (
   <Card>
     <CardContent sx={{ p: 0 }}>
@@ -64,7 +74,19 @@ const AksesuarTablo = ({
           {filteredAksesuarlar.map((aksesuar) => (
             <Paper key={aksesuar.id} variant="outlined" sx={{ p: 2 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                <Typography variant="subtitle1" fontWeight={600}>{aksesuar.ad_soyad}</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                  {isAdmin && (
+                    <Checkbox
+                      size="small"
+                      disabled={['tamamlandi', 'iptal_edildi'].includes(aksesuar.durum)}
+                      checked={selectedIds.includes(aksesuar.id)}
+                      onClick={(event) => event.stopPropagation()}
+                      onChange={() => toggleSelected(aksesuar.id)}
+                      inputProps={{ 'aria-label': `${aksesuar.ad_soyad} satışını seç` }}
+                    />
+                  )}
+                  <Typography variant="subtitle1" fontWeight={600}>{aksesuar.ad_soyad}</Typography>
+                </Box>
                 <Box>
                   <IconButton size="small" onClick={() => handleViewDetails(aksesuar)} sx={{ color: themeColors.primary }}>
                     <VisibilityIcon fontSize="small" />
@@ -120,6 +142,17 @@ const AksesuarTablo = ({
           <Table>
             <TableHead>
               <TableRow sx={{ bgcolor: `${themeColors.primary}15` }}>
+                {isAdmin && (
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      size="small"
+                      checked={allSelected}
+                      indeterminate={!allSelected && someSelected}
+                      onChange={toggleAll}
+                      inputProps={{ 'aria-label': 'Tüm uygun aksesuar satışlarını seç' }}
+                    />
+                  </TableCell>
+                )}
                 <TableCell sx={{ fontWeight: 700 }}>Ad Soyad</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Telefon</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Ürün Sayısı</TableCell>
@@ -140,6 +173,18 @@ const AksesuarTablo = ({
                   onDoubleClick={() => isAdmin && handleViewDetails(aksesuar)}
                   sx={{ cursor: isAdmin ? 'pointer' : 'default' }}
                 >
+                  {isAdmin && (
+                    <TableCell padding="checkbox">
+                      <Checkbox
+                        size="small"
+                        disabled={['tamamlandi', 'iptal_edildi'].includes(aksesuar.durum)}
+                        checked={selectedIds.includes(aksesuar.id)}
+                        onClick={(event) => event.stopPropagation()}
+                        onChange={() => toggleSelected(aksesuar.id)}
+                        inputProps={{ 'aria-label': `${aksesuar.ad_soyad} satışını seç` }}
+                      />
+                    </TableCell>
+                  )}
                   <TableCell>{aksesuar.ad_soyad}</TableCell>
                   <TableCell>{aksesuar.telefon || '-'}</TableCell>
                   <TableCell>

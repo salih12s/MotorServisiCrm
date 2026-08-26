@@ -17,7 +17,7 @@ function PriceBrandsPage() {
           <Stack alignItems="center" spacing={1.5} sx={{ mb: { xs: 4, md: 6 } }}>
             <Typography sx={{ color: '#36C5D3', letterSpacing: 4, fontWeight: 800, fontSize: '.78rem' }}>FİYAT LİSTELERİ</Typography>
             <Typography component="h1" sx={{ fontSize: { xs: '2.2rem', md: '3.8rem' }, fontWeight: 900, textAlign: 'center' }}>Markanı Seç, Fiyatları İncele</Typography>
-            <Typography sx={{ color: 'rgba(255,255,255,.7)', textAlign: 'center', maxWidth: 680 }}>Falcon ve Musatti için markaya özel nakit ve taksitli fiyat listelerine ulaşın.</Typography>
+            <Typography sx={{ color: 'rgba(255,255,255,.7)', textAlign: 'center', maxWidth: 680 }}>Falcon ve Musatti için markaya özel güncel fiyat listelerine ulaşın.</Typography>
           </Stack>
 
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: { xs: 2.5, md: 4 } }}>
@@ -32,7 +32,7 @@ function PriceBrandsPage() {
                 <Stack justifyContent="flex-end" alignItems="flex-start" sx={{ position: 'relative', zIndex: 1, p: { xs: 3, md: 4 }, width: '100%' }}>
                   <Typography sx={{ color: brand.accent, letterSpacing: 5, fontWeight: 900, fontSize: '.82rem', mb: 1 }}>{brand.name.toUpperCase()}</Typography>
                   <Typography sx={{ fontSize: { xs: '1.75rem', md: '2.35rem' }, lineHeight: 1.1, fontWeight: 900 }}>{brand.name} Fiyat Listesi</Typography>
-                  <Typography sx={{ mt: 1.5, color: 'rgba(255,255,255,.72)', lineHeight: 1.6 }}>Güncel nakit ve taksitli tavsiye edilen satış fiyatlarını inceleyin.</Typography>
+                  <Typography sx={{ mt: 1.5, color: 'rgba(255,255,255,.72)', lineHeight: 1.6 }}>Güncel fiyatları inceleyin.</Typography>
                   <Box sx={{ mt: 2.5, display: 'flex', alignItems: 'center', gap: 1, color: brand.accent, fontWeight: 800 }}>Fiyat Listesine Git <ArrowIcon /></Box>
                 </Stack>
               </ButtonBase>

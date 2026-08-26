@@ -317,6 +317,54 @@ router.put('/:id', async (req, res) => {
   }
 });
 
+router.patch('/bulk/complete', async (req, res) => {
+  if (req.user?.rol !== 'admin') return res.status(403).json({ message: 'Bu işlem için yönetici yetkisi gereklidir.' });
+  const ids = [...new Set((Array.isArray(req.body.ids) ? req.body.ids : []).map(Number))];
+  if (!ids.length || ids.length > 500 || ids.some((id) => !Number.isSafeInteger(id) || id <= 0)) {
+    return res.status(400).json({ message: '1-500 geçerli aksesuar satışı seçilmelidir.' });
+  }
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const locked = await client.query('SELECT id FROM aksesuarlar WHERE id = ANY($1::int[]) FOR UPDATE', [ids]);
+    if (locked.rowCount !== ids.length) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: 'Seçilen aksesuar satışlarından biri bulunamadı.' });
+    }
+    const quantities = await client.query(`
+      SELECT p.urun_adi, SUM(p.adet)::int AS adet
+      FROM aksesuar_parcalar p
+      JOIN aksesuarlar a ON a.id = p.aksesuar_id
+      WHERE a.id = ANY($1::int[]) AND LOWER(COALESCE(a.durum, '')) NOT IN ('tamamlandi', 'iptal', 'iptal_edildi')
+      GROUP BY p.urun_adi
+    `, [ids]);
+    for (const item of quantities.rows) {
+      await client.query(`
+        UPDATE aksesuar_stok
+        SET cikan_miktar = cikan_miktar + $1,
+            mevcut = giren_miktar - (cikan_miktar + $1),
+            envanter_degeri = (giren_miktar - (cikan_miktar + $1)) * satis_fiyati,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE stok_adi = $2
+      `, [item.adet, item.urun_adi]);
+    }
+    const result = await client.query(`
+      UPDATE aksesuarlar
+      SET durum = 'tamamlandi', tamamlama_tarihi = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ANY($1::int[]) AND LOWER(COALESCE(durum, '')) NOT IN ('tamamlandi', 'iptal', 'iptal_edildi')
+      RETURNING id
+    `, [ids]);
+    await client.query('COMMIT');
+    res.json({ message: `${result.rowCount} aksesuar satışı tamamlandı.`, count: result.rowCount, ids: result.rows.map((row) => row.id) });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Toplu aksesuar tamamlama hatası:', error);
+    res.status(500).json({ message: 'Aksesuar satışları tamamlanamadı.' });
+  } finally {
+    client.release();
+  }
+});
+
 // Aksesuar kaydını sil
 router.delete('/:id', async (req, res) => {
   const client = await pool.connect();

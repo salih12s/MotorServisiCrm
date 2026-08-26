@@ -178,7 +178,7 @@ function MotorCard({ motor, onClick }) {
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  Tavsiye Edilen Satış Fiyatı
+                  Fiyat
                 </Typography>
                 <Typography
                   sx={{

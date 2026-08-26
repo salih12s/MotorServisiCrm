@@ -3,7 +3,7 @@ import {
   Box, Paper, Typography, Button, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, IconButton, TextField, Chip, Tooltip,
   CircularProgress, Alert, InputAdornment,
-  Card, CardContent, Avatar, useTheme, useMediaQuery, Divider
+  Card, CardContent, Avatar, useTheme, useMediaQuery, Divider, Checkbox
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -33,6 +33,9 @@ import {
   formatDate,
 } from './motorSatislariUtils';
 
+const isClosedSale = (satis) => ['tamamlandi', 'iptal', 'iptal_edildi'].includes(satis.durum);
+const getRemainingDebt = (satis) => isClosedSale(satis) ? 0 : Number(satis.kalan_bakiye || 0);
+
 const MotorSatislari = () => {
   const { setMotorSatisTheme, setDefaultTheme } = useCustomTheme();
   const { user } = useAuth();
@@ -58,6 +61,9 @@ const MotorSatislari = () => {
   const [selectedSatisDetay, setSelectedSatisDetay] = useState(null);
   const [editingSatis, setEditingSatis] = useState(null);
   const [editingModel, setEditingModel] = useState(null);
+  const [selectedSatisIds, setSelectedSatisIds] = useState([]);
+  const [bulkSaving, setBulkSaving] = useState(false);
+  const [success, setSuccess] = useState(null);
 
   // Sabit değerler
   const DAMGA_VERGISI = 791;
@@ -111,6 +117,7 @@ const MotorSatislari = () => {
       ]);
       setSatislar(satisRes.data);
       setModeller(modelRes.data);
+      setSelectedSatisIds([]);
     } catch (err) {
       console.error('Veri yükleme hatası:', err);
       setError('Veriler yüklenirken hata oluştu');
@@ -366,6 +373,37 @@ const MotorSatislari = () => {
     const matchesDurum = !filterDurum || satis.durum === filterDurum;
     return matchesSearch && matchesDurum;
   });
+  const selectableSatislar = filteredSatislar.filter(
+    (item) => !['tamamlandi', 'iptal_edildi'].includes(item.durum)
+  );
+  const allSatislarSelected = selectableSatislar.length > 0
+    && selectableSatislar.every((item) => selectedSatisIds.includes(item.id));
+  const someSatislarSelected = selectableSatislar.some((item) => selectedSatisIds.includes(item.id));
+
+  const toggleSatis = (id) => {
+    setSelectedSatisIds((current) => current.includes(id)
+      ? current.filter((item) => item !== id)
+      : [...current, id]);
+  };
+
+  const toggleAllSatislar = () => {
+    setSelectedSatisIds(allSatislarSelected ? [] : selectableSatislar.map((item) => item.id));
+  };
+
+  const handleBulkComplete = async () => {
+    if (!selectedSatisIds.length || !window.confirm(`${selectedSatisIds.length} motosiklet satışını tamamlandı olarak işaretlemek istiyor musunuz?`)) return;
+    setBulkSaving(true);
+    setSuccess(null);
+    try {
+      const response = await motorSatisService.bulkComplete(selectedSatisIds);
+      setSuccess(response.data.message);
+      await fetchData();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Satışlar toplu olarak tamamlanamadı.');
+    } finally {
+      setBulkSaving(false);
+    }
+  };
 
   // Bugünü kontrol et
   const isToday = (dateStr) => {
@@ -382,7 +420,7 @@ const MotorSatislari = () => {
   const tamamlananSatis = satislar.filter(s => s.durum === 'tamamlandi').length;
   const toplamKar = satislar.reduce((sum, s) => sum + parseFloat(s.kar || 0), 0);
   const toplamSatisFiyati = satislar.reduce((sum, s) => sum + parseFloat(s.satis_fiyati || 0), 0);
-  const toplamBorc = satislar.reduce((sum, s) => sum + parseFloat(s.kalan_bakiye || 0), 0);
+  const toplamBorc = satislar.reduce((sum, satis) => sum + getRemainingDebt(satis), 0);
 
   // Input için görüntüleme değeri (yazarken ham değer, değilse formatlı)
   const [activeInput, setActiveInput] = useState(null);
@@ -434,6 +472,11 @@ const MotorSatislari = () => {
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
           {error}
+        </Alert>
+      )}
+      {success && (
+        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess(null)}>
+          {success}
         </Alert>
       )}
 
@@ -592,6 +635,18 @@ const MotorSatislari = () => {
         />
       </Paper>
 
+      {isAdmin && selectedSatisIds.length > 0 && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: { xs: 'stretch', sm: 'center' }, justifyContent: 'space-between', flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
+            <span>{selectedSatisIds.length} motosiklet satışı seçildi.</span>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button size="small" color="inherit" disabled={bulkSaving} onClick={() => setSelectedSatisIds([])}>Seçimi Kaldır</Button>
+              <Button size="small" variant="contained" color="success" disabled={bulkSaving} onClick={handleBulkComplete}>Seçilenleri Tamamla</Button>
+            </Box>
+          </Box>
+        </Alert>
+      )}
+
       {/* Satışlar - Masaüstü Tablo / Mobil Kart Görünümü */}
       {isMobile ? (
         /* Mobil Kart Görünümü */
@@ -626,6 +681,16 @@ const MotorSatislari = () => {
                     {/* Üst Kısım - Model ve Tarih */}
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
+                        {isAdmin && (
+                          <Checkbox
+                            size="small"
+                            disabled={['tamamlandi', 'iptal_edildi'].includes(satis.durum)}
+                            checked={selectedSatisIds.includes(satis.id)}
+                            onClick={(event) => event.stopPropagation()}
+                            onChange={() => toggleSatis(satis.id)}
+                            inputProps={{ 'aria-label': `${satis.musteri_adi || satis.model_adi} satışını seç` }}
+                          />
+                        )}
                         <Avatar sx={{ bgcolor: 'primary.main', width: 36, height: 36 }}>
                           <MotorIcon sx={{ fontSize: 20 }} />
                         </Avatar>
@@ -676,17 +741,19 @@ const MotorSatislari = () => {
                       <Typography variant="body2" fontWeight={500} noWrap sx={{ flex: 1 }}>
                         {satis.musteri_adi || 'Müşteri belirtilmemiş'}
                       </Typography>
-                      <Chip
-                        size="small"
-                        label={`Borç: ${formatCurrency(satis.kalan_bakiye)}`}
-                        sx={{
-                          height: 22,
-                          bgcolor: Number(satis.kalan_bakiye || 0) > 0 ? '#fee2e2' : '#dcfce7',
-                          color: Number(satis.kalan_bakiye || 0) > 0 ? '#b91c1c' : '#047857',
-                          fontWeight: 800,
-                          fontSize: '0.65rem',
-                        }}
-                      />
+                      {!isClosedSale(satis) && (
+                        <Chip
+                          size="small"
+                          label={`Borç: ${formatCurrency(getRemainingDebt(satis))}`}
+                          sx={{
+                            height: 22,
+                            bgcolor: getRemainingDebt(satis) > 0 ? '#fee2e2' : '#dcfce7',
+                            color: getRemainingDebt(satis) > 0 ? '#b91c1c' : '#047857',
+                            fontWeight: 800,
+                            fontSize: '0.65rem',
+                          }}
+                        />
+                      )}
                     </Box>
 
                     <Divider sx={{ my: 1 }} />
@@ -760,6 +827,18 @@ const MotorSatislari = () => {
         <Table size="small" sx={{ minWidth: 1020, tableLayout: 'fixed' }}>
           <TableHead>
             <TableRow sx={{ backgroundColor: 'primary.main', '& th': { py: 0.75, px: 0.5, fontSize: '0.7rem' } }}>
+              {isAdmin && (
+                <TableCell padding="checkbox" sx={{ width: 38 }}>
+                  <Checkbox
+                    size="small"
+                    checked={allSatislarSelected}
+                    indeterminate={!allSatislarSelected && someSatislarSelected}
+                    onChange={toggleAllSatislar}
+                    inputProps={{ 'aria-label': 'Tüm uygun motosiklet satışlarını seç' }}
+                    sx={{ color: 'white', '&.Mui-checked, &.MuiCheckbox-indeterminate': { color: 'white' } }}
+                  />
+                </TableCell>
+              )}
               <TableCell sx={{ color: 'white', fontWeight: 'bold', width: 75 }}>Tarih</TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold', width: 130 }}>Motor Modeli</TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold', width: 100 }}>Müşteri</TableCell>
@@ -777,7 +856,7 @@ const MotorSatislari = () => {
           <TableBody>
             {filteredSatislar.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={isAdmin ? 12 : 10} align="center" sx={{ py: 4 }}>
+                <TableCell colSpan={isAdmin ? 13 : 10} align="center" sx={{ py: 4 }}>
                   <Typography color="text.secondary">
                     {searchTerm ? 'Arama sonucu bulunamadı' : 'Henüz motor satışı yok'}
                   </Typography>
@@ -808,9 +887,22 @@ const MotorSatislari = () => {
                 <TableRow 
                   key={satis.id} 
                   hover 
+                  selected={selectedSatisIds.includes(satis.id)}
                   onDoubleClick={() => isAdmin && handleOpenDetayModal(satis)}
                   sx={{ '& td': { py: 0.5, px: 0.5, fontSize: '0.7rem' }, cursor: isAdmin ? 'pointer' : 'default' }}
                 >
+                  {isAdmin && (
+                    <TableCell padding="checkbox">
+                      <Checkbox
+                        size="small"
+                        disabled={['tamamlandi', 'iptal_edildi'].includes(satis.durum)}
+                        checked={selectedSatisIds.includes(satis.id)}
+                        onClick={(event) => event.stopPropagation()}
+                        onChange={() => toggleSatis(satis.id)}
+                        inputProps={{ 'aria-label': `${satis.musteri_adi || satis.model_adi} satışını seç` }}
+                      />
+                    </TableCell>
+                  )}
                   <TableCell>
                     <Typography fontSize="0.7rem">{formatDate(satis.tarih)}</Typography>
                   </TableCell>
@@ -829,14 +921,18 @@ const MotorSatislari = () => {
                     </Tooltip>
                   </TableCell>
                   <TableCell align="right">
-                    <Typography
-                      fontSize="0.68rem"
-                      fontWeight={800}
-                      noWrap
-                      sx={{ color: Number(satis.kalan_bakiye || 0) > 0 ? '#b91c1c' : '#2e7d32' }}
-                    >
-                      {formatCurrency(satis.kalan_bakiye)}
-                    </Typography>
+                    {isClosedSale(satis) ? (
+                      <Typography color="text.secondary" align="right">—</Typography>
+                    ) : (
+                      <Typography
+                        fontSize="0.68rem"
+                        fontWeight={800}
+                        noWrap
+                        sx={{ color: getRemainingDebt(satis) > 0 ? '#b91c1c' : '#2e7d32' }}
+                      >
+                        {formatCurrency(getRemainingDebt(satis))}
+                      </Typography>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Chip label={`%${satis.iskonto || 0}`} size="small" sx={{ height: 18, fontSize: '0.6rem', '& .MuiChip-label': { px: 0.5 } }} />

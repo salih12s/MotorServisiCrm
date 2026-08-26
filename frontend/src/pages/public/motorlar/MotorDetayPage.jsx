@@ -334,7 +334,7 @@ function MotorDetayPage() {
                         mb: 0.4,
                       }}
                     >
-                      Tavsiye Edilen Satış Fiyatı
+                      Fiyat
                     </Typography>
                     <Typography sx={{ fontSize: { xs: '1.65rem', md: '1.85rem' }, fontWeight: 900, color: '#fff' }}>
                       {motor.price.replace('TL', '₺')}

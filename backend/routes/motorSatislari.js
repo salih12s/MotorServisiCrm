@@ -315,6 +315,26 @@ router.put('/:id', async (req, res) => {
   }
 });
 
+router.patch('/bulk/complete', async (req, res) => {
+  if (req.user?.rol !== 'admin') return res.status(403).json({ message: 'Bu işlem için yönetici yetkisi gereklidir.' });
+  const ids = [...new Set((Array.isArray(req.body.ids) ? req.body.ids : []).map(Number))];
+  if (!ids.length || ids.length > 500 || ids.some((id) => !Number.isSafeInteger(id) || id <= 0)) {
+    return res.status(400).json({ message: '1-500 geçerli motosiklet satışı seçilmelidir.' });
+  }
+  try {
+    const result = await pool.query(`
+      UPDATE motor_satislari
+      SET durum = 'tamamlandi', updated_at = CURRENT_TIMESTAMP
+      WHERE id = ANY($1::int[]) AND LOWER(COALESCE(durum, '')) NOT IN ('tamamlandi', 'iptal', 'iptal_edildi')
+      RETURNING id
+    `, [ids]);
+    res.json({ message: `${result.rowCount} motosiklet satışı tamamlandı.`, count: result.rowCount, ids: result.rows.map((row) => row.id) });
+  } catch (error) {
+    console.error('Toplu motosiklet satışı tamamlama hatası:', error);
+    res.status(500).json({ message: 'Motosiklet satışları tamamlanamadı.' });
+  }
+});
+
 // Motor satışı sil
 router.delete('/:id', async (req, res) => {
   try {
