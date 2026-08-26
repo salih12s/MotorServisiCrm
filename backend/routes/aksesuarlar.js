@@ -22,7 +22,7 @@ const ensureCustomer = async (client, name, phone) => {
   } else if (normalizedName && normalizedName !== '-') {
     existing = await client.query("SELECT id FROM musteriler WHERE LOWER(TRIM(COALESCE(ad_soyad, ''))) = LOWER($1) ORDER BY id LIMIT 1", [normalizedName]);
   } else {
-    return null;
+    existing = { rowCount: 0, rows: [] };
   }
   if (existing.rowCount) return existing.rows[0].id;
   const inserted = await client.query(

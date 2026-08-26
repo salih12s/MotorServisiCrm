@@ -10,6 +10,43 @@ const serviceTotalExpression = `CASE
   ELSE COALESCE(NULLIF(ie.gercek_toplam_ucret, 0), ie.tahmini_toplam_ucret, 0)
 END`;
 
+const ensureServiceCustomer = async (client, name, phone, address) => {
+  const normalizedPhone = String(phone || '').replace(/[^0-9]/g, '');
+  const normalizedName = String(name || '').trim();
+  let existing;
+
+  if (normalizedPhone) {
+    existing = await client.query(
+      "SELECT id, aktif FROM musteriler WHERE REGEXP_REPLACE(COALESCE(telefon, ''), '[^0-9]', '', 'g') = $1 ORDER BY aktif DESC, id ASC LIMIT 1",
+      [normalizedPhone]
+    );
+  } else if (normalizedName && normalizedName !== '-') {
+    existing = await client.query(
+      "SELECT id, aktif FROM musteriler WHERE LOWER(TRIM(COALESCE(ad_soyad, ''))) = LOWER($1) ORDER BY aktif DESC, id ASC LIMIT 1",
+      [normalizedName]
+    );
+  }
+
+  if (existing?.rowCount) {
+    if (!existing.rows[0].aktif) return { inactive: true, id: existing.rows[0].id };
+    await client.query(`
+      UPDATE musteriler
+      SET ad_soyad = COALESCE(NULLIF($1, ''), ad_soyad),
+          adres = COALESCE(NULLIF($2, ''), adres),
+          telefon = COALESCE(NULLIF($3, ''), telefon),
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = $4
+    `, [normalizedName, String(address || '').trim(), String(phone || '').trim(), existing.rows[0].id]);
+    return { id: existing.rows[0].id, inactive: false };
+  }
+
+  const inserted = await client.query(
+    'INSERT INTO musteriler (ad_soyad, adres, telefon, aktif) VALUES ($1, $2, $3, TRUE) RETURNING id',
+    [normalizedName || 'Servis Müşterisi', address || null, normalizedPhone ? phone : null]
+  );
+  return { id: inserted.rows[0].id, inactive: false };
+};
+
 // Bir sonraki fiş numarasını getir (1'den başlar)
 const getNextFisNo = async () => {
   const result = await pool.query(
@@ -214,36 +251,15 @@ router.post('/', async (req, res) => {
     
     const fis_no = await getNextFisNo();
     
-    // Müşteriyi kontrol et veya oluştur
-    let musteri_id = null;
-    if (telefon) {
-      const musteriResult = await client.query(
-        'SELECT id, aktif FROM musteriler WHERE telefon = $1 ORDER BY aktif DESC, id ASC LIMIT 1',
-        [telefon]
-      );
-      
-      if (musteriResult.rows.length > 0) {
-        if (!musteriResult.rows[0].aktif) {
-          await client.query('ROLLBACK');
-          return res.status(409).json({
-            message: 'Bu telefon numarası pasif bir müşteriye ait. Yeni iş emri açmadan önce müşteriyi yeniden aktif edin.'
-          });
-        }
-        musteri_id = musteriResult.rows[0].id;
-        // Müşteri bilgilerini güncelle
-        await client.query(
-          'UPDATE musteriler SET ad_soyad = $1, adres = $2 WHERE id = $3',
-          [musteri_ad_soyad, adres, musteri_id]
-        );
-      } else {
-        // Yeni müşteri oluştur
-        const newMusteri = await client.query(
-          'INSERT INTO musteriler (ad_soyad, adres, telefon) VALUES ($1, $2, $3) RETURNING id',
-          [musteri_ad_soyad, adres, telefon]
-        );
-        musteri_id = newMusteri.rows[0].id;
-      }
+    // Her bekleyen iş emrinin cari hesapta karşılığı olabilmesi için müşteri bağlantısı zorunludur.
+    const customer = await ensureServiceCustomer(client, musteri_ad_soyad, telefon, adres);
+    if (customer.inactive) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        message: 'Bu bilgiler pasif bir müşteriye ait. Yeni iş emri açmadan önce müşteriyi yeniden aktif edin.'
+      });
     }
+    const musteri_id = customer.id;
     
     // İş emri oluştur
     const olusturan_kullanici_id = req.user?.id || null;
@@ -288,6 +304,7 @@ router.post('/', async (req, res) => {
       await client.query('ROLLBACK');
       return res.status(400).json({ message: payment.error });
     }
+
     const kar = toplamFiyat - toplamMaliyet;
     await client.query(
       'UPDATE is_emirleri SET gercek_toplam_ucret = $1, toplam_maliyet = $2, kar = $3 WHERE id = $4',
@@ -379,6 +396,14 @@ router.put('/:id', async (req, res) => {
       await client.query('ROLLBACK');
       return res.status(400).json({ message: payment.error });
     }
+
+    const customer = await ensureServiceCustomer(client, musteri_ad_soyad, telefon, adres);
+    if (customer.inactive) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        message: 'Bu bilgiler pasif bir müşteriye ait. İş emrini bağlamadan önce müşteriyi yeniden aktif edin.'
+      });
+    }
     
     // İş emrini güncelle
     // Eğer durum tamamlandı'ya çekiliyorsa tamamlama_tarihi'ni set et
@@ -392,13 +417,14 @@ router.put('/:id', async (req, res) => {
         teslim_alan_ad_soyad = $13, teslim_eden_teknisyen = $14, teslim_tarihi = $15,
         odeme_detaylari = $16, olusturan_kisi = $17, odeme_sekli = $18,
         nakit_tutar = $19, kart_tutar = $20, havale_tutar = $21, odeme_bilgisi_girildi = TRUE,
-        tamamlama_tarihi = CASE WHEN $22::boolean THEN CURRENT_TIMESTAMP ELSE tamamlama_tarihi END,
+        musteri_id = $22,
+        tamamlama_tarihi = CASE WHEN $23::boolean THEN CURRENT_TIMESTAMP ELSE tamamlama_tarihi END,
         updated_at = CURRENT_TIMESTAMP
-       WHERE id = $23`,
+       WHERE id = $24`,
       [musteri_ad_soyad, adres, telefon, km, model_tip, marka, aciklama, ariza_sikayetler, 
        tahmini_teslim_tarihi, tahmini_toplam_ucret, durum || 'beklemede', musteri_imza || false,
        teslim_alan_ad_soyad, teslim_eden_teknisyen, teslim_tarihi, odeme_detaylari || null,
-       olusturan_kisi || null, odeme_sekli || 'nakit', payment.values[0], payment.values[1], payment.values[2], shouldSetTamamlamaTarihi, id]
+       olusturan_kisi || null, odeme_sekli || 'nakit', payment.values[0], payment.values[1], payment.values[2], customer.id, shouldSetTamamlamaTarihi, id]
     );
     
     // Mevcut parçaları sil ve yenilerini ekle

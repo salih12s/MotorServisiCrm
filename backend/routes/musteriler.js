@@ -30,8 +30,7 @@ const automaticReceivablesSelect = (customerAlias) => {
       REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g') <> '' AND
       REGEXP_REPLACE(COALESCE(ie.telefon, ''), '[^0-9]', '', 'g') = REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g')
     ))
-    AND LOWER(COALESCE(ie.durum, '')) NOT IN ('tamamlandi', 'iptal', 'iptal_edildi')
-    AND COALESCE(NULLIF(ie.gercek_toplam_ucret, 0), ie.tahmini_toplam_ucret, 0) > 0
+    AND LOWER(COALESCE(ie.durum, '')) = 'beklemede'
   UNION ALL
   SELECT 'MOTOR_SATISI', ms.id::TEXT, COALESCE(ms.tarih::timestamp, ms.created_at),
     CONCAT_WS(' ', 'Motosiklet satışı', NULLIF(mm.model_adi, '')),
@@ -46,8 +45,7 @@ const automaticReceivablesSelect = (customerAlias) => {
       REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g') <> '' AND
       REGEXP_REPLACE(COALESCE(ms.musteri_telefon, ''), '[^0-9]', '', 'g') = REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g')
     ))
-    AND LOWER(COALESCE(ms.durum, '')) NOT IN ('tamamlandi', 'iptal', 'iptal_edildi')
-    AND COALESCE(ms.satis_fiyati, ms.fatura_fiyati, 0) > 0
+    AND LOWER(COALESCE(ms.durum, '')) = 'beklemede'
   UNION ALL
   SELECT 'AKSESUAR', a.id::TEXT, COALESCE(a.satis_tarihi::timestamp, a.created_at),
     COALESCE(NULLIF(a.urun_adi, ''), 'Aksesuar satışı'), COALESCE(a.toplam_satis, 0)::NUMERIC(14,2),
@@ -60,8 +58,7 @@ const automaticReceivablesSelect = (customerAlias) => {
       REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g') <> '' AND
       REGEXP_REPLACE(COALESCE(a.telefon, ''), '[^0-9]', '', 'g') = REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g')
     ))
-    AND LOWER(COALESCE(a.durum, '')) NOT IN ('tamamlandi', 'iptal', 'iptal_edildi')
-    AND COALESCE(a.toplam_satis, 0) > 0
+    AND LOWER(COALESCE(a.durum, '')) = 'beklemede'
   UNION ALL
   SELECT 'HOBI_GRUP', b.id::TEXT, COALESCE(b.satis_tarihi::timestamp, b.created_at),
     'Hobi grup / bisiklet satışı', COALESCE(b.toplam_satis, 0)::NUMERIC(14,2),
@@ -74,8 +71,7 @@ const automaticReceivablesSelect = (customerAlias) => {
       REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g') <> '' AND
       REGEXP_REPLACE(COALESCE(b.telefon, ''), '[^0-9]', '', 'g') = REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g')
     ))
-    AND LOWER(COALESCE(b.durum, '')) NOT IN ('tamamlandi', 'iptal', 'iptal_edildi')
-    AND COALESCE(b.toplam_satis, 0) > 0
+    AND LOWER(COALESCE(b.durum, '')) = 'beklemede'
 `;
 };
 
@@ -271,6 +267,7 @@ router.get('/finans/ozet', async (req, res) => {
 router.get('/finans/alacaklar', async (req, res) => {
   try {
     const source = String(req.query.kaynak || 'tumu').toLowerCase();
+    const includeAllPending = String(req.query.bekleyenlerin_tumu || '').toLowerCase() === 'true';
     const sourceMap = { satis: 'MOTOR_SATISI', servis: 'SERVIS', aksesuar: 'AKSESUAR', hobi: 'HOBI_GRUP' };
     if (source !== 'tumu' && !sourceMap[source]) return res.status(400).json({ message: 'Geçersiz kaynak filtresi.' });
     const params = [];
@@ -285,7 +282,7 @@ router.get('/finans/alacaklar', async (req, res) => {
         COALESCE(SUM(kalan) OVER (), 0)::NUMERIC(14,2) AS toplam_acik_bakiye,
         COUNT(*) OVER ()::INTEGER AS acik_islem_sayisi
       FROM alacaklar
-      WHERE kalan > 0${sourceFilter}
+      WHERE ${includeAllPending ? 'TRUE' : 'kalan > 0'}${sourceFilter}
       ORDER BY tarih ASC, musteri ASC
     `, params);
     res.json({

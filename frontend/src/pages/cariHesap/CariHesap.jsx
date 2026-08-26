@@ -46,7 +46,7 @@ function CariHesap() {
     setLoading(true);
     try {
       const [receivables, financial] = await Promise.all([
-        musteriService.getReceivables({ kaynak: filter }),
+        musteriService.getReceivables({ kaynak: filter, bekleyenlerin_tumu: true }),
         musteriService.getFinancialSummary(),
       ]);
       setRows(receivables.data.data || []);
@@ -97,7 +97,7 @@ function CariHesap() {
   return <Box>
     <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0,1fr))' }, gap: 1.5, mb: 2 }}>
       <SummaryCard label="Toplam Kalan Bakiye" value={currency(overview.toplam_acik_bakiye)} icon={<BalanceIcon />} color="#ea580c" />
-      <SummaryCard label="Açık İşlem" value={overview.acik_islem_sayisi || 0} icon={<ReceiptIcon />} color="#2563eb" />
+      <SummaryCard label="Bekleyen İşlem" value={overview.acik_islem_sayisi || 0} icon={<ReceiptIcon />} color="#2563eb" />
       <SummaryCard label="Bugünkü Tahsilat" value={currency(summary.bugunku_tahsilat)} icon={<PaymentsIcon />} color="#059669" />
     </Box>
 
@@ -130,7 +130,7 @@ function CariHesap() {
             <TableCell>{(methods[key] || 'NAKIT') === 'KARISIK' ? <Box sx={{ display: 'grid', gap: .5 }}>
               {[['NAKIT', 'Nakit'], ['KART', 'Kart'], ['HAVALE_EFT', 'Havale']].map(([paymentMethod, label]) => <TextField key={paymentMethod} size="small" type="number" label={label} value={mixedAmounts[key]?.[paymentMethod] || ''} onChange={(event) => setMixedAmounts((prev) => ({ ...prev, [key]: { ...(prev[key] || {}), [paymentMethod]: event.target.value } }))} inputProps={{ min: 0, max: row.kalan, step: .01 }} fullWidth />)}
             </Box> : <TextField size="small" type="number" value={amounts[key] || ''} onChange={(event) => setAmounts((prev) => ({ ...prev, [key]: event.target.value }))} placeholder="Tutar" inputProps={{ min: .01, max: row.kalan, step: .01 }} fullWidth />}</TableCell>
-            <TableCell align="center"><Box sx={{ display: 'flex', gap: .5, justifyContent: 'center', alignItems: 'center' }}><Button size="small" variant="contained" disabled={saving === key} onClick={() => collect(row)} sx={{ px: 1, minWidth: 80, fontSize: '0.7rem' }}>Tahsil Et</Button><Tooltip title="Hareket geçmişi"><IconButton size="small" onClick={() => setDetailId(row.musteri_id)}><HistoryIcon fontSize="small" /></IconButton></Tooltip></Box></TableCell>
+            <TableCell align="center"><Box sx={{ display: 'flex', gap: .5, justifyContent: 'center', alignItems: 'center' }}><Button size="small" variant="contained" disabled={saving === key || Number(row.kalan) <= 0} onClick={() => collect(row)} sx={{ px: 1, minWidth: 80, fontSize: '0.7rem' }}>{Number(row.kalan) > 0 ? 'Tahsil Et' : 'Borç Yok'}</Button><Tooltip title="Hareket geçmişi"><IconButton size="small" onClick={() => setDetailId(row.musteri_id)}><HistoryIcon fontSize="small" /></IconButton></Tooltip></Box></TableCell>
           </TableRow>;
         })}</TableBody>
       </Table></TableContainer>

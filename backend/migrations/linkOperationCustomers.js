@@ -2,6 +2,13 @@ const pool = require('../config/db');
 
 const operationSources = [
   {
+    table: 'is_emirleri',
+    nameColumn: 'musteri_ad_soyad',
+    phoneColumn: 'telefon',
+    addressColumn: 'adres',
+    fallbackName: 'Servis Müşterisi',
+  },
+  {
     table: 'aksesuarlar',
     nameColumn: 'ad_soyad',
     phoneColumn: 'telefon',
@@ -97,6 +104,25 @@ async function linkSourceCustomers(client, source) {
       AND NULLIF(TRIM(s.${nameColumn}), '') IS NOT NULL
       AND TRIM(s.${nameColumn}) <> '-'
   `);
+
+  // Adı ve telefonu da boş olan bekleyen işlem yine de caride görünmelidir.
+  const unmatched = await client.query(`
+    SELECT s.id
+    FROM ${table} s
+    WHERE s.musteri_id IS NULL
+      AND LOWER(COALESCE(s.durum, '')) = 'beklemede'
+    ORDER BY s.id
+  `);
+  for (const row of unmatched.rows) {
+    const customer = await client.query(
+      'INSERT INTO musteriler (ad_soyad, aktif) VALUES ($1, TRUE) RETURNING id',
+      [`${fallbackName} #${row.id}`]
+    );
+    await client.query(
+      `UPDATE ${table} SET musteri_id = $1 WHERE id = $2 AND musteri_id IS NULL`,
+      [customer.rows[0].id, row.id]
+    );
+  }
 }
 
 async function linkOperationCustomers(db = pool) {
