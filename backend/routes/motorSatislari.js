@@ -18,10 +18,22 @@ const validatePayments = (total, values) => {
 };
 
 const ensureCustomer = async (name, phone, address) => {
-  const normalized = String(phone || '').replace(/[^0-9]/g, '');
-  if (!normalized) return;
-  const existing = await pool.query("SELECT id FROM musteriler WHERE REGEXP_REPLACE(COALESCE(telefon, ''), '[^0-9]', '', 'g') = $1 ORDER BY id LIMIT 1", [normalized]);
-  if (!existing.rowCount) await pool.query('INSERT INTO musteriler (ad_soyad, telefon, adres, aktif) VALUES ($1, $2, $3, TRUE)', [name || 'Motosiklet Müşterisi', phone, address || null]);
+  const normalizedPhone = String(phone || '').replace(/[^0-9]/g, '');
+  const normalizedName = String(name || '').trim();
+  let existing;
+  if (normalizedPhone) {
+    existing = await pool.query("SELECT id FROM musteriler WHERE REGEXP_REPLACE(COALESCE(telefon, ''), '[^0-9]', '', 'g') = $1 ORDER BY id LIMIT 1", [normalizedPhone]);
+  } else if (normalizedName && normalizedName !== '-') {
+    existing = await pool.query("SELECT id FROM musteriler WHERE LOWER(TRIM(COALESCE(ad_soyad, ''))) = LOWER($1) ORDER BY id LIMIT 1", [normalizedName]);
+  } else {
+    return null;
+  }
+  if (existing.rowCount) return existing.rows[0].id;
+  const inserted = await pool.query(
+    'INSERT INTO musteriler (ad_soyad, telefon, adres, aktif) VALUES ($1, $2, $3, TRUE) RETURNING id',
+    [normalizedName || 'Motosiklet Müşterisi', normalizedPhone ? phone : null, address || null]
+  );
+  return inserted.rows[0].id;
 };
 
 // ==================== MOTOR MODELLERİ ====================
@@ -198,15 +210,15 @@ router.post('/', async (req, res) => {
     }
     const payment = validatePayments(satis_fiyati, [nakit_tutar, kart_tutar, havale_tutar]);
     if (payment.error) return res.status(400).json({ message: payment.error });
-    await ensureCustomer(musteri_adi, musteri_telefon, adres);
+    const musteriId = await ensureCustomer(musteri_adi, musteri_telefon, adres);
     
     const result = await pool.query(
       `INSERT INTO motor_satislari 
         (tarih, sase_no, motor_modeli_id, iskonto, alis_fiyati, satis_fiyati, fatura_fiyati,
          odeme_sekli, nakit_tutar, kart_tutar, havale_tutar, odeme_bilgisi_girildi, musteri_adi, musteri_telefon, tc_kimlik_no, adres, aciklama, durum,
          iskonto_tutari, iskontolu_alis_fiyati, matrah_satis, kdv_tutari, kdvsiz_tutar,
-         otv_tutari, damga_vergisi, vergiler_toplami, kar, olusturan_kullanici_id, olusturan_kisi)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, TRUE, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28)
+         otv_tutari, damga_vergisi, vergiler_toplami, kar, olusturan_kullanici_id, olusturan_kisi, musteri_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, TRUE, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29)
        RETURNING *`,
       [
         tarih || new Date().toISOString().split('T')[0], 
@@ -236,7 +248,8 @@ router.post('/', async (req, res) => {
         vergiler_toplami || 0,
         kar || 0,
         olusturan_kullanici_id,
-        olusturan_kisi || null
+        olusturan_kisi || null,
+        musteriId
       ]
     );
     
@@ -282,7 +295,7 @@ router.put('/:id', async (req, res) => {
     } = req.body;
     const payment = validatePayments(satis_fiyati, [nakit_tutar, kart_tutar, havale_tutar]);
     if (payment.error) return res.status(400).json({ message: payment.error });
-    await ensureCustomer(musteri_adi, musteri_telefon, adres);
+    const musteriId = await ensureCustomer(musteri_adi, musteri_telefon, adres);
     
     const result = await pool.query(
       `UPDATE motor_satislari 
@@ -293,15 +306,15 @@ router.put('/:id', async (req, res) => {
            iskonto_tutari = $18, iskontolu_alis_fiyati = $19, matrah_satis = $20,
            kdv_tutari = $21, kdvsiz_tutar = $22, otv_tutari = $23, damga_vergisi = $24,
            vergiler_toplami = $25, kar = $26, olusturan_kisi = COALESCE($27, olusturan_kisi),
-           olusturan_kullanici_id = COALESCE(olusturan_kullanici_id, $28),
+           olusturan_kullanici_id = COALESCE(olusturan_kullanici_id, $28), musteri_id = $29,
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $29 RETURNING *`,
+       WHERE id = $30 RETURNING *`,
       [tarih, sase_no, motor_modeli_id, iskonto, alis_fiyati, satis_fiyati, fatura_fiyati, odeme_sekli, 
        payment.values[0], payment.values[1], payment.values[2],
        musteri_adi, musteri_telefon, tc_kimlik_no, adres, aciklama, durum || 'beklemede',
        iskonto_tutari || 0, iskontolu_alis_fiyati || 0, matrah_satis || 0,
        kdv_tutari || 0, kdvsiz_tutar || 0, otv_tutari || 0, damga_vergisi || 791,
-       vergiler_toplami || 0, kar || 0, req.body.olusturan_kisi || null, req.user?.id || null, id]
+       vergiler_toplami || 0, kar || 0, req.body.olusturan_kisi || null, req.user?.id || null, musteriId, id]
     );
     
     if (result.rows.length === 0) {

@@ -1,6 +1,7 @@
 const pool = require('./db');
 const bcrypt = require('bcryptjs');
 const addCustomerAccountsSchema = require('../migrations/addCustomerAccounts');
+const linkOperationCustomers = require('../migrations/linkOperationCustomers');
 
 const initDatabase = async () => {
   try {
@@ -592,6 +593,10 @@ const initDatabase = async () => {
       )
     `);
     console.log('✓ Bisiklet Satış Parçaları tablosu oluşturuldu');
+
+    // Eski ve yeni satışların cari hesapta müşteriye kalıcı olarak bağlanmasını sağlar.
+    await linkOperationCustomers(pool);
+    console.log('✓ Satış kayıtları müşteri kartlarına bağlandı');
 
     // SMS Rehberi tablosu (toplu SMS alıcı listesi)
     await pool.query(`

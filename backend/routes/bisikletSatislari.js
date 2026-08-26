@@ -14,10 +14,22 @@ const validatePayments = (total, values) => {
 };
 
 const ensureCustomer = async (client, name, phone) => {
-  const normalized = String(phone || '').replace(/[^0-9]/g, '');
-  if (!normalized) return;
-  const existing = await client.query("SELECT id FROM musteriler WHERE REGEXP_REPLACE(COALESCE(telefon, ''), '[^0-9]', '', 'g') = $1 ORDER BY id LIMIT 1", [normalized]);
-  if (!existing.rowCount) await client.query('INSERT INTO musteriler (ad_soyad, telefon, aktif) VALUES ($1, $2, TRUE)', [name || 'Hobi Grup Müşterisi', phone]);
+  const normalizedPhone = String(phone || '').replace(/[^0-9]/g, '');
+  const normalizedName = String(name || '').trim();
+  let existing;
+  if (normalizedPhone) {
+    existing = await client.query("SELECT id FROM musteriler WHERE REGEXP_REPLACE(COALESCE(telefon, ''), '[^0-9]', '', 'g') = $1 ORDER BY id LIMIT 1", [normalizedPhone]);
+  } else if (normalizedName && normalizedName !== '-') {
+    existing = await client.query("SELECT id FROM musteriler WHERE LOWER(TRIM(COALESCE(ad_soyad, ''))) = LOWER($1) ORDER BY id LIMIT 1", [normalizedName]);
+  } else {
+    return null;
+  }
+  if (existing.rowCount) return existing.rows[0].id;
+  const inserted = await client.query(
+    'INSERT INTO musteriler (ad_soyad, telefon, aktif) VALUES ($1, $2, TRUE) RETURNING id',
+    [normalizedName || 'Hobi Grup Müşterisi', normalizedPhone ? phone : null]
+  );
+  return inserted.rows[0].id;
 };
 
 // Tüm bisiklet satış kayıtlarını parçalarıyla birlikte getir
@@ -98,7 +110,7 @@ router.post('/', async (req, res) => {
 
     const { ad_soyad, telefon, odeme_sekli, nakit_tutar, kart_tutar, havale_tutar, aciklama, durum, odeme_detaylari, satis_tarihi, olusturan_kisi, parcalar = [] } = req.body;
     const olusturan_kullanici_id = req.user?.id || null;
-    await ensureCustomer(client, ad_soyad, telefon);
+    const musteriId = await ensureCustomer(client, ad_soyad, telefon);
 
     // Toplamları hesapla
     let toplam_maliyet = 0;
@@ -118,10 +130,10 @@ router.post('/', async (req, res) => {
     }
 
     const result = await client.query(
-      `INSERT INTO bisiklet_satislar (ad_soyad, telefon, odeme_sekli, aciklama, durum, odeme_detaylari, satis_tarihi, toplam_maliyet, toplam_satis, kar, odeme_tutari, olusturan_kullanici_id, olusturan_kisi, nakit_tutar, kart_tutar, havale_tutar, odeme_bilgisi_girildi)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, TRUE)
+      `INSERT INTO bisiklet_satislar (ad_soyad, telefon, odeme_sekli, aciklama, durum, odeme_detaylari, satis_tarihi, toplam_maliyet, toplam_satis, kar, odeme_tutari, olusturan_kullanici_id, olusturan_kisi, nakit_tutar, kart_tutar, havale_tutar, odeme_bilgisi_girildi, musteri_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, TRUE, $17)
        RETURNING *`,
-      [ad_soyad, telefon, odeme_sekli, aciklama, durum || 'beklemede', odeme_detaylari, satis_tarihi || new Date(), toplam_maliyet, toplam_satis, kar, payment.paid, olusturan_kullanici_id, olusturan_kisi || null, ...payment.values]
+      [ad_soyad, telefon, odeme_sekli, aciklama, durum || 'beklemede', odeme_detaylari, satis_tarihi || new Date(), toplam_maliyet, toplam_satis, kar, payment.paid, olusturan_kullanici_id, olusturan_kisi || null, ...payment.values, musteriId]
     );
 
     const satisId = result.rows[0].id;
@@ -196,7 +208,7 @@ router.put('/:id', async (req, res) => {
 
     const { id } = req.params;
     const { ad_soyad, telefon, odeme_sekli, nakit_tutar, kart_tutar, havale_tutar, aciklama, durum, odeme_detaylari, satis_tarihi, olusturan_kisi, parcalar = [] } = req.body;
-    await ensureCustomer(client, ad_soyad, telefon);
+    const musteriId = await ensureCustomer(client, ad_soyad, telefon);
 
     // Mevcut durumu al
     const mevcutDurum = await client.query('SELECT durum FROM bisiklet_satislar WHERE id = $1', [id]);
@@ -234,10 +246,11 @@ router.put('/:id', async (req, res) => {
            kar = $10, odeme_tutari = $11, olusturan_kisi = COALESCE($12, olusturan_kisi),
            olusturan_kullanici_id = COALESCE(olusturan_kullanici_id, $13),
            nakit_tutar = $14, kart_tutar = $15, havale_tutar = $16, odeme_bilgisi_girildi = TRUE,
+           musteri_id = $17,
            updated_at = CURRENT_TIMESTAMP${tamamlamaTarihiQuery}
-       WHERE id = $17
+       WHERE id = $18
        RETURNING *`,
-      [ad_soyad, telefon, odeme_sekli, aciklama, durum || 'beklemede', odeme_detaylari, satis_tarihi, toplam_maliyet, toplam_satis, kar, payment.paid, olusturan_kisi || null, req.user?.id || null, ...payment.values, id]
+      [ad_soyad, telefon, odeme_sekli, aciklama, durum || 'beklemede', odeme_detaylari, satis_tarihi, toplam_maliyet, toplam_satis, kar, payment.paid, olusturan_kisi || null, req.user?.id || null, ...payment.values, musteriId, id]
     );
 
     if (result.rows.length === 0) {

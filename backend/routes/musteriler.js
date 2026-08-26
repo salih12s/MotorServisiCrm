@@ -42,8 +42,10 @@ const automaticReceivablesSelect = (customerAlias) => {
     0::NUMERIC(14,2)
   FROM motor_satislari ms
   LEFT JOIN motor_modelleri mm ON mm.id = ms.motor_modeli_id${customerSource}
-  WHERE REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g') <> ''
-    AND REGEXP_REPLACE(COALESCE(ms.musteri_telefon, ''), '[^0-9]', '', 'g') = REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g')
+  WHERE (ms.musteri_id = ${customerAlias}.id OR (
+      REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g') <> '' AND
+      REGEXP_REPLACE(COALESCE(ms.musteri_telefon, ''), '[^0-9]', '', 'g') = REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g')
+    ))
     AND LOWER(COALESCE(ms.durum, '')) NOT IN ('tamamlandi', 'iptal', 'iptal_edildi')
     AND COALESCE(ms.satis_fiyati, ms.fatura_fiyati, 0) > 0
   UNION ALL
@@ -54,8 +56,10 @@ const automaticReceivablesSelect = (customerAlias) => {
     CASE WHEN a.odeme_bilgisi_girildi THEN COALESCE(a.havale_tutar, 0) ELSE 0 END::NUMERIC(14,2),
     CASE WHEN a.odeme_bilgisi_girildi THEN 0 ELSE COALESCE(a.odeme_tutari, 0) END::NUMERIC(14,2)
   FROM aksesuarlar a${customerSource}
-  WHERE REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g') <> ''
-    AND REGEXP_REPLACE(COALESCE(a.telefon, ''), '[^0-9]', '', 'g') = REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g')
+  WHERE (a.musteri_id = ${customerAlias}.id OR (
+      REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g') <> '' AND
+      REGEXP_REPLACE(COALESCE(a.telefon, ''), '[^0-9]', '', 'g') = REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g')
+    ))
     AND LOWER(COALESCE(a.durum, '')) NOT IN ('tamamlandi', 'iptal', 'iptal_edildi')
     AND COALESCE(a.toplam_satis, 0) > 0
   UNION ALL
@@ -66,8 +70,10 @@ const automaticReceivablesSelect = (customerAlias) => {
     CASE WHEN b.odeme_bilgisi_girildi THEN COALESCE(b.havale_tutar, 0) ELSE 0 END::NUMERIC(14,2),
     CASE WHEN b.odeme_bilgisi_girildi THEN 0 ELSE COALESCE(b.odeme_tutari, 0) END::NUMERIC(14,2)
   FROM bisiklet_satislar b${customerSource}
-  WHERE REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g') <> ''
-    AND REGEXP_REPLACE(COALESCE(b.telefon, ''), '[^0-9]', '', 'g') = REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g')
+  WHERE (b.musteri_id = ${customerAlias}.id OR (
+      REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g') <> '' AND
+      REGEXP_REPLACE(COALESCE(b.telefon, ''), '[^0-9]', '', 'g') = REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g')
+    ))
     AND LOWER(COALESCE(b.durum, '')) NOT IN ('tamamlandi', 'iptal', 'iptal_edildi')
     AND COALESCE(b.toplam_satis, 0) > 0
 `;
