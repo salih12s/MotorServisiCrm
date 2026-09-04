@@ -254,7 +254,16 @@ function Layout() {
       </Box>
 
       {/* Navigation */}
-      <List sx={{ py: 1.5, px: 1.5, flex: 1, minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain' }}>
+      <List sx={{
+        py: 1.5,
+        px: 1.5,
+        flex: 1,
+        minHeight: 0,
+        overflowY: 'auto',
+        overscrollBehavior: 'contain',
+        scrollbarWidth: 'none',
+        '&::-webkit-scrollbar': { display: 'none' },
+      }}>
         {filteredMenuItems.map((item) => {
           const isActive = location.pathname === item.path || 
             (item.path !== '/' && location.pathname.startsWith(item.path));
@@ -400,30 +409,6 @@ function Layout() {
             primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem', color: 'white' }}
           />
         </ListItemButton>
-      </Box>
-
-      {/* Logo Alt Kısım */}
-      <Box
-        sx={{
-          p: 3,
-          display: { xs: 'none', sm: 'flex' },
-          justifyContent: 'center',
-          alignItems: 'center',
-          flexShrink: 0,
-        }}
-      >
-        <img 
-          src="/Demirkan.jpeg" 
-          alt="Logo" 
-          style={{ 
-            width: 100, 
-            height: 100, 
-            objectFit: 'cover',
-            borderRadius: '50%',
-            opacity: 0.15,
-            filter: 'grayscale(30%)',
-          }} 
-        />
       </Box>
 
       {/* User Info - Compact */}
