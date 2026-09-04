@@ -314,7 +314,8 @@ function IsEmirleri() {
         gap: 1,
         justifyContent: 'space-between'
       }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+        {isAdmin && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
           {/* Inline Stats - Tıklanabilir Filtreler */}
           <Chip 
             label={`Toplam: ${toplamIsEmri}`} 
@@ -405,18 +406,17 @@ function IsEmirleri() {
             size="small"
             sx={{ bgcolor: '#e3f2fd', color: '#1565c0', fontWeight: 600 }} 
           />
-          {isAdmin && (
-            <Chip 
-              label={`Kar: ${formatCurrency(filtreliToplamKar)}`} 
-              size="small"
-              sx={{ 
-                bgcolor: filtreliToplamKar >= 0 ? '#e8f5e9' : '#ffebee', 
-                color: filtreliToplamKar >= 0 ? '#2e7d32' : '#c62828', 
-                fontWeight: 600 
-              }} 
-            />
-          )}
-        </Box>
+          <Chip
+            label={`Kar: ${formatCurrency(filtreliToplamKar)}`}
+            size="small"
+            sx={{
+              bgcolor: filtreliToplamKar >= 0 ? '#e8f5e9' : '#ffebee',
+              color: filtreliToplamKar >= 0 ? '#2e7d32' : '#c62828',
+              fontWeight: 600
+            }}
+          />
+          </Box>
+        )}
         <Button
           variant="contained"
           startIcon={<AddIcon />}

@@ -2,6 +2,7 @@ const express = require('express');
 const pool = require('../config/db');
 const { logAktivite, getRequestInfo, ISLEM_TIPLERI } = require('../config/activityLogger');
 const { sourcePaymentJoin, sourcePaymentColumns } = require('../domain/sourcePaymentSummary');
+const { buildServiceVisibility } = require('../domain/serviceVisibility');
 
 const router = express.Router();
 
@@ -75,11 +76,17 @@ router.get('/', async (req, res) => {
       ${sourcePaymentJoin('SERVIS', 'ie')}
     `;
     
+    const visibility = buildServiceVisibility(req.user);
+
     // Pasife alınan müşterinin kayıtları silinmez; günlük servis listesinden gizlenir.
     const conditions = ['(ie.musteri_id IS NULL OR m.aktif IS DISTINCT FROM FALSE)'];
-    // İstatistik filtreleri müşteri görünürlüğünden bağımsızdır.
     const statsConditions = [];
-    const params = [];
+    const params = [...visibility.params];
+
+    if (visibility.condition) {
+      conditions.push(visibility.condition);
+      statsConditions.push(visibility.condition);
+    }
     
     if (tarih) {
       params.push(tarih);
@@ -124,6 +131,7 @@ router.get('/', async (req, res) => {
     
     const whereClause = conditions.length > 0 ? ' WHERE ' + conditions.join(' AND ') : '';
     const statsWhereClause = statsConditions.length > 0 ? ' WHERE ' + statsConditions.join(' AND ') : '';
+    const baseStatsWhereClause = visibility.condition ? ` WHERE ${visibility.condition}` : '';
     query += ` GROUP BY ie.id, m.id, cari_odeme.nakit_tutar, cari_odeme.kart_tutar, cari_odeme.havale_tutar, cari_odeme.toplam ORDER BY ie.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
 
     const listParams = [...params, limit, (page - 1) * limit];
@@ -139,7 +147,7 @@ router.get('/', async (req, res) => {
         COUNT(*) FILTER (WHERE ie.durum = 'tamamlandi')::int AS tamamlandi,
         COUNT(*) FILTER (WHERE ie.durum = 'iptal_edildi')::int AS iptal_edildi,
         COALESCE(SUM(${serviceTotalExpression}), 0) AS toplam_tutar
-        FROM is_emirleri ie`),
+        FROM is_emirleri ie${baseStatsWhereClause}`, visibility.params),
       pool.query(`SELECT COALESCE(SUM(ie.kar), 0) AS toplam_kar FROM is_emirleri ie${statsWhereClause}`, params),
     ]);
     const total = countResult.rows[0].total;
@@ -169,13 +177,14 @@ router.get('/next-fis-no/preview', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    const visibility = buildServiceVisibility(req.user, 'ie', 2);
     
     const isEmriResult = await pool.query(
       `SELECT ie.*, ${sourcePaymentColumns('ie', serviceTotalExpression)}
        FROM is_emirleri ie
        ${sourcePaymentJoin('SERVIS', 'ie')}
-       WHERE ie.id = $1`,
-      [id]
+       WHERE ie.id = $1${visibility.condition ? ` AND ${visibility.condition}` : ''}`,
+      [id, ...visibility.params]
     );
     
     if (isEmriResult.rows.length === 0) {
@@ -350,8 +359,16 @@ router.put('/:id', async (req, res) => {
     const { id } = req.params;
     
     // İş emri durumunu kontrol et - tamamlandıysa personel düzenlemesin
-    const mevcutIsEmri = await client.query('SELECT durum, gercek_toplam_ucret FROM is_emirleri WHERE id = $1', [id]);
-    if (mevcutIsEmri.rows.length > 0 && mevcutIsEmri.rows[0].durum === 'tamamlandi') {
+    const visibility = buildServiceVisibility(req.user, 'ie', 2);
+    const mevcutIsEmri = await client.query(
+      `SELECT ie.durum, ie.gercek_toplam_ucret FROM is_emirleri ie WHERE ie.id = $1${visibility.condition ? ` AND ${visibility.condition}` : ''}`,
+      [id, ...visibility.params]
+    );
+    if (mevcutIsEmri.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: 'İş emri bulunamadı' });
+    }
+    if (mevcutIsEmri.rows[0].durum === 'tamamlandi') {
       if (req.user?.rol !== 'admin') {
         await client.query('ROLLBACK');
         return res.status(403).json({ message: 'Tamamlanmış iş emirlerini düzenleyemezsiniz.' });
@@ -541,6 +558,15 @@ router.post('/:id/parcalar', async (req, res) => {
     
     const { id } = req.params;
     const { parca_kodu, takilan_parca, adet, birim_fiyat, maliyet } = req.body;
+    const visibility = buildServiceVisibility(req.user, 'ie', 2);
+    const isEmriResult = await client.query(
+      `SELECT ie.id FROM is_emirleri ie WHERE ie.id = $1${visibility.condition ? ` AND ${visibility.condition}` : ''}`,
+      [id, ...visibility.params]
+    );
+    if (isEmriResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: 'İş emri bulunamadı' });
+    }
     
     const toplam_fiyat = (adet || 1) * (birim_fiyat || 0);
     const toplam_maliyet = (adet || 1) * (maliyet || 0);
@@ -593,8 +619,16 @@ router.delete('/:id/parcalar/:parcaId', async (req, res) => {
     const { id, parcaId } = req.params;
     
     // İş emri durumunu kontrol et - tamamlandıysa personel silemesin
-    const isEmriResult = await client.query('SELECT durum FROM is_emirleri WHERE id = $1', [id]);
-    if (isEmriResult.rows.length > 0 && isEmriResult.rows[0].durum === 'tamamlandi') {
+    const visibility = buildServiceVisibility(req.user, 'ie', 2);
+    const isEmriResult = await client.query(
+      `SELECT ie.durum FROM is_emirleri ie WHERE ie.id = $1${visibility.condition ? ` AND ${visibility.condition}` : ''}`,
+      [id, ...visibility.params]
+    );
+    if (isEmriResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: 'İş emri bulunamadı' });
+    }
+    if (isEmriResult.rows[0].durum === 'tamamlandi') {
       if (req.user?.rol !== 'admin') {
         await client.query('ROLLBACK');
         return res.status(403).json({ message: 'Tamamlanmış iş emirlerinde parça silemezsiniz.' });
@@ -637,11 +671,13 @@ router.delete('/:id/parcalar/:parcaId', async (req, res) => {
 router.patch('/:id/tamamla', async (req, res) => {
   try {
     const { id } = req.params;
+    const visibility = buildServiceVisibility(req.user, 'is_emirleri', 3);
     
-    await pool.query(
-      'UPDATE is_emirleri SET durum = $1, tamamlama_tarihi = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-      ['tamamlandi', id]
+    const result = await pool.query(
+      `UPDATE is_emirleri SET durum = $1, tamamlama_tarihi = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $2${visibility.condition ? ` AND ${visibility.condition}` : ''} RETURNING id`,
+      ['tamamlandi', id, ...visibility.params]
     );
+    if (result.rows.length === 0) return res.status(404).json({ message: 'İş emri bulunamadı' });
     
     res.json({ message: 'İş emri tamamlandı' });
   } catch (error) {

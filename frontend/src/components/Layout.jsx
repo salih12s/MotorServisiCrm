@@ -107,9 +107,7 @@ const menuItems = [
     title: 'Cari Hesap',
     path: '/cari-hesap',
     icon: <AccountBalanceWalletIcon />,
-    roles: ['admin', 'user', 'personel'],
-    hideForAksesuarOnly: true,
-    hideForMotorSatisOnly: true,
+    roles: ['admin'],
   },
   {
     title: 'Toplu SMS',
@@ -210,7 +208,7 @@ function Layout() {
   };
 
   const drawer = (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: themeColors.secondary, overflow: 'hidden', transition: 'background-color 0.3s ease' }}>
+    <Box sx={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', bgcolor: themeColors.secondary, overflow: 'hidden', transition: 'background-color 0.3s ease' }}>
       {/* Logo */}
       <Box 
         sx={{ 
@@ -256,7 +254,7 @@ function Layout() {
       </Box>
 
       {/* Navigation */}
-      <List sx={{ py: 1.5, px: 1.5, flex: 1 }}>
+      <List sx={{ py: 1.5, px: 1.5, flex: 1, minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain' }}>
         {filteredMenuItems.map((item) => {
           const isActive = location.pathname === item.path || 
             (item.path !== '/' && location.pathname.startsWith(item.path));
@@ -380,7 +378,7 @@ function Layout() {
       </List>
 
       {/* Anasayfaya Git */}
-      <Box sx={{ px: 1.5, pb: 0.5 }}>
+      <Box sx={{ px: 1.5, pb: 0.5, flexShrink: 0 }}>
         <ListItemButton
           onClick={() => {
             navigate('/');
@@ -408,9 +406,10 @@ function Layout() {
       <Box
         sx={{
           p: 3,
-          display: 'flex',
+          display: { xs: 'none', sm: 'flex' },
           justifyContent: 'center',
           alignItems: 'center',
+          flexShrink: 0,
         }}
       >
         <img 
@@ -435,6 +434,7 @@ function Layout() {
           display: 'flex',
           alignItems: 'center',
           gap: 1.5,
+          flexShrink: 0,
         }}
       >
         <Avatar 
@@ -584,6 +584,8 @@ function Layout() {
             '& .MuiDrawer-paper': { 
               boxSizing: 'border-box', 
               width: drawerWidth,
+              height: '100dvh',
+              overflow: 'hidden',
               border: 'none',
             },
           }}

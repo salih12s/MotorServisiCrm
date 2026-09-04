@@ -242,6 +242,7 @@ router.get('/', async (req, res) => {
 
 // Inactive customers remain included by design: visibility must never erase receivables.
 router.get('/finans/ozet', async (req, res) => {
+  if (!requireAdmin(req, res)) return;
   try {
     const result = await pool.query(`
       WITH bakiyeler AS (
@@ -265,6 +266,7 @@ router.get('/finans/ozet', async (req, res) => {
 });
 
 router.get('/finans/alacaklar', async (req, res) => {
+  if (!requireAdmin(req, res)) return;
   try {
     const source = String(req.query.kaynak || 'tumu').toLowerCase();
     const includeAllPending = String(req.query.bekleyenlerin_tumu || '').toLowerCase() === 'true';
@@ -299,6 +301,7 @@ router.get('/finans/alacaklar', async (req, res) => {
 });
 
 router.post('/finans/tahsilat', async (req, res) => {
+  if (!requireAdmin(req, res)) return;
   const customerId = parsePositiveId(req.body.musteri_id);
   const referenceId = parsePositiveId(req.body.referans_id);
   const source = String(req.body.kaynak || '').toUpperCase();

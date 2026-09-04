@@ -220,7 +220,7 @@ function AppRoutes() {
         <Route path="is-emirleri/:id" element={<NormalRoute><IsEmriDetay /></NormalRoute>} />
         <Route path="is-emirleri/:id/duzenle" element={<NormalRoute><IsEmriForm /></NormalRoute>} />
         <Route path="musteriler" element={<NormalRoute><Musteriler /></NormalRoute>} />
-        <Route path="cari-hesap" element={<NormalRoute><CariHesap /></NormalRoute>} />
+        <Route path="cari-hesap" element={<AdminRoute><CariHesap /></AdminRoute>} />
         <Route 
           path="raporlar" 
           element={
