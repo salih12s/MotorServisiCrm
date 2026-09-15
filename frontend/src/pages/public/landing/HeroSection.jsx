@@ -300,13 +300,19 @@ function HeroSection() {
               Hobi Grup • Bisiklet & E-Bike
             </Button>
 
-            <Box sx={{ position: 'relative' }}>
+            <Box
+              sx={{
+                position: 'relative',
+                pt: { xs: 1.25, sm: 0 },
+                overflow: 'visible',
+              }}
+            >
               <Box
                 sx={{
                   position: 'absolute',
-                  top: -12,
-                  right: -8,
-                  zIndex: 1,
+                  top: { xs: 0, sm: -12 },
+                  right: { xs: 12, sm: -8 },
+                  zIndex: 3,
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 0.4,
@@ -319,6 +325,7 @@ function HeroSection() {
                   fontWeight: 800,
                   fontSize: { xs: '0.64rem', sm: '0.7rem' },
                   letterSpacing: { xs: 0.6, sm: 0.8 },
+                  whiteSpace: 'nowrap',
                   boxShadow: '0 4px 18px rgba(245,180,49,0.55)',
                   pointerEvents: 'none',
                   animation: 'heroYeniPulse 2s ease-in-out infinite',
@@ -345,6 +352,8 @@ function HeroSection() {
                   textTransform: 'none',
                   fontSize: { xs: '0.95rem', md: '1.05rem' },
                   width: '100%',
+                  position: 'relative',
+                  zIndex: 1,
                   backdropFilter: 'blur(10px)',
                   background: 'linear-gradient(135deg, rgba(126,31,31,0.55) 0%, rgba(229,115,115,0.24) 100%)',
                   boxShadow: '0 8px 28px rgba(229,115,115,0.15)',
