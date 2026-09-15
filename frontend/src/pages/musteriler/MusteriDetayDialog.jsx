@@ -61,6 +61,7 @@ const sourceLabels = {
   MOTOR_SATISI: 'Motor Satışı',
   AKSESUAR: 'Aksesuar',
   HOBI_GRUP: 'Hobi Grup / Bisiklet',
+  YEDEK_PARCA: 'Yedek Parça',
   MANUEL: 'Manuel',
   TERS_KAYIT: 'Ters Kayıt',
 };

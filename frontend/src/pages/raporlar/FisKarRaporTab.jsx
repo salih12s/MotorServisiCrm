@@ -22,6 +22,7 @@ import {
   ShoppingBag as ShoppingBagIcon,
   TwoWheeler as TwoWheelerIcon,
   PedalBike as PedalBikeIcon,
+  Build as BuildIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -44,6 +45,7 @@ const FisKarRaporTab = ({
   handleViewAksesuarDetail,
   handleViewMotorSatisDetail,
   handleViewBisikletDetail,
+  handleViewYedekParcaDetail,
 }) => (
   <Box>
     {/* Tarih Aralığı Seçici */}
@@ -218,6 +220,38 @@ const FisKarRaporTab = ({
                   <Typography variant="body2" fontWeight={700}>Kar:</Typography>
                   <Typography variant="h6" fontWeight={700} sx={{ color: (fisKarRapor.bisiklet_toplam?.kar || 0) >= 0 ? '#2e7d32' : '#c62828' }}>
                     {formatCurrency(fisKarRapor.bisiklet_toplam?.kar || 0)}
+                  </Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Yedek Parça Satışları Özet */}
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ height: '100%', borderTop: '4px solid #8B1E1E' }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <BuildIcon sx={{ color: '#8B1E1E' }} />
+                  <Typography variant="h6" fontWeight={700}>Yedek Parça</Typography>
+                  <Chip label={`${fisKarRapor.yedek_parcalar?.length || 0}`} size="small" sx={{ ml: 'auto' }} />
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="body2" color="text.secondary">Gelir:</Typography>
+                  <Typography fontWeight={600} sx={{ color: '#2e7d32' }}>
+                    {formatCurrency(fisKarRapor.yedek_parca_toplam?.gelir || 0)}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="body2" color="text.secondary">Maliyet:</Typography>
+                  <Typography fontWeight={600} sx={{ color: '#c62828' }}>
+                    {formatCurrency(fisKarRapor.yedek_parca_toplam?.maliyet || 0)}
+                  </Typography>
+                </Box>
+                <Divider sx={{ my: 1 }} />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="body2" fontWeight={700}>Kar:</Typography>
+                  <Typography variant="h6" fontWeight={700} sx={{ color: (fisKarRapor.yedek_parca_toplam?.kar || 0) >= 0 ? '#2e7d32' : '#c62828' }}>
+                    {formatCurrency(fisKarRapor.yedek_parca_toplam?.kar || 0)}
                   </Typography>
                 </Box>
               </CardContent>
@@ -554,6 +588,93 @@ const FisKarRaporTab = ({
                             }}
                           >
                             {formatCurrency(b.kar)}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </Card>
+
+        {/* Yedek Parça Satışları Tablosu */}
+        <Card sx={{ mb: 3 }}>
+          <CardContent sx={{ p: 0 }}>
+            <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 1 }}>
+              <BuildIcon sx={{ color: '#8B1E1E' }} />
+              <Typography variant="h6" fontWeight={700} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' }, color: '#8B1E1E' }}>
+                Yedek Parça Satışları
+              </Typography>
+              <Chip
+                label={`${fisKarRapor.yedek_parcalar?.length || 0} kayıt`}
+                size="small"
+                sx={{ bgcolor: '#fbe9e7', color: '#8B1E1E', ml: 'auto' }}
+              />
+              {fisKarRapor.yedek_parca_toplam && (
+                <Chip
+                  label={`Kar: ${formatCurrency(fisKarRapor.yedek_parca_toplam.kar)}`}
+                  size="small"
+                  sx={{ bgcolor: '#e8f5e9', color: '#2e7d32' }}
+                />
+              )}
+            </Box>
+            <TableContainer sx={{ overflowX: 'auto' }}>
+              <Table sx={{ minWidth: { xs: 600, sm: '100%' } }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 700 }}>Fiş No</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Müşteri</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Ödeme Şekli</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 700 }}>Tarih</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700 }}>Satış</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700 }}>Maliyet</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700 }}>Kar</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {(fisKarRapor.yedek_parcalar || []).length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                        <BuildIcon sx={{ fontSize: 40, color: 'text.disabled', mb: 1 }} />
+                        <Typography color="text.secondary">Bu tarih aralığında yedek parça satışı bulunmuyor</Typography>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    (fisKarRapor.yedek_parcalar || []).map((y) => (
+                      <TableRow
+                        key={y.id}
+                        hover
+                        onDoubleClick={() => handleViewYedekParcaDetail && handleViewYedekParcaDetail(y)}
+                        sx={{ cursor: isAdmin ? 'pointer' : 'default' }}
+                      >
+                        <TableCell>
+                          <Typography fontWeight={700} sx={{ color: '#8B1E1E' }}>{y.fis_no}</Typography>
+                        </TableCell>
+                        <TableCell>{y.musteri_ad_soyad}</TableCell>
+                        <TableCell>{y.marka || '-'}</TableCell>
+                        <TableCell align="center">
+                          <Typography variant="body2">
+                            {format(new Date(y.created_at), 'dd.MM.yyyy', { locale: tr })}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography sx={{ color: '#2e7d32' }}>
+                            {formatCurrency(y.gercek_toplam_ucret)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography sx={{ color: '#c62828' }}>
+                            {formatCurrency(y.toplam_maliyet)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography
+                            fontWeight={700}
+                            sx={{ color: parseFloat(y.kar) >= 0 ? '#2e7d32' : '#c62828' }}
+                          >
+                            {formatCurrency(y.kar)}
                           </Typography>
                         </TableCell>
                       </TableRow>

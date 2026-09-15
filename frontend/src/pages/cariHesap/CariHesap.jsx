@@ -9,7 +9,7 @@ import {
   Payments as PaymentsIcon, ReceiptLong as ReceiptIcon, Search as SearchIcon,
 } from '@mui/icons-material';
 import {
-  aksesuarService, bisikletSatisService, isEmriService, motorSatisService, musteriService,
+  aksesuarService, bisikletSatisService, isEmriService, motorSatisService, musteriService, yedekParcaSatisService,
 } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import MusteriDetayDialog from '../musteriler/MusteriDetayDialog';
@@ -20,12 +20,14 @@ const sourceInfo = {
   SERVIS: { label: 'Servis', color: '#ca8a04', bg: '#fefce8' },
   AKSESUAR: { label: 'Aksesuar', color: '#7c3aed', bg: '#f5f3ff' },
   HOBI_GRUP: { label: 'Hobi Grup', color: '#0891b2', bg: '#ecfeff' },
+  YEDEK_PARCA: { label: 'Yedek Parça', color: '#8B1E1E', bg: '#fef2f2' },
 };
 const completionService = {
   MOTOR_SATISI: motorSatisService,
   SERVIS: isEmriService,
   AKSESUAR: aksesuarService,
   HOBI_GRUP: bisikletSatisService,
+  YEDEK_PARCA: yedekParcaSatisService,
 };
 
 function SummaryCard({ label, value, icon, color }) {
@@ -131,7 +133,7 @@ function CariHesap() {
     <Card sx={{ mb: 2 }}><CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}><Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
       <Tabs value={filter} onChange={(_, value) => setFilter(value)} variant="scrollable" scrollButtons="auto">
         <Tab value="tumu" label="Tümü" /><Tab value="satis" label="Satış" /><Tab value="servis" label="Servis" />
-        <Tab value="hobi" label="Hobi Grup" /><Tab value="aksesuar" label="Aksesuar" />
+        <Tab value="hobi" label="Hobi Grup" /><Tab value="aksesuar" label="Aksesuar" /><Tab value="yedek" label="Yedek Parça" />
       </Tabs>
       <TextField size="small" placeholder="Müşteri, telefon veya işlem ara" value={search} onChange={(event) => setSearch(event.target.value)} sx={{ width: { xs: '100%', sm: 340 } }}
         InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment>, endAdornment: search ? <InputAdornment position="end"><IconButton size="small" onClick={() => setSearch('')}><ClearIcon fontSize="small" /></IconButton></InputAdornment> : null }} />

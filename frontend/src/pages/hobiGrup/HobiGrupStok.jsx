@@ -86,6 +86,7 @@ const ProductPhotoPicker = React.memo(function ProductPhotoPicker({
   onImageChange,
   onRemove,
   onSetMain,
+  inputId = 'bisiklet-resim-input',
 }) {
   return (
     <Box>
@@ -180,7 +181,7 @@ const ProductPhotoPicker = React.memo(function ProductPhotoPicker({
         <Tooltip title="Fotoğraf ekle (birden fazla seçebilirsiniz)" arrow>
           <Box
             component="label"
-            htmlFor="bisiklet-resim-input"
+            htmlFor={inputId}
             sx={{
               width: 90,
               height: 90,
@@ -205,7 +206,7 @@ const ProductPhotoPicker = React.memo(function ProductPhotoPicker({
           </Box>
         </Tooltip>
         <input
-          id="bisiklet-resim-input"
+          id={inputId}
           type="file"
           accept="image/*"
           multiple
@@ -232,6 +233,7 @@ const StockResults = React.memo(function StockResults({
   totalInventory,
   onEdit,
   onDelete,
+  getImageUrl,
 }) {
   if (loading) {
     return (
@@ -260,7 +262,7 @@ const StockResults = React.memo(function StockResults({
                   <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
                     <Avatar
                       variant="rounded"
-                      src={stok.resim || (stok.resim_var ? getPublicBisikletImageUrl(stok.id, stok.updated_at) : undefined)}
+                      src={stok.resim || (stok.resim_var ? getImageUrl(stok.id, stok.updated_at) : undefined)}
                       sx={{ width: 48, height: 48, bgcolor: 'rgba(0,0,0,0.06)' }}
                     >
                       <ImageIcon sx={{ color: 'rgba(0,0,0,0.3)' }} />
@@ -317,7 +319,7 @@ const StockResults = React.memo(function StockResults({
                 {stocks.map((stok) => (
                   <TableRow key={stok.id} hover>
                     <TableCell>
-                      <Avatar variant="rounded" src={stok.resim || (stok.resim_var ? getPublicBisikletImageUrl(stok.id, stok.updated_at) : undefined)} sx={{ width: 40, height: 40, bgcolor: 'rgba(0,0,0,0.06)' }}>
+                      <Avatar variant="rounded" src={stok.resim || (stok.resim_var ? getImageUrl(stok.id, stok.updated_at) : undefined)} sx={{ width: 40, height: 40, bgcolor: 'rgba(0,0,0,0.06)' }}>
                         <ImageIcon fontSize="small" sx={{ color: 'rgba(0,0,0,0.3)' }} />
                       </Avatar>
                     </TableCell>
@@ -365,7 +367,16 @@ const StockResults = React.memo(function StockResults({
   );
 });
 
-function HobiGrupStok() {
+function HobiGrupStok({
+  stokService = bisikletStokService,
+  getImageUrl = getPublicBisikletImageUrl,
+  inputId = 'bisiklet-resim-input',
+  searchPlaceholder = 'Stok kodu veya ürün adı ile ara... (bisiklet, e-bike...)',
+  newProductTitle = 'Yeni Bisiklet / E-Bike Ekle',
+  productPlaceholder = 'Örn: Musatti E-Bike X1 250W',
+  descriptionPlaceholder = 'Motor gücü, menzil, vites, jant, batarya vb. özellikler...',
+  createSuccessMessage = 'Yeni ürün başarıyla eklendi. Hobi Grup sayfasında yayında.',
+}) {
   const [stoklar, setStoklar] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -405,7 +416,7 @@ function HobiGrupStok() {
     const requestId = ++requestIdRef.current;
     try {
       setLoading(true);
-      const response = await bisikletStokService.getAll({ page, limit: 25, search: debouncedSearch });
+      const response = await stokService.getAll({ page, limit: 25, search: debouncedSearch });
       if (requestId !== requestIdRef.current) return;
       setStoklar(response.data?.data || []);
       setTotalItems(response.data?.pagination?.total || 0);
@@ -416,7 +427,7 @@ function HobiGrupStok() {
     } finally {
       if (requestId === requestIdRef.current) setLoading(false);
     }
-  }, [page, debouncedSearch]);
+  }, [page, debouncedSearch, stokService]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -438,7 +449,7 @@ function HobiGrupStok() {
       setSaving(true);
       let detayliStok = stok;
       try {
-        const response = await bisikletStokService.getById(stok.id);
+        const response = await stokService.getById(stok.id);
         detayliStok = response.data;
       } catch (error) {
         setError(error.response?.data?.message || 'Stok detayı yüklenemedi');
@@ -495,7 +506,7 @@ function HobiGrupStok() {
     }
     setError('');
     setDialogOpen(true);
-  }, []);
+  }, [stokService]);
 
   const handleCloseDialog = useCallback(() => {
     setDialogOpen(false);
@@ -568,11 +579,11 @@ function HobiGrupStok() {
         resim: formData.resim || formData.resimler?.[0] || '',
       };
       if (editingStok) {
-        await bisikletStokService.update(editingStok.id, payload);
+        await stokService.update(editingStok.id, payload);
         setSuccessMsg('Ürün başarıyla güncellendi. Vitrin fotoğrafı dahil değişiklikler kaydedildi.');
       } else {
-        await bisikletStokService.create(payload);
-        setSuccessMsg('Yeni ürün başarıyla eklendi. Hobi Grup sayfasında yayında.');
+        await stokService.create(payload);
+        setSuccessMsg(createSuccessMessage);
       }
       handleCloseDialog();
       loadStoklar();
@@ -586,13 +597,13 @@ function HobiGrupStok() {
   const handleDelete = useCallback(async (id) => {
     if (window.confirm('Bu stok kaydını silmek istediğinizden emin misiniz?')) {
       try {
-        await bisikletStokService.delete(id);
+        await stokService.delete(id);
         loadStoklar();
       } catch (error) {
         console.error('Silme hatası:', error);
       }
     }
-  }, [loadStoklar]);
+  }, [loadStoklar, stokService]);
 
   return (
     <Box>
@@ -602,12 +613,12 @@ function HobiGrupStok() {
           <Chip
             label={`Toplam: ${totalItems} ürün`}
             size="small"
-            sx={{ bgcolor: '#1B5E20', color: 'white', fontWeight: 600 }}
+            sx={{ bgcolor: themeColors.primaryDark, color: 'white', fontWeight: 600 }}
           />
           <Chip
             label={`Envanter: ₺${formatCurrency(toplamEnvanter)}`}
             size="small"
-            sx={{ bgcolor: '#e8f5e9', color: '#2e7d32', fontWeight: 600 }}
+            sx={{ bgcolor: `${themeColors.primary}18`, color: themeColors.primaryDark, fontWeight: 600 }}
           />
         </Box>
         <Button
@@ -626,7 +637,7 @@ function HobiGrupStok() {
           <TextField
             fullWidth
             size="small"
-            placeholder="Stok kodu veya ürün adı ile ara... (bisiklet, e-bike...)"
+            placeholder={searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             InputProps={{
@@ -656,6 +667,7 @@ function HobiGrupStok() {
         totalInventory={toplamEnvanter}
         onEdit={handleOpenDialog}
         onDelete={handleDelete}
+        getImageUrl={getImageUrl}
       />
 
       {totalPages > 1 && (
@@ -683,7 +695,7 @@ function HobiGrupStok() {
         }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <PedalBikeIcon />
-            <Typography variant="h6">{editingStok ? 'Ürün Düzenle' : 'Yeni Bisiklet / E-Bike Ekle'}</Typography>
+            <Typography variant="h6">{editingStok ? 'Ürün Düzenle' : newProductTitle}</Typography>
           </Box>
           <IconButton onClick={handleCloseDialog} sx={{ color: 'white' }}>
             <CloseIcon />
@@ -700,6 +712,7 @@ function HobiGrupStok() {
               onImageChange={handleImageChange}
               onRemove={handleRemoveImage}
               onSetMain={handleSetMainImage}
+              inputId={inputId}
             />
             {/* Stok Kodu + Birimi */}
             <Box sx={{ display: 'flex', gap: 2 }}>
@@ -730,7 +743,7 @@ function HobiGrupStok() {
               value={formData.stok_adi}
               onChange={handleChange}
               required
-              placeholder="Örn: Musatti E-Bike X1 250W"
+              placeholder={productPlaceholder}
             />
             <TextField
               fullWidth
@@ -742,7 +755,7 @@ function HobiGrupStok() {
               multiline
               minRows={2}
               maxRows={6}
-              placeholder="Motor gücü, menzil, vites, jant, batarya vb. özellikler..."
+              placeholder={descriptionPlaceholder}
               helperText="Açıklama varsa ürün kartında kısaca, detay penceresinde ise tamamı görünür."
             />
             <Box sx={{ display: 'flex', gap: 2 }}>

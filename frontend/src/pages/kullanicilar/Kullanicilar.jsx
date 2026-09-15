@@ -33,7 +33,6 @@ import {
   useMediaQuery,
   useTheme,
   Switch,
-  FormControlLabel,
 } from '@mui/material';
 import {
   CheckCircle as CheckCircleIcon,
@@ -170,8 +169,8 @@ function Kullanicilar() {
   const handleDelete = async () => {
     if (!userToDelete) return;
     try {
-      await authService.deleteUser(userToDelete.id);
-      setSnackbar({ open: true, message: 'Kullanıcı silindi', severity: 'success' });
+      const response = await authService.deleteUser(userToDelete.id);
+      setSnackbar({ open: true, message: response.data?.message || 'Kullanıcı silindi', severity: 'success' });
       setDeleteDialogOpen(false);
       setUserToDelete(null);
       loadData();
@@ -846,6 +845,9 @@ function Kullanicilar() {
         <DialogContent>
           <Typography>
             <strong>{userToDelete?.ad_soyad}</strong> kullanıcısını silmek istediğinize emin misiniz?
+          </Typography>
+          <Typography color="text.secondary" sx={{ mt: 1 }}>
+            Kullanıcının hesabı kaldırılır ve sisteme tekrar giremez. Oluşturduğu iş emirleri, satışlar ve rapor kayıtları korunur.
           </Typography>
         </DialogContent>
         <DialogActions>

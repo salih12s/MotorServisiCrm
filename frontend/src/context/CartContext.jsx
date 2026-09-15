@@ -4,7 +4,7 @@ const CartContext = createContext(null);
 
 const STORAGE_KEY = 'demirkan_sepet';
 
-// Aksesuar ve bisiklet ürünlerinin id'leri çakışabileceği için sepet öğeleri
+// Farklı kataloglardaki ürün id'leri çakışabileceği için sepet öğeleri
 // tür + id birleşimiyle anahtarlanır. Eski kayıtlar (key alanı olmayan) aksesuar sayılır.
 export const cartItemKey = (item) => item.key || `aksesuar:${item.id}`;
 
@@ -33,7 +33,7 @@ export function CartProvider({ children }) {
 
   // Ürünü sepete ekler; aynı ürün varsa adedini artırır.
   // Stoktaki miktar (mevcut) aşılamaz; aşılırsa { ok:false, reason:'limit' } döner.
-  // tur: 'aksesuar' (varsayılan) veya 'bisiklet' - görsel ve anahtarlama için kullanılır.
+  // tur katalog türünü belirtir; görsel seçimi ve benzersiz anahtarlama için kullanılır.
   const addItem = useCallback((urun, adet = 1, tur = 'aksesuar') => {
     if (!urun || urun.id == null) return { ok: false, reason: 'invalid' };
     const stok = Number(urun.mevcut);

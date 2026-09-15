@@ -16,6 +16,7 @@ import {
   ShoppingBag as ShoppingBagIcon,
   TwoWheeler as TwoWheelerIcon,
   PedalBike as PedalBikeIcon,
+  Build as BuildIcon,
   AccountBalanceWallet as AccountBalanceWalletIcon,
 } from '@mui/icons-material';
 import { raporService, authService, motorSatisService } from '../../services/api';
@@ -34,7 +35,7 @@ import BorcRaporTab from './BorcRaporTab';
 function Raporlar() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const { setAksesuarTheme, setMotorSatisTheme, setHobiGrupTheme, setDefaultTheme } = useCustomTheme();
+  const { setAksesuarTheme, setMotorSatisTheme, setHobiGrupTheme, setYedekParcaTheme, setDefaultTheme } = useCustomTheme();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const [activeTab, setActiveTab] = useState(0);
@@ -73,6 +74,14 @@ function Raporlar() {
   const [selectedBisiklet, setSelectedBisiklet] = useState(null);
   const [bisikletDetailModalOpen, setBisikletDetailModalOpen] = useState(false);
   const [selectedBisikletKullanici, setSelectedBisikletKullanici] = useState('');
+
+  // Yedek Parça Rapor State
+  const [yedekParcaSelectedDate, setYedekParcaSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [yedekParcaEndDate, setYedekParcaEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [yedekParcaRapor, setYedekParcaRapor] = useState(null);
+  const [selectedYedekParca, setSelectedYedekParca] = useState(null);
+  const [yedekParcaDetailModalOpen, setYedekParcaDetailModalOpen] = useState(false);
+  const [selectedYedekParcaKullanici, setSelectedYedekParcaKullanici] = useState('');
 
   // Sıralama State'leri
   const [isEmriSortField, setIsEmriSortField] = useState('created_at');
@@ -126,11 +135,14 @@ function Raporlar() {
     } else if (activeTab === 3) {
       // Hobi Grup sekmesi - yeşil tema
       setHobiGrupTheme();
+    } else if (activeTab === 4) {
+      // Yedek Parça sekmesi - koyu kırmızı tema
+      setYedekParcaTheme();
     } else {
       // Diğer sekmeler - varsayılan tema
       setDefaultTheme();
     }
-  }, [activeTab, setAksesuarTheme, setMotorSatisTheme, setHobiGrupTheme, setDefaultTheme]);
+  }, [activeTab, setAksesuarTheme, setMotorSatisTheme, setHobiGrupTheme, setYedekParcaTheme, setDefaultTheme]);
 
   // Sayfa kapanınca varsayılan temaya dön
   useEffect(() => {
@@ -149,10 +161,12 @@ function Raporlar() {
     } else if (activeTab === 3) {
       loadBisikletRapor();
     } else if (activeTab === 4) {
+      loadYedekParcaRapor();
+    } else if (activeTab === 5) {
       loadFisKarRapor();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, selectedDate, endDate, fisKarBaslangic, fisKarBitis, aksesuarSelectedDate, aksesuarEndDate, bisikletSelectedDate, bisikletEndDate, motorSatisSelectedDate, motorSatisEndDate]);
+  }, [activeTab, selectedDate, endDate, fisKarBaslangic, fisKarBitis, aksesuarSelectedDate, aksesuarEndDate, bisikletSelectedDate, bisikletEndDate, yedekParcaSelectedDate, yedekParcaEndDate, motorSatisSelectedDate, motorSatisEndDate]);
 
   const loadGunlukRapor = async () => {
     try {
@@ -260,6 +274,18 @@ function Raporlar() {
     }
   };
 
+  const loadYedekParcaRapor = async () => {
+    try {
+      setLoading(true);
+      const response = await raporService.getYedekParcaAralik(yedekParcaSelectedDate, yedekParcaEndDate);
+      setYedekParcaRapor(response.data);
+    } catch (error) {
+      console.error('Yedek parça rapor hatası:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleViewBisikletDetail = async (satis) => {
     if (!isAdmin) return;
     try {
@@ -268,6 +294,17 @@ function Raporlar() {
       setBisikletDetailModalOpen(true);
     } catch (error) {
       console.error('Hobi grup detay hatası:', error);
+    }
+  };
+
+  const handleViewYedekParcaDetail = async (satis) => {
+    if (!isAdmin) return;
+    try {
+      const response = await raporService.getYedekParcaDetay(satis.id);
+      setSelectedYedekParca(response.data);
+      setYedekParcaDetailModalOpen(true);
+    } catch (error) {
+      console.error('Yedek parça detay hatası:', error);
     }
   };
 
@@ -481,6 +518,42 @@ function Raporlar() {
       }
     : bisikletRapor;
 
+  // Yedek parça verileri - aksesuar ve hobi grup raporlarıyla aynı yapı
+  const filteredYedekParcalar = (yedekParcaRapor?.detayli_aksesuarlar || [])
+    .filter((satis) => matchesCreatorFilter(satis, selectedYedekParcaKullanici));
+  const sortedYedekParcalar = sortData(filteredYedekParcalar, aksesuarSortField, aksesuarSortDirection);
+
+  const filteredYedekParcaRapor = selectedYedekParcaKullanici && yedekParcaRapor
+    ? {
+        ...yedekParcaRapor,
+        detayli_aksesuarlar: filteredYedekParcalar,
+        gunluk_veriler: Object.values(filteredYedekParcalar.reduce((gunler, satis) => {
+          const tarihDegeri = satis.tamamlama_tarihi || satis.created_at || satis.satis_tarihi;
+          const tarih = tarihDegeri ? format(new Date(tarihDegeri), 'yyyy-MM-dd') : 'Tarihsiz';
+          if (!gunler[tarih]) {
+            gunler[tarih] = {
+              tarih,
+              satis_sayisi: 0,
+              toplam_satis: 0,
+              toplam_maliyet: 0,
+              toplam_kar: 0,
+            };
+          }
+          gunler[tarih].satis_sayisi += 1;
+          gunler[tarih].toplam_satis += parseFloat(satis.toplam_satis || 0);
+          gunler[tarih].toplam_maliyet += parseFloat(satis.toplam_maliyet || 0);
+          gunler[tarih].toplam_kar += parseFloat(satis.kar || 0);
+          return gunler;
+        }, {})).sort((a, b) => b.tarih.localeCompare(a.tarih)),
+        genel_ozet: {
+          toplam_satis_sayisi: filteredYedekParcalar.length,
+          toplam_satis: filteredYedekParcalar.reduce((sum, satis) => sum + parseFloat(satis.toplam_satis || 0), 0),
+          toplam_maliyet: filteredYedekParcalar.reduce((sum, satis) => sum + parseFloat(satis.toplam_maliyet || 0), 0),
+          toplam_kar: filteredYedekParcalar.reduce((sum, satis) => sum + parseFloat(satis.kar || 0), 0),
+        },
+      }
+    : yedekParcaRapor;
+
   // Sıralama ikonu
   const SortIcon = ({ field, currentField, direction }) => {
     if (field !== currentField) return null;
@@ -530,6 +603,11 @@ function Raporlar() {
           <Tab
             label="Hobi Grup"
             icon={<PedalBikeIcon />}
+            iconPosition="start"
+          />
+          <Tab
+            label="Yedek Parça"
+            icon={<BuildIcon />}
             iconPosition="start"
           />
           <Tab
@@ -627,6 +705,25 @@ function Raporlar() {
         />
       )}
       {activeTab === 4 && (
+        <AksesuarRaporTab
+          theme={theme}
+          isMobile={isMobile}
+          loading={loading}
+          aksesuarSelectedDate={yedekParcaSelectedDate}
+          setAksesuarSelectedDate={setYedekParcaSelectedDate}
+          aksesuarEndDate={yedekParcaEndDate}
+          setAksesuarEndDate={setYedekParcaEndDate}
+          aksesuarRapor={filteredYedekParcaRapor}
+          sortedAksesuarlar={sortedYedekParcalar}
+          selectedKullanici={selectedYedekParcaKullanici}
+          setSelectedKullanici={setSelectedYedekParcaKullanici}
+          kullanicilar={kullanicilar}
+          handleViewAksesuarDetail={handleViewYedekParcaDetail}
+          HeaderIcon={BuildIcon}
+          emptyText="Bu tarih aralığında yedek parça satışı bulunmuyor"
+        />
+      )}
+      {activeTab === 5 && (
         <FisKarRaporTab
           loading={loading}
           isAdmin={isAdmin}
@@ -644,9 +741,10 @@ function Raporlar() {
           handleViewAksesuarDetail={handleViewAksesuarDetail}
           handleViewMotorSatisDetail={handleViewMotorSatisDetail}
           handleViewBisikletDetail={handleViewBisikletDetail}
+          handleViewYedekParcaDetail={handleViewYedekParcaDetail}
         />
       )}
-      {activeTab === 5 && (
+      {activeTab === 6 && (
         <BorcRaporTab user={user} navigate={navigate} />
       )}
 
@@ -675,6 +773,17 @@ function Raporlar() {
         baslik="Hobi Grup Satış Detayları"
         accentColor="#2E7D32"
         accentDark="#1B5E20"
+      />
+
+      {/* Yedek Parça Satış Detay Modal */}
+      <AksesuarDetayModal
+        open={yedekParcaDetailModalOpen}
+        onClose={() => setYedekParcaDetailModalOpen(false)}
+        isMobile={isMobile}
+        selectedAksesuar={selectedYedekParca}
+        baslik="Yedek Parça Satış Detayları"
+        accentColor="#8B1E1E"
+        accentDark="#651414"
       />
 
       {/* Motor Satış Detay Modal (Fiş Kar Analizi için) */}

@@ -50,6 +50,7 @@ const MENU = [
   { path: '/', label: 'Anasayfa' },
   { path: '/hakkimizda', label: 'Hakkımızda' },
   { path: '/hobi-grup', label: 'Hobi Grup • Bisiklet & E-Bike' },
+  { path: '/yedek-parca', label: 'Yedek Parça' },
   { path: '/koleksiyon', label: 'Motorlarımız' },
   { path: '/fiyat-listesi', label: 'Fiyat Listesi' },
   { path: '/aksesuarlar-satis', label: 'Aksesuarlar' },
@@ -74,16 +75,16 @@ function PublicNav({ solid = false }) {
         <Container maxWidth="xl">
           <Toolbar
             disableGutters
-            sx={{ py: 1, gap: { xs: 1, md: 2 }, justifyContent: 'space-between' }}
+            sx={{ py: 0.75, gap: { xs: 0.75, md: 1 }, justifyContent: 'space-between' }}
           >
             <Box
-              sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer' }}
+              sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', flexShrink: 0 }}
               onClick={() => navigate('/')}
             >
               <Box
                 sx={{
-                  width: 56,
-                  height: 56,
+                  width: 50,
+                  height: 50,
                   borderRadius: '50%',
                   overflow: 'hidden',
                   border: '2px solid #36C5D3',
@@ -100,7 +101,7 @@ function PublicNav({ solid = false }) {
                 <Typography
                   sx={{
                     fontWeight: 800,
-                    fontSize: '1.1rem',
+                    fontSize: '1rem',
                     letterSpacing: 1.5,
                     lineHeight: 1,
                     background: 'linear-gradient(90deg,#36C5D3,#fff)',
@@ -118,14 +119,14 @@ function PublicNav({ solid = false }) {
 
             <Stack
               direction="row"
-              spacing={{ lg: 0.75, xl: 1.75 }}
+              spacing={{ lg: 0.25, xl: 0.8 }}
               sx={{
                 display: { xs: 'none', lg: 'flex' },
                 flexGrow: 1,
                 minWidth: 0,
                 justifyContent: 'center',
                 alignItems: 'stretch',
-                mx: { lg: 1.5, xl: 3 },
+                mx: { lg: 0.5, xl: 1.25 },
               }}
             >
               {MENU.map((item) => {
@@ -143,9 +144,9 @@ function PublicNav({ solid = false }) {
                       whiteSpace: 'normal',
                       wordBreak: 'normal',
                       minWidth: 0,
-                      maxWidth: item.path === '/hobi-grup' ? { lg: 190, xl: 230 } : { lg: 130, xl: 155 },
-                      px: { lg: 0.75, xl: 1.25 },
-                      fontSize: { lg: '0.78rem', xl: '0.88rem' },
+                      maxWidth: item.path === '/hobi-grup' ? { lg: 170, xl: 205 } : { lg: 115, xl: 140 },
+                      px: { lg: 0.5, xl: 0.85 },
+                      fontSize: { lg: '0.72rem', xl: '0.82rem' },
                       borderBottom: active
                         ? '2px solid #36C5D3'
                         : '2px solid transparent',
@@ -179,14 +180,14 @@ function PublicNav({ solid = false }) {
                 color: '#fff',
                 borderColor: 'rgba(54,197,211,0.5)',
                 fontWeight: 700,
-                px: { xs: 1.5, sm: 2.5 },
+                px: { xs: 1.5, sm: 2 },
                 py: 1,
                 borderRadius: 50,
                 textTransform: 'none',
                 letterSpacing: 0.5,
                 fontSize: { xs: '0.8rem', sm: '0.875rem' },
                 minWidth: 0,
-                mr: { xs: 0.5, sm: 1 },
+                mr: { xs: 0.25, sm: 0.5 },
                 '& .MuiButton-startIcon': { marginRight: { xs: 0.5, sm: 1 } },
                 '&:hover': { borderColor: '#36C5D3', background: 'rgba(54,197,211,0.12)' },
                 transition: 'all 0.3s ease',
@@ -203,7 +204,7 @@ function PublicNav({ solid = false }) {
                 background: 'linear-gradient(135deg, #04A7B8 0%, #36C5D3 100%)',
                 color: '#fff',
                 fontWeight: 700,
-                px: { xs: 1.8, sm: 3 },
+                px: { xs: 1.8, sm: 2.4 },
                 py: 1,
                 borderRadius: 50,
                 textTransform: 'none',

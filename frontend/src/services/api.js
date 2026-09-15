@@ -19,6 +19,14 @@ export const getPublicBisikletImageUrl = (id, version) => {
   return `${base}?v=${v}`;
 };
 
+// Yedek parça görsel URL'si - stok listesinde büyük base64 verisi taşınmasını önler.
+export const getPublicYedekParcaImageUrl = (id, version) => {
+  const base = `${API_URL}/public/yedek-parcalar/${id}/resim`;
+  if (version == null || version === '') return base;
+  const v = encodeURIComponent(new Date(version).getTime() || version);
+  return `${base}?v=${v}`;
+};
+
 const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -126,6 +134,9 @@ export const raporService = {
   // Hobi Grup bisiklet raporları
   getBisikletAralik: (baslangic, bitis) => api.get('/raporlar/bisiklet/aralik', { params: { baslangic, bitis } }),
   getBisikletDetay: (id) => api.get(`/raporlar/bisiklet/${id}`),
+  // Yedek parça raporları
+  getYedekParcaAralik: (baslangic, bitis) => api.get('/raporlar/yedek-parca/aralik', { params: { baslangic, bitis } }),
+  getYedekParcaDetay: (id) => api.get(`/raporlar/yedek-parca/${id}`),
 };
 
 // Giderler
@@ -182,6 +193,28 @@ export const bisikletStokService = {
   // Public (giriş gerektirmeyen) hobi grup kataloğu
   getPublic: (params) => api.get('/public/bisikletler', { params }),
   getPublicById: (id) => api.get(`/public/bisikletler/${id}`),
+};
+
+// Yedek Parça Satışları
+export const yedekParcaSatisService = {
+  getAll: () => api.get('/yedek-parca-satislari'),
+  getById: (id) => api.get(`/yedek-parca-satislari/${id}`),
+  create: (data) => api.post('/yedek-parca-satislari', data),
+  update: (id, data) => api.put(`/yedek-parca-satislari/${id}`, data),
+  delete: (id) => api.delete(`/yedek-parca-satislari/${id}`),
+  bulkComplete: (ids) => api.patch('/yedek-parca-satislari/bulk/complete', { ids }),
+};
+
+// Yedek Parça Stok
+export const yedekParcaStokService = {
+  getAll: (params) => api.get('/yedek-parca-stok', { params }),
+  getById: (id) => api.get(`/yedek-parca-stok/${id}`),
+  search: (q) => api.get('/yedek-parca-stok/ara', { params: { q } }),
+  create: (data) => api.post('/yedek-parca-stok', data),
+  update: (id, data) => api.put(`/yedek-parca-stok/${id}`, data),
+  delete: (id) => api.delete(`/yedek-parca-stok/${id}`),
+  getPublic: (params) => api.get('/public/yedek-parcalar', { params }),
+  getPublicById: (id) => api.get(`/public/yedek-parcalar/${id}`),
 };
 
 // Motor Satışları

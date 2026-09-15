@@ -20,7 +20,7 @@ import {
   ShoppingCartOutlined as ShoppingCartOutlinedIcon,
 } from '@mui/icons-material';
 import { useCart, cartItemKey } from '../context/CartContext';
-import { getPublicAksesuarImageUrl, getPublicBisikletImageUrl } from '../services/api';
+import { getPublicAksesuarImageUrl, getPublicBisikletImageUrl, getPublicYedekParcaImageUrl } from '../services/api';
 import { WHATSAPP_NUMBER } from '../config/site';
 
 function formatCurrency(value) {
@@ -33,9 +33,9 @@ function formatCurrency(value) {
 function cartItemImage(item) {
   if (item.resim) return item.resim;
   if (item.resim_var) {
-    return item.tur === 'bisiklet'
-      ? getPublicBisikletImageUrl(item.id, item.updated_at)
-      : getPublicAksesuarImageUrl(item.id, item.updated_at);
+    if (item.tur === 'bisiklet') return getPublicBisikletImageUrl(item.id, item.updated_at);
+    if (item.tur === 'yedek-parca') return getPublicYedekParcaImageUrl(item.id, item.updated_at);
+    return getPublicAksesuarImageUrl(item.id, item.updated_at);
   }
   return null;
 }
@@ -113,7 +113,7 @@ function CartDrawer({ open, onClose }) {
             Sepetiniz boş.
           </Typography>
           <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', mt: 0.5 }}>
-            Aksesuar veya Hobi Grup sayfasından ürün ekleyebilirsiniz.
+            Aksesuar, Hobi Grup veya Yedek Parça sayfasından ürün ekleyebilirsiniz.
           </Typography>
         </Box>
       ) : (

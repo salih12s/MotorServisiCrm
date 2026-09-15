@@ -35,6 +35,7 @@ import {
   Home as HomeIcon,
   Sms as SmsIcon,
   AccountBalanceWallet as AccountBalanceWalletIcon,
+  Build as BuildIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { useCustomTheme } from '../context/ThemeContext';
@@ -84,6 +85,18 @@ const menuItems = [
     ],
   },
   {
+    title: 'Yedek Parça',
+    path: '/yedek-parca-panel',
+    icon: <BuildIcon />,
+    roles: ['admin', 'user', 'personel'],
+    color: '#8B1E1E',
+    showForAksesuarOnly: true,
+    subItems: [
+      { title: 'Yedek Parça Satış', path: '/yedek-parca-satis', icon: <ShoppingBagIcon /> },
+      { title: 'Yedek Parça Stok', path: '/yedek-parca-stok', icon: <InventoryIcon /> },
+    ],
+  },
+  {
     title: 'Raporlar',
     path: '/raporlar', 
     icon: <AssessmentIcon />,
@@ -122,7 +135,7 @@ function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenus, setOpenMenus] = useState({});
   const { user, logout } = useAuth();
-  const { setAksesuarTheme, setMotorSatisTheme, setHobiGrupTheme, setDefaultTheme, themeColors } = useCustomTheme();
+  const { setAksesuarTheme, setMotorSatisTheme, setHobiGrupTheme, setYedekParcaTheme, setDefaultTheme, themeColors } = useCustomTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -134,12 +147,15 @@ function Layout() {
     } else if (location.pathname === '/hobi-grup-satis' || location.pathname === '/hobi-grup-stok') {
       setHobiGrupTheme();
       setOpenMenus((prev) => ({ ...prev, '/hobi-grup-panel': true }));
+    } else if (location.pathname === '/yedek-parca-satis' || location.pathname === '/yedek-parca-stok') {
+      setYedekParcaTheme();
+      setOpenMenus((prev) => ({ ...prev, '/yedek-parca-panel': true }));
     } else if (location.pathname === '/motor-satislari') {
       setMotorSatisTheme();
     } else {
       setDefaultTheme();
     }
-  }, [location.pathname, setAksesuarTheme, setMotorSatisTheme, setHobiGrupTheme, setDefaultTheme]);
+  }, [location.pathname, setAksesuarTheme, setMotorSatisTheme, setHobiGrupTheme, setYedekParcaTheme, setDefaultTheme]);
 
   // Kullanıcı rolüne göre ve yetkilerine göre menu filtrele
   const filteredMenuItems = menuItems.filter(item => {
@@ -201,6 +217,8 @@ function Layout() {
     if (location.pathname === '/aksesuar-stok') return 'Aksesuar Stok';
     if (location.pathname === '/hobi-grup-satis') return 'Hobi Grup Satış';
     if (location.pathname === '/hobi-grup-stok') return 'Hobi Grup Stok';
+    if (location.pathname === '/yedek-parca-satis') return 'Yedek Parça Satış';
+    if (location.pathname === '/yedek-parca-stok') return 'Yedek Parça Stok';
     const item = filteredMenuItems.find(item => item.path === location.pathname);
     if (item) return item.title;
     if (location.pathname.startsWith('/is-emirleri/')) return 'İş Emri Detay';

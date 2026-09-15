@@ -23,6 +23,13 @@ const operationSources = [
     fallbackName: 'Hobi Grup Müşterisi',
   },
   {
+    table: 'yedek_parca_satislar',
+    nameColumn: 'ad_soyad',
+    phoneColumn: 'telefon',
+    addressColumn: null,
+    fallbackName: 'Yedek Parça Müşterisi',
+  },
+  {
     table: 'motor_satislari',
     nameColumn: 'musteri_adi',
     phoneColumn: 'musteri_telefon',

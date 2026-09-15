@@ -41,6 +41,16 @@ const hobiGrupTheme = {
   secondaryDark: '#0F3D13',
 };
 
+// Yedek Parça (Koyu Kırmızı) tema
+const yedekParcaTheme = {
+  primary: '#8B1E1E',
+  primaryLight: '#B83A3A',
+  primaryDark: '#651414',
+  secondary: '#4A0F0F',
+  secondaryLight: '#651414',
+  secondaryDark: '#310909',
+};
+
 const ThemeContext = createContext(null);
 
 export const useCustomTheme = () => {
@@ -60,11 +70,14 @@ export const CustomThemeProvider = ({ children }) => {
       ? motorSatisTheme
       : currentTheme === 'hobiGrup'
         ? hobiGrupTheme
+        : currentTheme === 'yedekParca'
+          ? yedekParcaTheme
         : defaultTheme;
 
   const setAksesuarTheme = useCallback(() => setCurrentTheme('aksesuar'), []);
   const setMotorSatisTheme = useCallback(() => setCurrentTheme('motorSatis'), []);
   const setHobiGrupTheme = useCallback(() => setCurrentTheme('hobiGrup'), []);
+  const setYedekParcaTheme = useCallback(() => setCurrentTheme('yedekParca'), []);
   const setDefaultTheme = useCallback(() => setCurrentTheme('default'), []);
 
   const theme = useMemo(() => createTheme({
@@ -179,6 +192,7 @@ export const CustomThemeProvider = ({ children }) => {
       setAksesuarTheme,
       setMotorSatisTheme,
       setHobiGrupTheme,
+      setYedekParcaTheme,
       setDefaultTheme,
       themeColors 
     }}>

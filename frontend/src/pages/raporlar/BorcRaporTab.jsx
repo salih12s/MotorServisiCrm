@@ -50,6 +50,7 @@ const sourceInfo = {
   SERVIS: { label: 'Servis', color: '#ca8a04', bg: '#fefce8' },
   AKSESUAR: { label: 'Aksesuar', color: '#7c3aed', bg: '#f5f3ff' },
   HOBI_GRUP: { label: 'Hobi Grup', color: '#0891b2', bg: '#ecfeff' },
+  YEDEK_PARCA: { label: 'Yedek Parça', color: '#8B1E1E', bg: '#fef2f2' },
   MANUEL: { label: 'Manuel', color: '#475569', bg: '#f1f5f9' },
 };
 
@@ -194,6 +195,7 @@ function BorcRaporTab({ user, navigate }) {
                 <MenuItem value="SERVIS">Servis</MenuItem>
                 <MenuItem value="AKSESUAR">Aksesuar</MenuItem>
                 <MenuItem value="HOBI_GRUP">Hobi Grup</MenuItem>
+                <MenuItem value="YEDEK_PARCA">Yedek Parça</MenuItem>
               </Select>
             </FormControl>
             <FormControl size="small">

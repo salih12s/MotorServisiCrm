@@ -37,6 +37,24 @@ const MAVI = '#04A7B8';
 const MAVI_ACIK = '#36C5D3';
 const MAVI_GRADIENT = 'linear-gradient(135deg, #04A7B8 0%, #36C5D3 60%, #7be3ee 100%)';
 
+export const HOBI_GRUP_CATALOG = {
+  stokService: bisikletStokService,
+  getImageUrl: getPublicBisikletImageUrl,
+  cartType: 'bisiklet',
+  title: 'Hobi Grup • Bisiklet & E-Bike',
+  subtitle: 'Bisiklet ve elektrikli bisiklet koleksiyonumuz',
+  detailLabel: 'Hobi Grup • Bisiklet & E-Bike',
+  searchPlaceholder: 'Bisiklet veya e-bike ara...',
+  emptyDescription: 'Bisiklet ve e-bike koleksiyonumuz hazırlanıyor, kısa süre içinde bu sayfada olacak.',
+  primary: MAVI,
+  light: MAVI_ACIK,
+  gradient: MAVI_GRADIENT,
+  primaryRgb: '4,167,184',
+  lightRgb: '54,197,211',
+  Icon: PedalBikeIcon,
+  SubtitleIcon: ElectricBoltIcon,
+};
+
 function formatCurrency(value) {
   return new Intl.NumberFormat('tr-TR', {
     minimumFractionDigits: 2,
@@ -71,10 +89,11 @@ function getOzellikler(aciklama) {
     .filter(Boolean);
 }
 
-function BisikletCard({ urun, onClick, onAddToCart }) {
+function BisikletCard({ urun, onClick, onAddToCart, catalog }) {
   const stokVar = (urun.mevcut || 0) > 0;
   const resimler = getResimler(urun);
   const resimSayisi = Number(urun.resim_sayisi) || resimler.length;
+  const CatalogIcon = catalog.Icon;
 
   return (
     <Card
@@ -94,15 +113,15 @@ function BisikletCard({ urun, onClick, onAddToCart }) {
         display: 'flex',
         flexDirection: 'column',
         borderRadius: 2,
-        border: '1px solid rgba(54,197,211,0.15)',
+        border: `1px solid rgba(${catalog.lightRgb},0.15)`,
         background: 'rgba(255,255,255,0.03)',
         overflow: 'hidden',
         cursor: 'pointer',
         transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
         '&:hover': {
           transform: 'translateY(-4px)',
-          borderColor: 'rgba(54,197,211,0.45)',
-          boxShadow: '0 12px 30px rgba(4,167,184,0.18)',
+          borderColor: `rgba(${catalog.lightRgb},0.45)`,
+          boxShadow: `0 12px 30px rgba(${catalog.primaryRgb},0.18)`,
         },
         '&:hover .bisiklet-card-img': { transform: 'scale(1.04)' },
       }}
@@ -117,7 +136,7 @@ function BisikletCard({ urun, onClick, onAddToCart }) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          borderBottom: '1px solid rgba(54,197,211,0.1)',
+          borderBottom: `1px solid rgba(${catalog.lightRgb},0.1)`,
           overflow: 'hidden',
         }}
       >
@@ -125,7 +144,7 @@ function BisikletCard({ urun, onClick, onAddToCart }) {
           <Box
             component="img"
             className="bisiklet-card-img"
-            src={urun.resim || getPublicBisikletImageUrl(urun.id, urun.updated_at)}
+            src={urun.resim || catalog.getImageUrl(urun.id, urun.updated_at)}
             alt={urun.stok_adi}
             loading="lazy"
             decoding="async"
@@ -137,7 +156,7 @@ function BisikletCard({ urun, onClick, onAddToCart }) {
             }}
           />
         ) : (
-          <PedalBikeIcon sx={{ fontSize: 72, color: 'rgba(54,197,211,0.25)' }} />
+          <CatalogIcon sx={{ fontSize: 72, color: `rgba(${catalog.lightRgb},0.25)` }} />
         )}
 
         {resimSayisi > 1 && (
@@ -201,7 +220,7 @@ function BisikletCard({ urun, onClick, onAddToCart }) {
             fontWeight: 900,
             fontSize: { xs: '1.2rem', sm: '1.4rem' },
             lineHeight: 1.15,
-            background: MAVI_GRADIENT,
+            background: catalog.gradient,
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             whiteSpace: 'nowrap',
@@ -220,7 +239,7 @@ function BisikletCard({ urun, onClick, onAddToCart }) {
               fontSize: '0.72rem',
               height: 26,
               color: stokVar ? '#fff' : 'rgba(255,255,255,0.55)',
-              bgcolor: stokVar ? 'rgba(4,167,184,0.9)' : 'rgba(255,255,255,0.08)',
+              bgcolor: stokVar ? `rgba(${catalog.primaryRgb},0.9)` : 'rgba(255,255,255,0.08)',
               border: stokVar ? 'none' : '1px solid rgba(255,255,255,0.12)',
               '& .MuiChip-icon': { color: stokVar ? '#fff' : 'rgba(255,255,255,0.4)' },
             }}
@@ -243,10 +262,10 @@ function BisikletCard({ urun, onClick, onAddToCart }) {
               fontWeight: 700,
               textTransform: 'none',
               borderRadius: 50,
-              background: 'linear-gradient(135deg, #04A7B8 0%, #36C5D3 100%)',
+              background: `linear-gradient(135deg, ${catalog.primary} 0%, ${catalog.light} 100%)`,
               boxShadow: 'none',
               '& .MuiButton-startIcon': { mr: 0.5 },
-              '&:hover': { background: 'linear-gradient(135deg, #36C5D3 0%, #04A7B8 100%)' },
+              '&:hover': { background: `linear-gradient(135deg, ${catalog.light} 0%, ${catalog.primary} 100%)` },
               '&.Mui-disabled': { background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.35)' },
             }}
           >
@@ -258,7 +277,7 @@ function BisikletCard({ urun, onClick, onAddToCart }) {
   );
 }
 
-function BisikletDetayDialog({ urun, open, onClose, onAddToCart }) {
+function BisikletDetayDialog({ urun, open, onClose, onAddToCart, catalog }) {
   const [aktifResim, setAktifResim] = useState(0);
 
   useEffect(() => {
@@ -271,6 +290,7 @@ function BisikletDetayDialog({ urun, open, onClose, onAddToCart }) {
   const stokVar = (urun.mevcut || 0) > 0;
   const ozellikler = getOzellikler(urun.aciklama);
   const cokSatirli = ozellikler.length > 1;
+  const CatalogIcon = catalog.Icon;
 
   return (
     <Dialog
@@ -284,7 +304,7 @@ function BisikletDetayDialog({ urun, open, onClose, onAddToCart }) {
       PaperProps={{
         sx: {
           background: 'linear-gradient(180deg, #0a1622 0%, #02080f 100%)',
-          border: '1px solid rgba(54,197,211,0.25)',
+          border: `1px solid rgba(${catalog.lightRgb},0.25)`,
           borderRadius: 3,
           color: '#fff',
           m: { xs: 1.5, sm: 2 },
@@ -301,9 +321,9 @@ function BisikletDetayDialog({ urun, open, onClose, onAddToCart }) {
             top: 10,
             right: 10,
             zIndex: 2,
-            bgcolor: 'rgba(4,167,184,0.9)',
+            bgcolor: `rgba(${catalog.primaryRgb},0.9)`,
             color: '#fff',
-            '&:hover': { bgcolor: MAVI_ACIK },
+            '&:hover': { bgcolor: catalog.light },
           }}
         >
           <CloseIcon />
@@ -318,7 +338,7 @@ function BisikletDetayDialog({ urun, open, onClose, onAddToCart }) {
                 borderRadius: 2,
                 overflow: 'hidden',
                 background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(54,197,211,0.18)',
+                border: `1px solid rgba(${catalog.lightRgb},0.18)`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -332,7 +352,7 @@ function BisikletDetayDialog({ urun, open, onClose, onAddToCart }) {
                   sx={{ width: '100%', height: '100%', objectFit: 'contain' }}
                 />
               ) : (
-                <PedalBikeIcon sx={{ fontSize: 72, color: 'rgba(54,197,211,0.25)' }} />
+                <CatalogIcon sx={{ fontSize: 72, color: `rgba(${catalog.lightRgb},0.25)` }} />
               )}
             </Box>
 
@@ -350,10 +370,10 @@ function BisikletDetayDialog({ urun, open, onClose, onAddToCart }) {
                       cursor: 'pointer',
                       flexShrink: 0,
                       border: '2px solid',
-                      borderColor: i === aktifResim ? MAVI_ACIK : 'rgba(255,255,255,0.12)',
+                      borderColor: i === aktifResim ? catalog.light : 'rgba(255,255,255,0.12)',
                       opacity: i === aktifResim ? 1 : 0.7,
                       transition: 'all 0.15s ease',
-                      '&:hover': { opacity: 1, borderColor: 'rgba(54,197,211,0.6)' },
+                      '&:hover': { opacity: 1, borderColor: `rgba(${catalog.lightRgb},0.6)` },
                     }}
                   >
                     <Box
@@ -374,12 +394,12 @@ function BisikletDetayDialog({ urun, open, onClose, onAddToCart }) {
                 fontSize: '0.7rem',
                 fontWeight: 800,
                 letterSpacing: 2,
-                color: MAVI_ACIK,
+                color: catalog.light,
                 textTransform: 'uppercase',
                 mb: 0.5,
               }}
             >
-              Hobi Grup • Bisiklet & E-Bike
+              {catalog.detailLabel}
             </Typography>
 
             <Typography
@@ -401,7 +421,7 @@ function BisikletDetayDialog({ urun, open, onClose, onAddToCart }) {
                 mt: 1.5,
                 fontWeight: 900,
                 fontSize: { xs: '1.5rem', sm: '1.8rem' },
-                background: MAVI_GRADIENT,
+                background: catalog.gradient,
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
               }}
@@ -419,7 +439,7 @@ function BisikletDetayDialog({ urun, open, onClose, onAddToCart }) {
                 fontSize: '0.72rem',
                 height: 26,
                 color: stokVar ? '#fff' : 'rgba(255,255,255,0.55)',
-                bgcolor: stokVar ? 'rgba(4,167,184,0.9)' : 'rgba(255,255,255,0.08)',
+                bgcolor: stokVar ? `rgba(${catalog.primaryRgb},0.9)` : 'rgba(255,255,255,0.08)',
                 border: stokVar ? 'none' : '1px solid rgba(255,255,255,0.12)',
                 '& .MuiChip-icon': { color: stokVar ? '#fff' : 'rgba(255,255,255,0.4)' },
               }}
@@ -437,9 +457,9 @@ function BisikletDetayDialog({ urun, open, onClose, onAddToCart }) {
                   borderRadius: 50,
                   px: 3,
                   py: 1,
-                  background: 'linear-gradient(135deg, #04A7B8 0%, #36C5D3 100%)',
-                  boxShadow: '0 6px 20px rgba(54,197,211,0.4)',
-                  '&:hover': { background: 'linear-gradient(135deg, #36C5D3 0%, #04A7B8 100%)' },
+                  background: `linear-gradient(135deg, ${catalog.primary} 0%, ${catalog.light} 100%)`,
+                  boxShadow: `0 6px 20px rgba(${catalog.lightRgb},0.4)`,
+                  '&:hover': { background: `linear-gradient(135deg, ${catalog.light} 0%, ${catalog.primary} 100%)` },
                   '&.Mui-disabled': { background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.35)' },
                 }}
               >
@@ -449,14 +469,14 @@ function BisikletDetayDialog({ urun, open, onClose, onAddToCart }) {
 
             {ozellikler.length > 0 && (
               <Box sx={{ mt: 2.5 }}>
-                <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: MAVI_ACIK, mb: 1 }}>
+                <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: catalog.light, mb: 1 }}>
                   {cokSatirli ? 'Özellikler ve Detaylar' : 'Ürün Açıklaması'}
                 </Typography>
                 {cokSatirli ? (
                   <Stack spacing={0.75}>
                     {ozellikler.map((oz, i) => (
                       <Box key={i} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                        <CheckCircleIcon sx={{ fontSize: 16, color: MAVI, mt: '3px', flexShrink: 0 }} />
+                        <CheckCircleIcon sx={{ fontSize: 16, color: catalog.primary, mt: '3px', flexShrink: 0 }} />
                         <Typography
                           sx={{
                             fontSize: '0.88rem',
@@ -495,7 +515,7 @@ function BisikletDetayDialog({ urun, open, onClose, onAddToCart }) {
   );
 }
 
-function HobiGrupPage() {
+function HobiGrupPage({ catalog = HOBI_GRUP_CATALOG }) {
   const [urunler, setUrunler] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -507,9 +527,11 @@ function HobiGrupPage() {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const requestIdRef = useRef(0);
   const { addItem } = useCart();
+  const CatalogIcon = catalog.Icon;
+  const SubtitleIcon = catalog.SubtitleIcon;
 
   const handleAddToCart = useCallback((urun) => {
-    const res = addItem(urun, 1, 'bisiklet');
+    const res = addItem(urun, 1, catalog.cartType);
     if (res.ok) {
       setSnackbar({ open: true, message: `${urun.stok_adi} sepete eklendi`, severity: 'success' });
     } else if (res.reason === 'limit') {
@@ -521,13 +543,13 @@ function HobiGrupPage() {
     } else if (res.reason === 'outofstock') {
       setSnackbar({ open: true, message: 'Bu ürün stokta bulunmuyor.', severity: 'warning' });
     }
-  }, [addItem]);
+  }, [addItem, catalog.cartType]);
 
   const loadUrunler = useCallback(async () => {
     const requestId = ++requestIdRef.current;
     try {
       setLoading(true);
-      const response = await bisikletStokService.getPublic({
+      const response = await catalog.stokService.getPublic({
         page,
         limit: 24,
         search: debouncedSearch,
@@ -541,7 +563,7 @@ function HobiGrupPage() {
     } finally {
       if (requestId === requestIdRef.current) setLoading(false);
     }
-  }, [page, debouncedSearch, stokFiltre]);
+  }, [page, debouncedSearch, stokFiltre, catalog.stokService]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -564,12 +586,12 @@ function HobiGrupPage() {
   const handleOpenDetail = useCallback(async (urun) => {
     setDetayUrun(urun);
     try {
-      const response = await bisikletStokService.getPublicById(urun.id);
+      const response = await catalog.stokService.getPublicById(urun.id);
       setDetayUrun(response.data);
     } catch (error) {
       console.error('Bisiklet detayı hatası:', error);
     }
-  }, []);
+  }, [catalog.stokService]);
 
   const bosDurum = !loading && urunler.length === 0;
   const filtreliBosDurum = bosDurum && (searchTerm || stokFiltre === 'stokta');
@@ -581,8 +603,8 @@ function HobiGrupPage() {
       <Box
         sx={{
           pt: { xs: '72px', sm: '80px', md: '88px' },
-          background: 'linear-gradient(180deg, rgba(4,167,184,0.18) 0%, rgba(2,8,15,0.0) 100%)',
-          borderBottom: '1px solid rgba(54,197,211,0.12)',
+          background: `linear-gradient(180deg, rgba(${catalog.primaryRgb},0.18) 0%, rgba(2,8,15,0.0) 100%)`,
+          borderBottom: `1px solid rgba(${catalog.lightRgb},0.12)`,
           pb: { xs: 4, md: 5 },
         }}
       >
@@ -598,15 +620,15 @@ function HobiGrupPage() {
                 width: 52,
                 height: 52,
                 borderRadius: 2,
-                background: 'linear-gradient(135deg, #04A7B8, #36C5D3)',
+                background: `linear-gradient(135deg, ${catalog.primary}, ${catalog.light})`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 6px 24px rgba(54,197,211,0.42)',
+                boxShadow: `0 6px 24px rgba(${catalog.lightRgb},0.42)`,
                 flexShrink: 0,
               }}
             >
-              <PedalBikeIcon sx={{ color: '#fff', fontSize: 30 }} />
+              <CatalogIcon sx={{ color: '#fff', fontSize: 30 }} />
             </Box>
             <Box>
               <Typography
@@ -614,13 +636,13 @@ function HobiGrupPage() {
                 sx={{
                   fontWeight: 900,
                   fontSize: { xs: '1.8rem', sm: '2.4rem', md: '3rem' },
-                  background: MAVI_GRADIENT,
+                  background: catalog.gradient,
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   lineHeight: 1.1,
                 }}
               >
-                Hobi Grup • Bisiklet & E-Bike
+                {catalog.title}
               </Typography>
               <Typography
                 sx={{
@@ -634,8 +656,8 @@ function HobiGrupPage() {
                   flexWrap: 'wrap',
                 }}
               >
-                <ElectricBoltIcon sx={{ fontSize: 16, color: MAVI_ACIK }} />
-                Bisiklet ve elektrikli bisiklet koleksiyonumuz
+                <SubtitleIcon sx={{ fontSize: 16, color: catalog.light }} />
+                {catalog.subtitle}
               </Typography>
             </Box>
           </Stack>
@@ -645,13 +667,13 @@ function HobiGrupPage() {
       <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
         <TextField
           fullWidth
-          placeholder="Bisiklet veya e-bike ara..."
+          placeholder={catalog.searchPlaceholder}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon sx={{ color: MAVI_ACIK }} />
+                <SearchIcon sx={{ color: catalog.light }} />
               </InputAdornment>
             ),
           }}
@@ -661,9 +683,9 @@ function HobiGrupPage() {
               borderRadius: 3,
               background: 'rgba(255,255,255,0.04)',
               color: '#fff',
-              '& fieldset': { borderColor: 'rgba(54,197,211,0.25)' },
-              '&:hover fieldset': { borderColor: 'rgba(54,197,211,0.5)' },
-              '&.Mui-focused fieldset': { borderColor: MAVI_ACIK },
+              '& fieldset': { borderColor: `rgba(${catalog.lightRgb},0.25)` },
+              '&:hover fieldset': { borderColor: `rgba(${catalog.lightRgb},0.5)` },
+              '&.Mui-focused fieldset': { borderColor: catalog.light },
             },
             '& .MuiInputBase-input::placeholder': { color: 'rgba(255,255,255,0.35)', opacity: 1 },
           }}
@@ -678,7 +700,7 @@ function HobiGrupPage() {
             mb: { xs: 3, md: 4 },
             '& .MuiToggleButton-root': {
               color: 'rgba(255,255,255,0.7)',
-              borderColor: 'rgba(54,197,211,0.3)',
+              borderColor: `rgba(${catalog.lightRgb},0.3)`,
               px: { xs: 2.5, sm: 4 },
               py: 0.9,
               fontWeight: 700,
@@ -686,12 +708,12 @@ function HobiGrupPage() {
               '&.Mui-selected': {
                 color: '#fff',
                 borderColor: 'transparent',
-                background: 'linear-gradient(135deg, #04A7B8 0%, #36C5D3 100%)',
+                background: `linear-gradient(135deg, ${catalog.primary} 0%, ${catalog.light} 100%)`,
                 '&:hover': {
-                  background: 'linear-gradient(135deg, #36C5D3 0%, #04A7B8 100%)',
+                  background: `linear-gradient(135deg, ${catalog.light} 0%, ${catalog.primary} 100%)`,
                 },
               },
-              '&:hover': { background: 'rgba(54,197,211,0.1)' },
+              '&:hover': { background: `rgba(${catalog.lightRgb},0.1)` },
             },
           }}
         >
@@ -701,11 +723,11 @@ function HobiGrupPage() {
 
         {loading ? (
           <Box sx={{ py: 10, textAlign: 'center' }}>
-            <CircularProgress sx={{ color: MAVI_ACIK }} />
+            <CircularProgress sx={{ color: catalog.light }} />
           </Box>
         ) : bosDurum ? (
           <Box sx={{ py: 10, textAlign: 'center' }}>
-            <PedalBikeIcon sx={{ fontSize: 64, color: 'rgba(54,197,211,0.3)', mb: 2 }} />
+            <CatalogIcon sx={{ fontSize: 64, color: `rgba(${catalog.lightRgb},0.3)`, mb: 2 }} />
             {filtreliBosDurum ? (
               <Typography sx={{ color: 'rgba(255,255,255,0.45)', fontSize: '1rem' }}>
                 {searchTerm ? 'Aramanızla eşleşen ürün bulunamadı.' : 'Şu anda stokta ürün bulunmuyor.'}
@@ -716,7 +738,7 @@ function HobiGrupPage() {
                   Çok Yakında
                 </Typography>
                 <Typography sx={{ mt: 1, color: 'rgba(255,255,255,0.45)', maxWidth: 460, mx: 'auto' }}>
-                  Bisiklet ve e-bike koleksiyonumuz hazırlanıyor, kısa süre içinde bu sayfada olacak.
+                  {catalog.emptyDescription}
                 </Typography>
               </>
             )}
@@ -740,6 +762,7 @@ function HobiGrupPage() {
                 key={urun.id}
                 onClick={handleOpenDetail}
                 onAddToCart={handleAddToCart}
+                catalog={catalog}
               />
             ))}
           </Box>
@@ -759,7 +782,7 @@ function HobiGrupPage() {
               showLastButton
               sx={{
                 '& .MuiPaginationItem-root': { color: 'rgba(255,255,255,0.75)' },
-                '& .Mui-selected': { bgcolor: '#04A7B8 !important', color: '#fff' },
+                '& .Mui-selected': { bgcolor: `${catalog.primary} !important`, color: '#fff' },
               }}
             />
           </Box>
@@ -771,6 +794,7 @@ function HobiGrupPage() {
         open={Boolean(detayUrun)}
         onClose={() => setDetayUrun(null)}
         onAddToCart={handleAddToCart}
+        catalog={catalog}
       />
 
       <Snackbar
@@ -783,7 +807,7 @@ function HobiGrupPage() {
           onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
           severity={snackbar.severity}
           variant="filled"
-          sx={{ fontWeight: 600, ...(snackbar.severity === 'success' ? { bgcolor: MAVI } : {}) }}
+          sx={{ fontWeight: 600, ...(snackbar.severity === 'success' ? { bgcolor: catalog.primary } : {}) }}
         >
           {snackbar.message}
         </Alert>

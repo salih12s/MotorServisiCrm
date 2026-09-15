@@ -19,6 +19,7 @@ import FalconFiyatListesiPage from './pages/public/FalconFiyatListesiPage';
 import PriceBrandsPage from './pages/public/PriceBrandsPage';
 import AksesuarSatisPage from './pages/public/AksesuarSatisPage';
 import HobiGrupPage from './pages/public/HobiGrupPage';
+import YedekParcaPage from './pages/public/YedekParcaPage';
 import Dashboard from './pages/dashboard/Dashboard';
 import IsEmirleri from './pages/isEmirleri/IsEmirleri';
 import IsEmriForm from './pages/isEmirleri/IsEmriForm';
@@ -32,6 +33,8 @@ import Aksesuarlar from './pages/aksesuarlar/Aksesuarlar';
 import AksesuarStok from './pages/aksesuarlar/AksesuarStok';
 import HobiGrupStok from './pages/hobiGrup/HobiGrupStok';
 import HobiGrupSatis from './pages/hobiGrup/HobiGrupSatis';
+import YedekParcaStok from './pages/yedekParca/YedekParcaStok';
+import YedekParcaSatis from './pages/yedekParca/YedekParcaSatis';
 import MotorSatislari from './pages/motorSatislari/MotorSatislari';
 import TopluSms from './pages/sms/TopluSms';
 
@@ -213,6 +216,7 @@ function AppRoutes() {
       <Route path="/fiyat-listesi/falcon" element={<FalconFiyatListesiPage />} />
       <Route path="/aksesuarlar-satis" element={<AksesuarSatisPage />} />
       <Route path="/hobi-grup" element={<HobiGrupPage />} />
+      <Route path="/yedek-parca" element={<YedekParcaPage />} />
 
       <Route element={<PanelLayoutRoute />}>
         <Route path="is-emirleri" element={<NormalRoute><IsEmirleri /></NormalRoute>} />
@@ -257,6 +261,8 @@ function AppRoutes() {
         <Route path="aksesuar-stok" element={<AksesuarRoute><AksesuarStok /></AksesuarRoute>} />
         <Route path="hobi-grup-satis" element={<AksesuarRoute><HobiGrupSatis /></AksesuarRoute>} />
         <Route path="hobi-grup-stok" element={<AksesuarRoute><HobiGrupStok /></AksesuarRoute>} />
+        <Route path="yedek-parca-satis" element={<AksesuarRoute><YedekParcaSatis /></AksesuarRoute>} />
+        <Route path="yedek-parca-stok" element={<AksesuarRoute><YedekParcaStok /></AksesuarRoute>} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

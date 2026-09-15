@@ -12,7 +12,7 @@ const {
 const router = express.Router();
 const debitTypesSql = DEBIT_TYPES.map((type) => `'${type}'`).join(', ');
 const creditTypesSql = CREDIT_TYPES.map((type) => `'${type}'`).join(', ');
-const automaticSourceTypesSql = "'SERVIS', 'MOTOR_SATISI', 'AKSESUAR', 'HOBI_GRUP'";
+const automaticSourceTypesSql = "'SERVIS', 'MOTOR_SATISI', 'AKSESUAR', 'HOBI_GRUP', 'YEDEK_PARCA'";
 
 const automaticReceivablesSelect = (customerAlias) => {
   const customerSource = customerAlias === 'm' ? '' : ', hedef h';
@@ -72,6 +72,19 @@ const automaticReceivablesSelect = (customerAlias) => {
       REGEXP_REPLACE(COALESCE(b.telefon, ''), '[^0-9]', '', 'g') = REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g')
     ))
     AND LOWER(COALESCE(b.durum, '')) = 'beklemede'
+  UNION ALL
+  SELECT 'YEDEK_PARCA', y.id::TEXT, COALESCE(y.satis_tarihi::timestamp, y.created_at),
+    'Yedek parça satışı', COALESCE(y.toplam_satis, 0)::NUMERIC(14,2),
+    CASE WHEN y.odeme_bilgisi_girildi THEN COALESCE(y.nakit_tutar, 0) ELSE 0 END::NUMERIC(14,2),
+    CASE WHEN y.odeme_bilgisi_girildi THEN COALESCE(y.kart_tutar, 0) ELSE 0 END::NUMERIC(14,2),
+    CASE WHEN y.odeme_bilgisi_girildi THEN COALESCE(y.havale_tutar, 0) ELSE 0 END::NUMERIC(14,2),
+    CASE WHEN y.odeme_bilgisi_girildi THEN 0 ELSE COALESCE(y.odeme_tutari, 0) END::NUMERIC(14,2)
+  FROM yedek_parca_satislar y${customerSource}
+  WHERE (y.musteri_id = ${customerAlias}.id OR (
+      REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g') <> '' AND
+      REGEXP_REPLACE(COALESCE(y.telefon, ''), '[^0-9]', '', 'g') = REGEXP_REPLACE(COALESCE(${customerAlias}.telefon, ''), '[^0-9]', '', 'g')
+    ))
+    AND LOWER(COALESCE(y.durum, '')) = 'beklemede'
 `;
 };
 
@@ -270,7 +283,7 @@ router.get('/finans/alacaklar', async (req, res) => {
   try {
     const source = String(req.query.kaynak || 'tumu').toLowerCase();
     const includeAllPending = String(req.query.bekleyenlerin_tumu || '').toLowerCase() === 'true';
-    const sourceMap = { satis: 'MOTOR_SATISI', servis: 'SERVIS', aksesuar: 'AKSESUAR', hobi: 'HOBI_GRUP' };
+    const sourceMap = { satis: 'MOTOR_SATISI', servis: 'SERVIS', aksesuar: 'AKSESUAR', hobi: 'HOBI_GRUP', yedek: 'YEDEK_PARCA' };
     if (source !== 'tumu' && !sourceMap[source]) return res.status(400).json({ message: 'Geçersiz kaynak filtresi.' });
     const params = [];
     let sourceFilter = '';
@@ -317,7 +330,7 @@ router.post('/finans/tahsilat', async (req, res) => {
   );
   const payments = parsedPayments.filter((payment) => payment.amount > 0);
   const amount = payments.reduce((sum, payment) => sum + payment.amount, 0);
-  const sourceTables = { MOTOR_SATISI: 'motor_satislari', SERVIS: 'is_emirleri', AKSESUAR: 'aksesuarlar', HOBI_GRUP: 'bisiklet_satislar' };
+  const sourceTables = { MOTOR_SATISI: 'motor_satislari', SERVIS: 'is_emirleri', AKSESUAR: 'aksesuarlar', HOBI_GRUP: 'bisiklet_satislar', YEDEK_PARCA: 'yedek_parca_satislar' };
   if (!customerId || !referenceId || !sourceTables[source] || payments.length < 1 || payments.length > 3
     || hasInvalidPayment || !Number.isFinite(amount) || amount <= 0
     || new Set(payments.map((payment) => payment.method)).size !== payments.length) {
@@ -488,6 +501,14 @@ router.get('/:id/detay', async (req, res) => {
             THEN GREATEST(COALESCE(b.toplam_satis, 0) - COALESCE(b.odeme_tutari, 0), 0) ELSE 0 END::NUMERIC(14,2), b.durum
         FROM bisiklet_satislar b, hedef h
         WHERE h.telefon <> '' AND REGEXP_REPLACE(COALESCE(b.telefon, ''), '[^0-9]', '', 'g') = h.telefon
+        UNION ALL
+        SELECT 'YEDEK_PARCA', y.id, COALESCE(y.satis_tarihi::timestamp, y.created_at),
+          'Yedek parça satışı', COALESCE(y.toplam_satis, 0)::NUMERIC(14,2),
+          COALESCE(y.odeme_tutari, 0)::NUMERIC(14,2),
+          CASE WHEN LOWER(COALESCE(y.durum, '')) = 'tamamlandi'
+            THEN GREATEST(COALESCE(y.toplam_satis, 0) - COALESCE(y.odeme_tutari, 0), 0) ELSE 0 END::NUMERIC(14,2), y.durum
+        FROM yedek_parca_satislar y, hedef h
+        WHERE y.musteri_id = h.id OR (h.telefon <> '' AND REGEXP_REPLACE(COALESCE(y.telefon, ''), '[^0-9]', '', 'g') = h.telefon)
       )
       SELECT o.*,
         EXISTS (

@@ -7,14 +7,25 @@ const { logAktivite, getRequestInfo, ISLEM_TIPLERI } = require('../config/activi
 const router = express.Router();
 
 // Middleware - Token doğrulama
-const authenticateToken = (req, res, next) => {
+const authenticateToken = async (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) {
     return res.status(401).json({ message: 'Token bulunamadı' });
   }
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
+    const result = await pool.query(
+      'SELECT id, kullanici_adi, rol, onay_durumu FROM kullanicilar WHERE id = $1',
+      [decoded.id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(401).json({ message: 'Kullanıcı hesabı artık aktif değil' });
+    }
+    const currentUser = result.rows[0];
+    if (currentUser.rol !== 'admin' && currentUser.onay_durumu !== 'onaylandi') {
+      return res.status(403).json({ message: 'Kullanıcı hesabı aktif değil' });
+    }
+    req.user = { ...decoded, ...currentUser };
     next();
   } catch (error) {
     return res.status(401).json({ message: 'Geçersiz token' });
@@ -321,27 +332,93 @@ router.patch('/users/:id/motor-satis-yetkisi', authenticateToken, isAdmin, async
 
 // Kullanıcı silme (sadece admin)
 router.delete('/users/:id', authenticateToken, isAdmin, async (req, res) => {
+  const client = await pool.connect();
   try {
-    const { id } = req.params;
+    const id = Number(req.params.id);
+
+    if (!Number.isSafeInteger(id) || id <= 0) {
+      return res.status(400).json({ message: 'Geçersiz kullanıcı ID’si' });
+    }
     
     // Admin kendini silemesin
-    if (parseInt(id) === req.user.id) {
+    if (id === req.user.id) {
       return res.status(400).json({ message: 'Kendinizi silemezsiniz' });
     }
-    
-    const result = await pool.query(
-      'DELETE FROM kullanicilar WHERE id = $1 RETURNING id',
+
+    await client.query('BEGIN');
+    const userResult = await client.query(
+      'SELECT id, kullanici_adi, ad_soyad FROM kullanicilar WHERE id = $1 FOR UPDATE',
       [id]
     );
-    
-    if (result.rows.length === 0) {
+    if (userResult.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ message: 'Kullanıcı bulunamadı' });
     }
-    
-    res.json({ message: 'Kullanıcı silindi' });
+
+    const deletedUser = userResult.rows[0];
+    const creatorName = deletedUser.ad_soyad || deletedUser.kullanici_adi || 'Silinmiş Kullanıcı';
+    const historyTables = [
+      'is_emirleri',
+      'aksesuarlar',
+      'motor_satislari',
+      'bisiklet_satislar',
+      'yedek_parca_satislar',
+    ];
+
+    // Raporlarda oluşturan kişi adı kaybolmasın; yalnızca kullanıcı bağlantısını ayır.
+    for (const table of historyTables) {
+      await client.query(
+        `UPDATE ${table}
+         SET olusturan_kisi = COALESCE(NULLIF(BTRIM(olusturan_kisi), ''), $2),
+             olusturan_kullanici_id = NULL
+         WHERE olusturan_kullanici_id = $1`,
+        [id, creatorName]
+      );
+    }
+
+    // Aktivite ve cari hareketler dahil kullanıcıya bağlı diğer kayıtları silmeden ayır.
+    const references = await client.query(`
+      SELECT ns.nspname AS schema_name, rel.relname AS table_name, att.attname AS column_name
+      FROM pg_constraint con
+      JOIN pg_class rel ON rel.oid = con.conrelid
+      JOIN pg_namespace ns ON ns.oid = rel.relnamespace
+      JOIN LATERAL unnest(con.conkey) AS key(attnum) ON TRUE
+      JOIN pg_attribute att ON att.attrelid = con.conrelid AND att.attnum = key.attnum
+      WHERE con.contype = 'f' AND con.confrelid = 'kullanicilar'::regclass
+    `);
+    const quoteIdentifier = (value) => `"${String(value).replace(/"/g, '""')}"`;
+    for (const reference of references.rows) {
+      const table = `${quoteIdentifier(reference.schema_name)}.${quoteIdentifier(reference.table_name)}`;
+      const column = quoteIdentifier(reference.column_name);
+      await client.query(`UPDATE ${table} SET ${column} = NULL WHERE ${column} = $1`, [id]);
+    }
+
+    await client.query('DELETE FROM kullanicilar WHERE id = $1', [id]);
+    await client.query('COMMIT');
+
+    try {
+      const { ip_adresi, tarayici_bilgisi } = getRequestInfo(req);
+      await logAktivite({
+        kullanici_id: req.user.id,
+        kullanici_adi: req.user.kullanici_adi,
+        islem_tipi: 'KULLANICI_SILME',
+        islem_detay: `Kullanıcı silindi: ${creatorName} (${deletedUser.kullanici_adi})`,
+        hedef_tablo: 'kullanicilar',
+        hedef_id: id,
+        ip_adresi,
+        tarayici_bilgisi,
+      });
+    } catch (logError) {
+      console.error('Kullanıcı silme aktivite log hatası:', logError);
+    }
+
+    res.json({ message: 'Kullanıcı silindi; geçmiş kayıtları korundu.' });
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('Kullanıcı silme hatası:', error);
-    res.status(500).json({ message: 'Sunucu hatası' });
+    res.status(500).json({ message: 'Kullanıcı silinemedi; geçmiş kayıtlar değiştirilmedi.' });
+  } finally {
+    client.release();
   }
 });
 

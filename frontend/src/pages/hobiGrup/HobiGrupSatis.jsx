@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCustomTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -13,7 +13,13 @@ import AksesuarDetayDialog from '../aksesuarlar/AksesuarDetayDialog';
 
 // Hobi Grup Bisiklet & E-Bike satış ekranı - aksesuar satış ekranıyla aynı akış,
 // bisiklet satış ve stok servislerine bağlı çalışır.
-function HobiGrupSatis() {
+function HobiGrupSatis({
+  satisService = bisikletSatisService,
+  stokService = bisikletStokService,
+  baslik = 'Hobi Grup',
+  detayBasligi = 'Hobi Grup Satış Detayları',
+  kayitAdi = 'hobi grup satışı',
+}) {
   const [satislar, setSatislar] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -43,14 +49,10 @@ function HobiGrupSatis() {
     }
   }, [user, navigate]);
 
-  useEffect(() => {
-    loadSatislar();
-  }, []);
-
-  const loadSatislar = async () => {
+  const loadSatislar = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await bisikletSatisService.getAll();
+      const response = await satisService.getAll();
       // ID'ye göre azalan sıralama (en yeni en üstte)
       const sorted = (response.data || []).sort((a, b) => b.id - a.id);
       setSatislar(sorted);
@@ -60,7 +62,11 @@ function HobiGrupSatis() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [satisService]);
+
+  useEffect(() => {
+    loadSatislar();
+  }, [loadSatislar]);
 
   const handleOpenModal = (satis = null) => {
     if (satis) {
@@ -83,7 +89,7 @@ function HobiGrupSatis() {
   const handleDelete = async (id) => {
     if (window.confirm('Bu satış kaydını silmek istediğinizden emin misiniz?')) {
       try {
-        await bisikletSatisService.delete(id);
+        await satisService.delete(id);
         loadSatislar();
       } catch (error) {
         console.error('Silme hatası:', error);
@@ -163,11 +169,11 @@ function HobiGrupSatis() {
   };
 
   const handleBulkComplete = async () => {
-    if (!selectedIds.length || !window.confirm(`${selectedIds.length} hobi grup satışını tamamlandı olarak işaretlemek istiyor musunuz?`)) return;
+    if (!selectedIds.length || !window.confirm(`${selectedIds.length} ${kayitAdi} tamamlandı olarak işaretlensin mi?`)) return;
     setBulkSaving(true);
     setBulkNotice(null);
     try {
-      const response = await bisikletSatisService.bulkComplete(selectedIds);
+      const response = await satisService.bulkComplete(selectedIds);
       setBulkNotice({ severity: 'success', text: response.data.message });
       await loadSatislar();
     } catch (error) {
@@ -259,7 +265,7 @@ function HobiGrupSatis() {
       {isAdmin && (selectedIds.length > 0 || bulkNotice) && (
         <Alert severity={bulkNotice?.severity || 'info'} sx={{ mb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: { xs: 'stretch', sm: 'center' }, justifyContent: 'space-between', flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
-            <span>{bulkNotice?.text || `${selectedIds.length} hobi grup satışı seçildi.`}</span>
+            <span>{bulkNotice?.text || `${selectedIds.length} ${kayitAdi} seçildi.`}</span>
             {selectedIds.length > 0 && (
               <Box sx={{ display: 'flex', gap: 1 }}>
                 <Button size="small" color="inherit" disabled={bulkSaving} onClick={() => setSelectedIds([])}>Seçimi Kaldır</Button>
@@ -292,9 +298,9 @@ function HobiGrupSatis() {
         onClose={handleCloseModal}
         onSuccess={handleSuccess}
         editId={editingId}
-        service={bisikletSatisService}
-        stokService={bisikletStokService}
-        baslik="Hobi Grup"
+        service={satisService}
+        stokService={stokService}
+        baslik={baslik}
       />
 
       {/* Detay Dialog */}
@@ -306,7 +312,7 @@ function HobiGrupSatis() {
         isAdmin={isAdmin}
         themeColors={themeColors}
         handleOpenModal={handleOpenModal}
-        baslik="Hobi Grup Satış Detayları"
+        baslik={detayBasligi}
       />
     </Box>
   );

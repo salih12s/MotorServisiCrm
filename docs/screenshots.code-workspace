@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"name": "screenshots",
+			"path": "screenshots"
+		},
+		{
+			"name": "Sunum",
+			"path": "../../../Sunum"
+		},
+		{
+			"path": "."
+		}
+	],
+	"settings": {}
+}

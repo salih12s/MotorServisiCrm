@@ -16,6 +16,8 @@ const aksesuarRoutes = require('./routes/aksesuarlar');
 const aksesuarStokRoutes = require('./routes/aksesuarStok');
 const bisikletStokRoutes = require('./routes/bisikletStok');
 const bisikletSatisRoutes = require('./routes/bisikletSatislari');
+const yedekParcaStokRoutes = require('./routes/yedekParcaStok');
+const yedekParcaSatisRoutes = require('./routes/yedekParcaSatislari');
 const motorSatisRoutes = require('./routes/motorSatislari');
 const smsRoutes = require('./routes/sms');
 
@@ -47,7 +49,7 @@ app.use(express.json({ limit: '20mb' }));
 // JWT Middleware (korumalı rotalar için)
 const jwt = require('jsonwebtoken');
 
-const authenticateToken = (req, res, next) => {
+const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -55,13 +57,24 @@ const authenticateToken = (req, res, next) => {
     return res.status(401).json({ message: 'Yetkilendirme token\'ı gerekli' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({ message: 'Geçersiz token' });
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const result = await pool.query(
+      'SELECT id, kullanici_adi, rol, onay_durumu, aksesuar_yetkisi, motor_satis_yetkisi FROM kullanicilar WHERE id = $1',
+      [decoded.id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(401).json({ message: 'Kullanıcı hesabı artık aktif değil' });
     }
-    req.user = user;
+    const currentUser = result.rows[0];
+    if (currentUser.rol !== 'admin' && currentUser.onay_durumu !== 'onaylandi') {
+      return res.status(403).json({ message: 'Kullanıcı hesabı aktif değil' });
+    }
+    req.user = { ...decoded, ...currentUser };
     next();
-  });
+  } catch (error) {
+    return res.status(403).json({ message: 'Geçersiz token' });
+  }
 };
 
 // Routes
@@ -246,6 +259,88 @@ app.get('/api/public/bisikletler/:id', async (req, res) => {
   }
 });
 
+// Açık yedek parça kataloğu - paneldeki stok kayıtları otomatik olarak burada görünür.
+app.get('/api/public/yedek-parcalar', async (req, res) => {
+  try {
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 24, 1), 100);
+    const search = String(req.query.search || '').trim();
+    const stokta = req.query.stokta === 'true';
+    const conditions = [];
+    const params = [];
+
+    if (search) {
+      params.push(`%${search}%`);
+      conditions.push(`(stok_adi ILIKE $${params.length} OR stok_kodu ILIKE $${params.length})`);
+    }
+    if (stokta) conditions.push('mevcut > 0');
+
+    const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    const countParams = [...params];
+    params.push(limit, (page - 1) * limit);
+    const [result, countResult] = await Promise.all([
+      pool.query(
+        `SELECT id, stok_kodu, stok_adi, satis_fiyati, mevcut, birimi, aciklama, updated_at,
+                CASE WHEN resim IS NOT NULL AND resim <> '' THEN TRUE ELSE FALSE END AS resim_var,
+                CASE WHEN resimler IS NULL OR resimler = '' THEN 0
+                     ELSE GREATEST((SELECT COUNT(*) FROM json_array_elements_text(resimler::json)), 1)
+                END AS resim_sayisi
+         FROM yedek_parca_stok
+         ${whereClause}
+         ORDER BY stok_adi ASC
+         LIMIT $${params.length - 1} OFFSET $${params.length}`,
+        params
+      ),
+      pool.query(`SELECT COUNT(*)::int AS total FROM yedek_parca_stok ${whereClause}`, countParams),
+    ]);
+    const total = countResult.rows[0].total;
+    res.json({
+      data: result.rows,
+      pagination: { page, limit, total, totalPages: Math.max(Math.ceil(total / limit), 1) },
+    });
+  } catch (error) {
+    console.error('Public yedek parça listesi hatası:', error);
+    res.status(500).json({ message: 'Sunucu hatası' });
+  }
+});
+
+// Stok listesinde yedek parça görsellerini base64 liste verisine eklemeden sunar.
+app.get('/api/public/yedek-parcalar/:id/resim', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT resim, updated_at FROM yedek_parca_stok WHERE id = $1',
+      [req.params.id]
+    );
+    if (result.rows.length === 0 || !result.rows[0].resim) return res.status(404).end();
+    const match = result.rows[0].resim.match(/^data:([^;]+);base64,(.+)$/);
+    if (!match) return res.status(404).end();
+    const etag = `W/"yedek-parca-${req.params.id}-${new Date(result.rows[0].updated_at).getTime()}"`;
+    if (req.headers['if-none-match'] === etag) return res.status(304).end();
+    res.set('Content-Type', match[1]);
+    res.set('Cache-Control', 'public, max-age=86400');
+    res.set('ETag', etag);
+    return res.send(Buffer.from(match[2], 'base64'));
+  } catch (error) {
+    console.error('Public yedek parça görsel hatası:', error);
+    return res.status(500).end();
+  }
+});
+
+app.get('/api/public/yedek-parcalar/:id', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, stok_kodu, stok_adi, satis_fiyati, mevcut, birimi, resim, resimler, aciklama, updated_at
+       FROM yedek_parca_stok WHERE id = $1`,
+      [req.params.id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ message: 'Ürün bulunamadı' });
+    return res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Public yedek parça detay hatası:', error);
+    return res.status(500).json({ message: 'Sunucu hatası' });
+  }
+});
+
 app.use('/api/musteriler', authenticateToken, musteriRoutes);
 app.use('/api/is-emirleri', authenticateToken, isEmriRoutes);
 app.use('/api/raporlar', authenticateToken, raporRoutes);
@@ -254,6 +349,8 @@ app.use('/api/aksesuarlar', authenticateToken, aksesuarRoutes);
 app.use('/api/aksesuar-stok', authenticateToken, aksesuarStokRoutes);
 app.use('/api/bisiklet-stok', authenticateToken, bisikletStokRoutes);
 app.use('/api/bisiklet-satislari', authenticateToken, bisikletSatisRoutes);
+app.use('/api/yedek-parca-stok', authenticateToken, yedekParcaStokRoutes);
+app.use('/api/yedek-parca-satislari', authenticateToken, yedekParcaSatisRoutes);
 app.use('/api/motor-satislari', authenticateToken, motorSatisRoutes);
 app.use('/api/sms', authenticateToken, smsRoutes);
 

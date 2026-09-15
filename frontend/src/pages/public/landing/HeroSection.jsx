@@ -4,6 +4,7 @@ import { Box, Button, Container, Typography, Stack } from '@mui/material';
 import {
   ArrowForward as ArrowForwardIcon,
   PedalBike as PedalBikeIcon,
+  Build as BuildIcon,
 } from '@mui/icons-material';
 
 const HEADER_HEIGHT = {
@@ -264,44 +265,13 @@ function HeroSection() {
 
           <Box
             sx={{
-              position: 'relative',
               width: { xs: '100%', sm: 'auto' },
               maxWidth: { xs: 320, sm: 'none' },
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1.1,
             }}
           >
-            <Box
-              sx={{
-                position: { xs: 'static', sm: 'absolute' },
-                top: { sm: -12 },
-                right: { sm: -8 },
-                zIndex: 1,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 0.4,
-                px: { xs: 1, sm: 1.2 },
-                py: 0.2,
-                mb: { xs: 0.7, sm: 0 },
-                mr: { xs: 1.2, sm: 0 },
-                ml: { xs: 'auto', sm: 0 },
-                width: 'fit-content',
-                borderRadius: 50,
-                background: 'linear-gradient(135deg, #f5b431 0%, #ffd76a 100%)',
-                color: '#1a1200',
-                fontWeight: 800,
-                fontSize: { xs: '0.64rem', sm: '0.7rem' },
-                letterSpacing: { xs: 0.6, sm: 0.8 },
-                boxShadow: '0 4px 18px rgba(245,180,49,0.55)',
-                pointerEvents: 'none',
-                animation: 'heroYeniPulse 2s ease-in-out infinite',
-                '@keyframes heroYeniPulse': {
-                  '0%, 100%': { transform: 'scale(1)' },
-                  '50%': { transform: 'scale(1.08)' },
-                },
-              }}
-            >
-              ★ YENİ
-            </Box>
-
             <Button
               variant="outlined"
               size="large"
@@ -329,6 +299,65 @@ function HeroSection() {
             >
               Hobi Grup • Bisiklet & E-Bike
             </Button>
+
+            <Box sx={{ position: 'relative' }}>
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: -12,
+                  right: -8,
+                  zIndex: 1,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 0.4,
+                  px: 1.2,
+                  py: 0.2,
+                  width: 'fit-content',
+                  borderRadius: 50,
+                  background: 'linear-gradient(135deg, #f5b431 0%, #ffd76a 100%)',
+                  color: '#1a1200',
+                  fontWeight: 800,
+                  fontSize: { xs: '0.64rem', sm: '0.7rem' },
+                  letterSpacing: { xs: 0.6, sm: 0.8 },
+                  boxShadow: '0 4px 18px rgba(245,180,49,0.55)',
+                  pointerEvents: 'none',
+                  animation: 'heroYeniPulse 2s ease-in-out infinite',
+                  '@keyframes heroYeniPulse': {
+                    '0%, 100%': { transform: 'scale(1)' },
+                    '50%': { transform: 'scale(1.08)' },
+                  },
+                }}
+              >
+                ★ YENİ
+              </Box>
+              <Button
+                variant="outlined"
+                size="large"
+                startIcon={<BuildIcon />}
+                onClick={() => navigate('/yedek-parca')}
+                sx={{
+                  color: '#FFE8E8',
+                  borderColor: 'rgba(229,115,115,0.78)',
+                  fontWeight: 700,
+                  px: { xs: 3.5, md: 4.5 },
+                  py: { xs: 1.1, md: 1.3 },
+                  borderRadius: 50,
+                  textTransform: 'none',
+                  fontSize: { xs: '0.95rem', md: '1.05rem' },
+                  width: '100%',
+                  backdropFilter: 'blur(10px)',
+                  background: 'linear-gradient(135deg, rgba(126,31,31,0.55) 0%, rgba(229,115,115,0.24) 100%)',
+                  boxShadow: '0 8px 28px rgba(229,115,115,0.15)',
+                  transition: 'all 0.25s ease',
+                  '&:hover': {
+                    borderColor: '#FFB3B3',
+                    background: 'linear-gradient(135deg, rgba(159,47,47,0.68) 0%, rgba(239,154,154,0.32) 100%)',
+                  },
+                }}
+              >
+                Yedek Parça
+              </Button>
+            </Box>
           </Box>
 
           <Button

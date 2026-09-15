@@ -594,6 +594,95 @@ const initDatabase = async () => {
     `);
     console.log('✓ Bisiklet Satış Parçaları tablosu oluşturuldu');
 
+    // Yedek Parça Stok tablosu - Hobi Grup stok ekranıyla aynı alanlar
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS yedek_parca_stok (
+        id SERIAL PRIMARY KEY,
+        stok_kodu VARCHAR(50) UNIQUE NOT NULL,
+        stok_adi VARCHAR(255) NOT NULL,
+        giren_miktar INTEGER DEFAULT 0,
+        cikan_miktar INTEGER DEFAULT 0,
+        mevcut INTEGER DEFAULT 0,
+        birimi VARCHAR(20) DEFAULT 'Adet',
+        alis_fiyati DECIMAL(10, 2) DEFAULT 0,
+        satis_fiyati DECIMAL(10, 2) DEFAULT 0,
+        envanter_degeri DECIMAL(12, 2) DEFAULT 0,
+        resim TEXT,
+        resimler TEXT,
+        aciklama TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✓ Yedek Parça Stok tablosu oluşturuldu');
+
+    // Yedek Parça satış tablosu - Hobi Grup satış ekranıyla aynı alanlar
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS yedek_parca_satislar (
+        id SERIAL PRIMARY KEY,
+        ad_soyad VARCHAR(100),
+        telefon VARCHAR(20),
+        odeme_tutari DECIMAL(10, 2) DEFAULT 0,
+        odeme_sekli VARCHAR(50),
+        nakit_tutar DECIMAL(12, 2) DEFAULT 0,
+        kart_tutar DECIMAL(12, 2) DEFAULT 0,
+        havale_tutar DECIMAL(12, 2) DEFAULT 0,
+        odeme_bilgisi_girildi BOOLEAN DEFAULT FALSE,
+        aciklama TEXT,
+        durum VARCHAR(50) DEFAULT 'beklemede',
+        toplam_maliyet DECIMAL(10, 2) DEFAULT 0,
+        toplam_satis DECIMAL(10, 2) DEFAULT 0,
+        kar DECIMAL(10, 2) DEFAULT 0,
+        odeme_detaylari TEXT,
+        satis_tarihi DATE DEFAULT CURRENT_DATE,
+        tamamlama_tarihi TIMESTAMP,
+        olusturan_kullanici_id INTEGER REFERENCES kullanicilar(id),
+        olusturan_kisi VARCHAR(100),
+        musteri_id INTEGER REFERENCES musteriler(id) ON DELETE SET NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_yedek_parca_satislar_musteri_id
+      ON yedek_parca_satislar (musteri_id)
+    `);
+    console.log('✓ Yedek Parça Satışları tablosu oluşturuldu');
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS yedek_parca_satis_parcalar (
+        id SERIAL PRIMARY KEY,
+        yedek_parca_satis_id INTEGER REFERENCES yedek_parca_satislar(id) ON DELETE CASCADE,
+        urun_adi VARCHAR(255),
+        adet INTEGER DEFAULT 1,
+        maliyet DECIMAL(10, 2) DEFAULT 0,
+        satis_fiyati DECIMAL(10, 2) DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✓ Yedek Parça Satış Parçaları tablosu oluşturuldu');
+
+    // Kullanıcı hesabı silindiğinde operasyon ve rapor kayıtları korunur;
+    // yalnızca artık var olmayan kullanıcı bağlantısı NULL yapılır.
+    await pool.query(`
+      DO $$
+      DECLARE
+        fk RECORD;
+      BEGIN
+        FOR fk IN
+          SELECT conrelid::regclass AS tablo, conname, pg_get_constraintdef(oid) AS tanim
+          FROM pg_constraint
+          WHERE contype = 'f'
+            AND confrelid = 'kullanicilar'::regclass
+            AND confdeltype <> 'n'
+        LOOP
+          EXECUTE format('ALTER TABLE %s DROP CONSTRAINT %I', fk.tablo, fk.conname);
+          EXECUTE format('ALTER TABLE %s ADD CONSTRAINT %I %s ON DELETE SET NULL', fk.tablo, fk.conname, fk.tanim);
+        END LOOP;
+      END $$;
+    `);
+    console.log('✓ Kullanıcı silme ilişkileri geçmiş kayıtları koruyacak şekilde ayarlandı');
+
     // Eski ve yeni satışların cari hesapta müşteriye kalıcı olarak bağlanmasını sağlar.
     await linkOperationCustomers(pool);
     console.log('✓ Satış kayıtları müşteri kartlarına bağlandı');
