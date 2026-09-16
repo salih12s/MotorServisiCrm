@@ -5,6 +5,7 @@ import { CssBaseline } from '@mui/material';
 import { CustomThemeProvider, useCustomTheme } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
+import { getDefaultAuthenticatedPath } from './utils/authNavigation';
 
 // Pages
 import Login from './pages/public/Login';
@@ -180,16 +181,9 @@ const NormalRoute = ({ children }) => {
     return children;
   }
 
-  if (user.aksesuar_yetkisi) {
-    return <Navigate to="/aksesuarlar" replace />;
-  }
-
-  if (user.motor_satis_yetkisi) {
-    return <Navigate to="/motor-satislari" replace />;
-  }
-
-  if (user.yedek_parca_yetkisi) {
-    return <Navigate to="/yedek-parca-satis" replace />;
+  const defaultPath = getDefaultAuthenticatedPath(user);
+  if (defaultPath !== '/is-emirleri') {
+    return <Navigate to={defaultPath} replace />;
   }
 
   return children;
@@ -204,7 +198,7 @@ const PublicRoute = ({ children }) => {
   }
 
   if (user) {
-    return <Navigate to="/is-emirleri" replace />;
+    return <Navigate to={getDefaultAuthenticatedPath(user)} replace />;
   }
 
   return children;

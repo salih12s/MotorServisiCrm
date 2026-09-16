@@ -27,6 +27,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import { authService } from '../../services/api';
+import { getDefaultAuthenticatedPath } from '../../utils/authNavigation';
 
 function Login() {
   const [tabValue, setTabValue] = useState(0); // 0: Giriş, 1: Kayıt
@@ -57,8 +58,8 @@ function Login() {
     setLoading(true);
 
     try {
-      await login({ username: kullaniciAdi, password: sifre });
-      navigate('/is-emirleri');
+      const authenticatedUser = await login({ username: kullaniciAdi, password: sifre });
+      navigate(getDefaultAuthenticatedPath(authenticatedUser), { replace: true });
     } catch (err) {
       setError(err.message || 'Giriş yapılamadı');
     } finally {
