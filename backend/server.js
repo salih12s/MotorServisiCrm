@@ -5,6 +5,7 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const initDatabase = require('./config/initDb');
 const pool = require('./config/db');
+const { canAccessYedekParca } = require('./domain/userPermissions');
 
 // Routes
 const authRoutes = require('./routes/auth');
@@ -60,7 +61,7 @@ const authenticateToken = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const result = await pool.query(
-      'SELECT id, kullanici_adi, rol, onay_durumu, aksesuar_yetkisi, motor_satis_yetkisi FROM kullanicilar WHERE id = $1',
+      'SELECT id, kullanici_adi, rol, onay_durumu, aksesuar_yetkisi, motor_satis_yetkisi, yedek_parca_yetkisi FROM kullanicilar WHERE id = $1',
       [decoded.id]
     );
     if (result.rows.length === 0) {
@@ -75,6 +76,13 @@ const authenticateToken = async (req, res, next) => {
   } catch (error) {
     return res.status(403).json({ message: 'Geçersiz token' });
   }
+};
+
+const requireYedekParcaAccess = (req, res, next) => {
+  if (!canAccessYedekParca(req.user)) {
+    return res.status(403).json({ message: 'Yedek parça sayfası için yetkiniz yok' });
+  }
+  next();
 };
 
 // Routes
@@ -349,8 +357,8 @@ app.use('/api/aksesuarlar', authenticateToken, aksesuarRoutes);
 app.use('/api/aksesuar-stok', authenticateToken, aksesuarStokRoutes);
 app.use('/api/bisiklet-stok', authenticateToken, bisikletStokRoutes);
 app.use('/api/bisiklet-satislari', authenticateToken, bisikletSatisRoutes);
-app.use('/api/yedek-parca-stok', authenticateToken, yedekParcaStokRoutes);
-app.use('/api/yedek-parca-satislari', authenticateToken, yedekParcaSatisRoutes);
+app.use('/api/yedek-parca-stok', authenticateToken, requireYedekParcaAccess, yedekParcaStokRoutes);
+app.use('/api/yedek-parca-satislari', authenticateToken, requireYedekParcaAccess, yedekParcaSatisRoutes);
 app.use('/api/motor-satislari', authenticateToken, motorSatisRoutes);
 app.use('/api/sms', authenticateToken, smsRoutes);
 

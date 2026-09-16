@@ -166,6 +166,16 @@ function Kullanicilar() {
     }
   };
 
+  const handleYedekParcaYetkisiToggle = async (userId, currentValue) => {
+    try {
+      await authService.updateYedekParcaYetkisi(userId, !currentValue);
+      setSnackbar({ open: true, message: `Yedek parça yetkisi ${!currentValue ? 'verildi' : 'kaldırıldı'}`, severity: 'success' });
+      loadData();
+    } catch (error) {
+      setSnackbar({ open: true, message: 'Yetki güncelleme başarısız', severity: 'error' });
+    }
+  };
+
   const handleDelete = async () => {
     if (!userToDelete) return;
     try {
@@ -362,6 +372,21 @@ function Kullanicilar() {
                     />
                   </Box>
 
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+                    <Typography variant="caption" sx={{ fontSize: '0.7rem', fontWeight: 600 }}>
+                      Yedek Parça Yetkisi:
+                    </Typography>
+                    <Switch
+                      size="small"
+                      checked={user.yedek_parca_yetkisi || false}
+                      onChange={() => handleYedekParcaYetkisiToggle(user.id, user.yedek_parca_yetkisi)}
+                      sx={{
+                        '& .MuiSwitch-switchBase.Mui-checked': { color: '#8B1E1E' },
+                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#8B1E1E' },
+                      }}
+                    />
+                  </Box>
+
                   <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
                     <Button
                       size="small"
@@ -430,6 +455,7 @@ function Kullanicilar() {
                 <TableCell>Durum</TableCell>
                 <TableCell>Aksesuar</TableCell>
                 <TableCell>Motor Satış</TableCell>
+                <TableCell>Yedek Parça</TableCell>
                 <TableCell>Kayıt Tarihi</TableCell>
                 <TableCell align="right">İşlemler</TableCell>
               </TableRow>
@@ -489,6 +515,17 @@ function Kullanicilar() {
                         '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
                           backgroundColor: '#E65100',
                         },
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Switch
+                      size="small"
+                      checked={user.yedek_parca_yetkisi || false}
+                      onChange={() => handleYedekParcaYetkisiToggle(user.id, user.yedek_parca_yetkisi)}
+                      sx={{
+                        '& .MuiSwitch-switchBase.Mui-checked': { color: '#8B1E1E' },
+                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#8B1E1E' },
                       }}
                     />
                   </TableCell>

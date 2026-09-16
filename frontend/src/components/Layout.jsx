@@ -90,7 +90,7 @@ const menuItems = [
     icon: <BuildIcon />,
     roles: ['admin', 'user', 'personel'],
     color: '#8B1E1E',
-    showForAksesuarOnly: true,
+    showForYedekParcaOnly: true,
     subItems: [
       { title: 'Yedek Parça Satış', path: '/yedek-parca-satis', icon: <ShoppingBagIcon /> },
       { title: 'Yedek Parça Stok', path: '/yedek-parca-stok', icon: <InventoryIcon /> },
@@ -169,31 +169,19 @@ function Layout() {
       return true;
     }
     
-    // Sadece aksesuar yetkisi olan kullanıcılar (motor satış yetkisi yok)
-    if (user?.aksesuar_yetkisi && !user?.motor_satis_yetkisi) {
-      return item.showForAksesuarOnly === true;
+    const hasSpecialPermission = Boolean(
+      user?.aksesuar_yetkisi || user?.motor_satis_yetkisi || user?.yedek_parca_yetkisi
+    );
+
+    if (hasSpecialPermission) {
+      return Boolean(
+        (item.showForAksesuarOnly && user?.aksesuar_yetkisi) ||
+        (item.showForMotorSatisOnly && user?.motor_satis_yetkisi) ||
+        (item.showForYedekParcaOnly && user?.yedek_parca_yetkisi)
+      );
     }
-    
-    // Sadece motor satış yetkisi olan kullanıcılar (aksesuar yetkisi yok)
-    if (user?.motor_satis_yetkisi && !user?.aksesuar_yetkisi) {
-      return item.showForMotorSatisOnly === true;
-    }
-    
-    // Her iki yetkisi de olan kullanıcılar
-    if (user?.aksesuar_yetkisi && user?.motor_satis_yetkisi) {
-      return item.showForAksesuarOnly === true || item.showForMotorSatisOnly === true;
-    }
-    
-    // Hiçbir özel yetkisi olmayan kullanıcılar
-    if (item.showForAksesuarOnly && !user?.aksesuar_yetkisi) {
-      return false;
-    }
-    
-    if (item.showForMotorSatisOnly && !user?.motor_satis_yetkisi) {
-      return false;
-    }
-    
-    return true;
+
+    return !item.showForAksesuarOnly && !item.showForMotorSatisOnly && !item.showForYedekParcaOnly;
   });
 
   const handleMenuClick = (event) => {

@@ -73,6 +73,7 @@ export const authService = {
   deleteUser: (id) => api.delete(`/auth/users/${id}`),
   updateAksesuarYetkisi: (id, aksesuar_yetkisi) => api.patch(`/auth/users/${id}/aksesuar-yetkisi`, { aksesuar_yetkisi }),
   updateMotorSatisYetkisi: (id, motor_satis_yetkisi) => api.patch(`/auth/users/${id}/motor-satis-yetkisi`, { motor_satis_yetkisi }),
+  updateYedekParcaYetkisi: (id, yedek_parca_yetkisi) => api.patch(`/auth/users/${id}/yedek-parca-yetkisi`, { yedek_parca_yetkisi }),
   getUserActivities: (id) => api.get(`/auth/users/${id}/activities`),
   getUserActivityLogs: (id, limit = 100) => api.get(`/auth/users/${id}/activity-logs?limit=${limit}`),
   getUserWorkOrders: (id) => api.get(`/auth/user-work-orders/${id}`),

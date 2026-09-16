@@ -140,7 +140,30 @@ const MotorSatisRoute = ({ children }) => {
   return children;
 };
 
-// Normal sayfalar için route - aksesuar_yetkisi veya motor_satis_yetkisi olanlar erişemez
+// Yedek Parça Route - sadece yedek_parca_yetkisi olanlar ve admin erişebilir
+const YedekParcaRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return null;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user.role === 'admin') {
+    return children;
+  }
+
+  if (!user.yedek_parca_yetkisi) {
+    return <Navigate to="/is-emirleri" replace />;
+  }
+
+  return children;
+};
+
+// Normal sayfalar için route - özel bölüm yetkisi olanlar kendi bölümlerine yönlendirilir
 const NormalRoute = ({ children }) => {
   const { user, loading } = useAuth();
 
@@ -157,19 +180,16 @@ const NormalRoute = ({ children }) => {
     return children;
   }
 
-  // Sadece aksesuar yetkisi olanlar aksesuar sayfasına yönlendirilir
-  if (user.aksesuar_yetkisi && !user.motor_satis_yetkisi) {
+  if (user.aksesuar_yetkisi) {
     return <Navigate to="/aksesuarlar" replace />;
   }
 
-  // Sadece motor satış yetkisi olanlar motor satış sayfasına yönlendirilir
-  if (user.motor_satis_yetkisi && !user.aksesuar_yetkisi) {
+  if (user.motor_satis_yetkisi) {
     return <Navigate to="/motor-satislari" replace />;
   }
 
-  // Her iki yetkisi de olanlar da normal sayfalara erişemez
-  if (user.aksesuar_yetkisi && user.motor_satis_yetkisi) {
-    return <Navigate to="/aksesuarlar" replace />;
+  if (user.yedek_parca_yetkisi) {
+    return <Navigate to="/yedek-parca-satis" replace />;
   }
 
   return children;
@@ -261,8 +281,8 @@ function AppRoutes() {
         <Route path="aksesuar-stok" element={<AksesuarRoute><AksesuarStok /></AksesuarRoute>} />
         <Route path="hobi-grup-satis" element={<AksesuarRoute><HobiGrupSatis /></AksesuarRoute>} />
         <Route path="hobi-grup-stok" element={<AksesuarRoute><HobiGrupStok /></AksesuarRoute>} />
-        <Route path="yedek-parca-satis" element={<AksesuarRoute><YedekParcaSatis /></AksesuarRoute>} />
-        <Route path="yedek-parca-stok" element={<AksesuarRoute><YedekParcaStok /></AksesuarRoute>} />
+        <Route path="yedek-parca-satis" element={<YedekParcaRoute><YedekParcaSatis /></YedekParcaRoute>} />
+        <Route path="yedek-parca-stok" element={<YedekParcaRoute><YedekParcaStok /></YedekParcaRoute>} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

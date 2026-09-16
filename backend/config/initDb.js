@@ -485,6 +485,17 @@ const initDatabase = async () => {
     `);
     console.log('✓ Kullanıcılar tablosuna motor_satis_yetkisi sütunu eklendi');
 
+    // Kullanıcılar tablosuna yedek_parca_yetkisi sütunu ekle (eğer yoksa)
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='kullanicilar' AND column_name='yedek_parca_yetkisi') THEN
+          ALTER TABLE kullanicilar ADD COLUMN yedek_parca_yetkisi BOOLEAN DEFAULT FALSE;
+        END IF;
+      END $$;
+    `);
+    console.log('✓ Kullanıcılar tablosuna yedek_parca_yetkisi sütunu eklendi');
+
     // Aksesuar Stok tablosu
     await pool.query(`
       CREATE TABLE IF NOT EXISTS aksesuar_stok (

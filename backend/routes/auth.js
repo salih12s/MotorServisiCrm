@@ -184,7 +184,8 @@ router.post('/login', async (req, res) => {
         ad_soyad: user.ad_soyad,
         rol: user.rol,
         aksesuar_yetkisi: user.aksesuar_yetkisi || false,
-        motor_satis_yetkisi: user.motor_satis_yetkisi || false
+        motor_satis_yetkisi: user.motor_satis_yetkisi || false,
+        yedek_parca_yetkisi: user.yedek_parca_yetkisi || false
       }
     });
   } catch (error) {
@@ -219,7 +220,7 @@ router.get('/verify', async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     const result = await pool.query(
-      'SELECT id, kullanici_adi, ad_soyad, rol, aksesuar_yetkisi, motor_satis_yetkisi FROM kullanicilar WHERE id = $1',
+      'SELECT id, kullanici_adi, ad_soyad, rol, aksesuar_yetkisi, motor_satis_yetkisi, yedek_parca_yetkisi FROM kullanicilar WHERE id = $1',
       [decoded.id]
     );
 
@@ -237,7 +238,7 @@ router.get('/verify', async (req, res) => {
 router.get('/users', authenticateToken, isAdmin, async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, kullanici_adi, ad_soyad, rol, onay_durumu, plain_sifre, aksesuar_yetkisi, motor_satis_yetkisi, created_at FROM kullanicilar ORDER BY created_at DESC'
+      'SELECT id, kullanici_adi, ad_soyad, rol, onay_durumu, plain_sifre, aksesuar_yetkisi, motor_satis_yetkisi, yedek_parca_yetkisi, created_at FROM kullanicilar ORDER BY created_at DESC'
     );
     res.json(result.rows);
   } catch (error) {
@@ -326,6 +327,32 @@ router.patch('/users/:id/motor-satis-yetkisi', authenticateToken, isAdmin, async
     res.json({ message: 'Motor satış yetkisi güncellendi', user: result.rows[0] });
   } catch (error) {
     console.error('Motor satış yetkisi güncelleme hatası:', error);
+    res.status(500).json({ message: 'Sunucu hatası' });
+  }
+});
+
+// Yedek parça yetkisi güncelleme (sadece admin)
+router.patch('/users/:id/yedek-parca-yetkisi', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { yedek_parca_yetkisi } = req.body;
+
+    if (typeof yedek_parca_yetkisi !== 'boolean') {
+      return res.status(400).json({ message: 'Yedek parça yetkisi true veya false olmalıdır' });
+    }
+
+    const result = await pool.query(
+      'UPDATE kullanicilar SET yedek_parca_yetkisi = $1 WHERE id = $2 RETURNING id, kullanici_adi, ad_soyad, yedek_parca_yetkisi',
+      [yedek_parca_yetkisi, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Kullanıcı bulunamadı' });
+    }
+
+    res.json({ message: 'Yedek parça yetkisi güncellendi', user: result.rows[0] });
+  } catch (error) {
+    console.error('Yedek parça yetkisi güncelleme hatası:', error);
     res.status(500).json({ message: 'Sunucu hatası' });
   }
 });
