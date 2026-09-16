@@ -1,4 +1,4 @@
-import { getDefaultAuthenticatedPath } from './authNavigation';
+import { getDefaultAuthenticatedPath, hasAuthenticatedPermission } from './authNavigation';
 
 test('yedek parça yetkili personeli yedek parça satışına yönlendirir', () => {
   expect(getDefaultAuthenticatedPath({ role: 'personel', yedek_parca_yetkisi: true }))
@@ -17,4 +17,15 @@ test('çoklu yetkide mevcut menü önceliğini korur', () => {
     motor_satis_yetkisi: true,
     yedek_parca_yetkisi: true,
   })).toBe('/aksesuarlar');
+});
+
+test('yeniden kullanılan satış ekranı doğru yetki alanını kontrol eder', () => {
+  const yedekParcaUser = {
+    role: 'personel',
+    aksesuar_yetkisi: false,
+    yedek_parca_yetkisi: true,
+  };
+
+  expect(hasAuthenticatedPermission(yedekParcaUser, 'yedek_parca_yetkisi')).toBe(true);
+  expect(hasAuthenticatedPermission(yedekParcaUser, 'aksesuar_yetkisi')).toBe(false);
 });

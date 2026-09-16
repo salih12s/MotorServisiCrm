@@ -10,6 +10,7 @@ import AksesuarHeader from '../aksesuarlar/AksesuarHeader';
 import AksesuarFiltreler from '../aksesuarlar/AksesuarFiltreler';
 import AksesuarTablo from '../aksesuarlar/AksesuarTablo';
 import AksesuarDetayDialog from '../aksesuarlar/AksesuarDetayDialog';
+import { hasAuthenticatedPermission } from '../../utils/authNavigation';
 
 // Hobi Grup Bisiklet & E-Bike satış ekranı - aksesuar satış ekranıyla aynı akış,
 // bisiklet satış ve stok servislerine bağlı çalışır.
@@ -19,6 +20,7 @@ function HobiGrupSatis({
   baslik = 'Hobi Grup',
   detayBasligi = 'Hobi Grup Satış Detayları',
   kayitAdi = 'hobi grup satışı',
+  requiredPermission = 'aksesuar_yetkisi',
 }) {
   const [satislar, setSatislar] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -42,12 +44,13 @@ function HobiGrupSatis({
   const navigate = useNavigate();
   const isAdmin = user?.role === 'admin';
 
-  // Erişim kontrolü - admin veya aksesuar yetkisi olmalı
+  // Bu ekran Hobi Grup ve Yedek Parça tarafında ortak kullanıldığı için
+  // kontrol edilecek yetkiyi çağıran ekran belirler.
   useEffect(() => {
-    if (user && user.role !== 'admin' && !user.aksesuar_yetkisi) {
-      navigate('/');
+    if (user && !hasAuthenticatedPermission(user, requiredPermission)) {
+      navigate('/is-emirleri', { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, navigate, requiredPermission]);
 
   const loadSatislar = useCallback(async () => {
     try {

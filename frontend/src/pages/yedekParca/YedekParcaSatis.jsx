@@ -10,6 +10,7 @@ function YedekParcaSatis() {
       baslik="Yedek Parça"
       detayBasligi="Yedek Parça Satış Detayları"
       kayitAdi="yedek parça satışı"
+      requiredPermission="yedek_parca_yetkisi"
     />
   );
 }

@@ -17,3 +17,7 @@ export const getDefaultAuthenticatedPath = (user) => {
 
   return '/is-emirleri';
 };
+
+export const hasAuthenticatedPermission = (user, permissionField) => Boolean(
+  user && (user.role === 'admin' || user[permissionField])
+);
